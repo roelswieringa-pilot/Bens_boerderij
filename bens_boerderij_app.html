@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ben's Boerderij">
+<meta name="theme-color" content="#e07b00">
+<title>Ben's Boerderij</title>
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23e07b00'/><text y='.9em' font-size='80'>🐔</text></svg>">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap');
+
+  :root {
+    --oranje:   #e07b00;
+    --oranje-l: #f5a623;
+    --bruin-d:  #7a4500;
+    --bruin-l:  #c8860a;
+    --geel-l:   #fffbe8;
+    --geel-m:   #fff8d6;
+    --geel-d:   #ffeeb0;
+    --tekst:    #5a3200;
+    --tekst-l:  #a06020;
+    --wit:      #ffffff;
+    --rood:     #c0392b;
+    --groen:    #27ae60;
+    --blauw:    #4a6fa5;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bot: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--geel-l);
+    color: var(--tekst);
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    overflow-x: hidden;
+  }
+
+  /* ── TOP NAV BAR ── */
+  .topbar {
+    position: fixed; top:0; left:0; right:0; z-index:100;
+    background: linear-gradient(90deg, var(--bruin-d), var(--oranje), var(--bruin-d));
+    padding: calc(var(--safe-top) + 10px) 16px 10px;
+    display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+  }
+  .topbar-title {
+    font-family: 'Fredoka One', cursive;
+    font-size: 20px; color: #fff;
+    letter-spacing: 1px;
+    text-shadow: 1px 2px 4px rgba(0,0,0,0.3);
+  }
+  .topbar-date {
+    font-size: 11px; color: rgba(255,255,255,0.8);
+    font-weight: 600;
+  }
+
+  /* ── BOTTOM NAV ── */
+  .bottomnav {
+    position: fixed; bottom:0; left:0; right:0; z-index:100;
+    background: linear-gradient(90deg, var(--bruin-d), var(--bruin-l), var(--bruin-d));
+    padding: 8px 0 calc(var(--safe-bot) + 8px);
+    display: flex; justify-content: space-around;
+    box-shadow: 0 -2px 12px rgba(0,0,0,0.15);
+  }
+  .nav-btn {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 2px; padding: 4px 12px; border:none; background:none;
+    cursor: pointer; border-radius: 10px; transition: background 0.15s;
+    min-width: 60px;
+  }
+  .nav-btn.active { background: rgba(255,255,255,0.18); }
+  .nav-btn span:first-child { font-size: 22px; }
+  .nav-btn span:last-child  { font-size: 9px; color: rgba(255,255,255,0.85); font-weight:700; letter-spacing:0.3px; }
+
+  /* ── PAGE WRAPPER ── */
+  .page-wrapper {
+    padding-top: calc(var(--safe-top) + 60px);
+    padding-bottom: calc(var(--safe-bot) + 72px);
+    min-height: 100vh;
+  }
+
+  /* ── PAGES ── */
+  .page { display:none; padding: 16px; }
+  .page.active { display:block; }
+
+  /* ── CARDS ── */
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1.5px solid var(--geel-d);
+    box-shadow: 0 2px 12px rgba(200,134,10,0.12);
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .card-title {
+    font-family: 'Fredoka One', cursive;
+    font-size: 15px; color: var(--bruin-d);
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  /* ── DASHBOARD STATS ── */
+  .stats-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px; margin-bottom: 14px;
+  }
+  .stat-box {
+    background: linear-gradient(135deg, var(--geel-l), var(--geel-d));
+    border-radius: 14px; border: 1.5px solid var(--geel-d);
+    padding: 14px 12px; text-align: center;
+    box-shadow: 0 2px 8px rgba(200,134,10,0.1);
+  }
+  .stat-box .emoji { font-size: 24px; margin-bottom: 4px; }
+  .stat-box .val { font-family:'Fredoka One',cursive; font-size:28px; color:var(--oranje); line-height:1; }
+  .stat-box .lbl { font-size:10px; color:var(--tekst-l); font-weight:700; margin-top:2px; }
+
+  /* ── FORMS ── */
+  .form-group { margin-bottom: 12px; }
+  .form-label { font-size:12px; font-weight:700; color:var(--bruin-d); margin-bottom:4px; display:block; }
+  .form-input, .form-select {
+    width: 100%; padding: 11px 14px;
+    border: 1.5px solid var(--geel-d);
+    border-radius: 10px; font-size:15px;
+    font-family: 'Nunito', sans-serif;
+    color: var(--tekst); background: var(--geel-l);
+    outline: none; transition: border-color 0.2s;
+    -webkit-appearance: none; appearance: none;
+  }
+  .form-input:focus, .form-select:focus { border-color: var(--oranje); background: #fff; }
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    width:100%; padding:13px; border:none; border-radius:12px;
+    font-family:'Fredoka One',cursive; font-size:16px; letter-spacing:0.5px;
+    cursor:pointer; transition: all 0.15s; box-shadow:0 3px 8px rgba(0,0,0,0.15);
+  }
+  .btn-primary { background: linear-gradient(90deg, var(--bruin-d), var(--oranje)); color:#fff; }
+  .btn-primary:active { transform:scale(0.97); }
+  .btn-success { background: linear-gradient(90deg, #1e8449, var(--groen)); color:#fff; }
+  .btn-danger  { background: linear-gradient(90deg, #922b21, var(--rood));  color:#fff; }
+  .btn-sm {
+    width:auto; padding:7px 14px; font-size:12px;
+    border-radius:8px; margin-left:6px;
+  }
+
+  /* ── TABLE / LIST ── */
+  .list-item {
+    display:flex; justify-content:space-between; align-items:center;
+    padding: 10px 0; border-bottom: 1px solid var(--geel-d);
+    gap: 8px;
+  }
+  .list-item:last-child { border-bottom: none; }
+  .list-item-left { flex:1; }
+  .list-item-title { font-size:13px; font-weight:700; color:var(--tekst); }
+  .list-item-sub   { font-size:11px; color:var(--tekst-l); margin-top:1px; }
+  .list-item-right { text-align:right; flex-shrink:0; }
+  .badge {
+    display:inline-block; padding:3px 8px; border-radius:20px;
+    font-size:11px; font-weight:700;
+  }
+  .badge-groen  { background:#d5f5e3; color:#1e8449; }
+  .badge-oranje { background:#fef3cd; color:#b7770d; }
+  .badge-rood   { background:#fadbd8; color:#922b21; }
+  .badge-blauw  { background:#d6eaf8; color:#1a5276; }
+
+  /* ── SECTION HEADER ── */
+  .section-hdr {
+    background: linear-gradient(90deg, var(--oranje), var(--oranje-l));
+    color:#fff; padding:10px 16px; margin: -16px -16px 14px;
+    border-radius:16px 16px 0 0;
+    font-family:'Fredoka One',cursive; font-size:16px;
+    letter-spacing:0.5px;
+  }
+
+  /* ── KIPPENLIJST ── */
+  .kip-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .kip-card {
+    background: var(--geel-l); border-radius:12px;
+    border:1.5px solid var(--geel-d); padding:10px;
+    text-align:center;
+  }
+  .kip-emoji { font-size:28px; }
+  .kip-ras  { font-size:11px; font-weight:800; color:var(--bruin-d); margin-top:4px; }
+  .kip-namen { font-size:9.5px; color:var(--tekst-l); font-style:italic; margin-top:2px; line-height:1.3; }
+
+  /* ── CHART BARS ── */
+  .bar-chart { display:flex; flex-direction:column; gap:6px; }
+  .bar-row { display:flex; align-items:center; gap:8px; }
+  .bar-lbl { font-size:10px; color:var(--tekst-l); width:32px; flex-shrink:0; text-align:right; }
+  .bar-track { flex:1; height:18px; background:var(--geel-d); border-radius:9px; overflow:hidden; }
+  .bar-fill { height:100%; border-radius:9px; background:linear-gradient(90deg, var(--bruin-d), var(--oranje)); transition:width 0.6s ease; display:flex; align-items:center; padding-left:6px; }
+  .bar-val { font-size:10px; font-weight:700; color:#fff; white-space:nowrap; }
+
+  /* ── TOAST ── */
+  .toast {
+    position:fixed; bottom:90px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--bruin-d); color:#fff; padding:10px 20px;
+    border-radius:20px; font-size:13px; font-weight:700;
+    opacity:0; transition:all 0.3s; z-index:200; white-space:nowrap;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* ── P&L ROWS ── */
+  .pl-row {
+    display:flex; justify-content:space-between; align-items:center;
+    padding:8px 12px; border-radius:8px; margin-bottom:4px;
+  }
+  .pl-row-label { font-size:13px; font-weight:600; color:var(--tekst); }
+  .pl-row-val   { font-size:14px; font-weight:800; }
+  .pl-row.sub   { background:var(--geel-l); }
+  .pl-row.total { background:linear-gradient(90deg, var(--bruin-d), var(--bruin-l)); }
+  .pl-row.total .pl-row-label { color:#fff; font-family:'Fredoka One',cursive; font-size:14px; }
+  .pl-row.total .pl-row-val   { color:#fff; font-size:16px; }
+  .pl-row.result-pos { background:linear-gradient(90deg, #1e5e34, var(--groen)); }
+  .pl-row.result-neg { background:linear-gradient(90deg, #7b241c, var(--rood)); }
+  .pl-row.result-pos .pl-row-label,
+  .pl-row.result-pos .pl-row-val,
+  .pl-row.result-neg .pl-row-label,
+  .pl-row.result-neg .pl-row-val { color:#fff; font-family:'Fredoka One',cursive; font-size:15px; }
+
+  /* ── EMPTY STATE ── */
+  .empty { text-align:center; padding:30px 0; color:var(--tekst-l); }
+  .empty .emoji { font-size:40px; margin-bottom:8px; }
+  .empty p { font-size:13px; }
+
+  /* ── DELETE BTN ── */
+  .del-btn {
+    background:none; border:none; font-size:16px; cursor:pointer;
+    padding:4px; border-radius:6px; color:var(--rood);
+    opacity:0.6; transition:opacity 0.15s;
+  }
+  .del-btn:active { opacity:1; }
+
+  /* ── SCROLL TABS ── */
+  .scroll-tabs {
+    display:flex; gap:8px; overflow-x:auto; padding:0 0 8px;
+    scrollbar-width:none; -ms-overflow-style:none; margin-bottom:14px;
+  }
+  .scroll-tabs::-webkit-scrollbar { display:none; }
+  .tab-pill {
+    flex-shrink:0; padding:6px 16px; border-radius:20px;
+    border:1.5px solid var(--geel-d); background:var(--geel-l);
+    font-size:12px; font-weight:700; color:var(--tekst-l); cursor:pointer;
+    transition:all 0.15s;
+  }
+  .tab-pill.active { background:var(--oranje); border-color:var(--oranje); color:#fff; }
+
+  .divider { height:1px; background:var(--geel-d); margin:10px 0; }
+  .text-groen { color:var(--groen); }
+  .text-rood  { color:var(--rood); }
+  .text-oranje{ color:var(--oranje); }
+  .fw-bold    { font-weight:800; }
+  .fs-sm      { font-size:11px; }
+  .mt-8 { margin-top:8px; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-title">🐔 Ben's Boerderij</div>
+  <div class="topbar-date" id="topdate"></div>
+</div>
+
+<!-- PAGES -->
+<div class="page-wrapper">
+
+  <!-- ══════════ DASHBOARD ══════════ -->
+  <div class="page active" id="page-dashboard">
+
+    <div class="stats-grid">
+      <div class="stat-box">
+        <div class="emoji">🥚</div>
+        <div class="val" id="stat-vandaag">0</div>
+        <div class="lbl">VANDAAG GERAAPT</div>
+      </div>
+      <div class="stat-box">
+        <div class="emoji">📅</div>
+        <div class="val" id="stat-week">0</div>
+        <div class="lbl">DEZE WEEK</div>
+      </div>
+      <div class="stat-box">
+        <div class="emoji">📦</div>
+        <div class="val" id="stat-maand">0</div>
+        <div class="lbl">DEZE MAAND</div>
+      </div>
+      <div class="stat-box">
+        <div class="emoji">💰</div>
+        <div class="val" id="stat-omzet">€0</div>
+        <div class="lbl">TOTAAL OMZET</div>
+      </div>
+    </div>
+
+    <!-- Snel invullen -->
+    <div class="card">
+      <div class="card-title">⚡ Snel invullen</div>
+      <div class="form-group">
+        <label class="form-label">Datum</label>
+        <input type="date" class="form-input" id="quick-datum">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Aantal eieren geraapt</label>
+        <input type="number" class="form-input" id="quick-eieren" placeholder="0" min="0" inputmode="numeric">
+      </div>
+      <button class="btn btn-primary" onclick="saveEieren()">🥚 Opslaan</button>
+    </div>
+
+    <!-- Laatste 5 dagen -->
+    <div class="card">
+      <div class="card-title">📋 Laatste dagen</div>
+      <div id="laatste-dagen">
+        <div class="empty"><div class="emoji">🐣</div><p>Nog geen gegevens</p></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════ LEGDAGEN ══════════ -->
+  <div class="page" id="page-legdagen">
+    <div class="card">
+      <div class="section-hdr">🥚 Legdagen bijhouden</div>
+
+      <div class="form-group">
+        <label class="form-label">Datum</label>
+        <input type="date" class="form-input" id="leg-datum">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Aantal eieren geraapt</label>
+        <input type="number" class="form-input" id="leg-aantal" placeholder="0" min="0" inputmode="numeric">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notities (optioneel)</label>
+        <input type="text" class="form-input" id="leg-notitie" placeholder="bijv. 2 gebroken...">
+      </div>
+      <button class="btn btn-primary" onclick="saveLegdag()">✅ Opslaan</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📊 Overzicht per maand</div>
+      <div class="scroll-tabs" id="maand-tabs"></div>
+      <div id="maand-overzicht"></div>
+    </div>
+  </div>
+
+  <!-- ══════════ VERKOPEN ══════════ -->
+  <div class="page" id="page-verkopen">
+    <div class="card">
+      <div class="section-hdr">💰 Verkoop registreren</div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Datum</label>
+          <input type="date" class="form-input" id="vk-datum">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Aantal eieren</label>
+          <input type="number" class="form-input" id="vk-aantal" placeholder="0" min="1" inputmode="numeric">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Koper (optioneel)</label>
+        <input type="text" class="form-input" id="vk-koper" placeholder="naam koper...">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Betaalwijze</label>
+          <select class="form-select" id="vk-betaal">
+            <option value="Cash">💵 Cash</option>
+            <option value="Tikkie">📱 Tikkie</option>
+            <option value="Overboeking">🏦 Overboeking</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Totaal</label>
+          <input type="text" class="form-input" id="vk-totaal" readonly placeholder="€ 0,00" style="background:#f5f5f5;color:var(--bruin-l);font-weight:800;">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notities</label>
+        <input type="text" class="form-input" id="vk-notitie" placeholder="optioneel...">
+      </div>
+      <button class="btn btn-success" onclick="saveVerkoop()">💰 Verkoop opslaan</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🧾 Verkoophistorie</div>
+      <div id="verkoop-lijst">
+        <div class="empty"><div class="emoji">🛒</div><p>Nog geen verkopen</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ KOSTEN ══════════ -->
+  <div class="page" id="page-kosten">
+    <div class="card">
+      <div class="section-hdr">📋 Kosten registreren</div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Datum</label>
+          <input type="date" class="form-input" id="kst-datum">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Bedrag (€)</label>
+          <input type="number" class="form-input" id="kst-bedrag" placeholder="0.00" step="0.01" inputmode="decimal">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Omschrijving</label>
+        <input type="text" class="form-input" id="kst-omschrijving" placeholder="bijv. zakje kippenvoer...">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Categorie</label>
+          <select class="form-select" id="kst-categorie">
+            <option value="Voer">🌾 Voer</option>
+            <option value="Verzorging">💊 Verzorging</option>
+            <option value="Materiaal">🔧 Materiaal</option>
+            <option value="Dierenarts">🏥 Dierenarts</option>
+            <option value="Overig">📦 Overig</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Leverancier</label>
+          <input type="text" class="form-input" id="kst-leverancier" placeholder="optioneel...">
+        </div>
+      </div>
+      <button class="btn btn-danger" onclick="saveKost()">💸 Kosten opslaan</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📊 Kosten per categorie</div>
+      <div id="kosten-chart" class="bar-chart"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🧾 Kostenhistorie</div>
+      <div id="kosten-lijst">
+        <div class="empty"><div class="emoji">🧾</div><p>Nog geen kosten</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ P&L / OVERZICHT ══════════ -->
+  <div class="page" id="page-pl">
+
+    <div class="card">
+      <div class="section-hdr">📊 Winst & Verlies</div>
+      <div style="margin-bottom:10px;">
+        <div class="pl-row sub">
+          <span class="pl-row-label">🥚 Eieren verkocht</span>
+          <span class="pl-row-val text-oranje fw-bold" id="pl-eieren">0</span>
+        </div>
+        <div class="pl-row sub">
+          <span class="pl-row-label">💰 Totale omzet</span>
+          <span class="pl-row-val text-groen fw-bold" id="pl-omzet">€ 0,00</span>
+        </div>
+        <div class="pl-row total">
+          <span class="pl-row-label">TOTAAL BATEN</span>
+          <span class="pl-row-val" id="pl-baten">€ 0,00</span>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div style="margin-bottom:10px;">
+        <div class="pl-row sub" id="pl-voer-row">
+          <span class="pl-row-label">🌾 Voer</span>
+          <span class="pl-row-val text-rood" id="pl-voer">€ 0,00</span>
+        </div>
+        <div class="pl-row sub">
+          <span class="pl-row-label">💊 Verzorging</span>
+          <span class="pl-row-val text-rood" id="pl-verzorging">€ 0,00</span>
+        </div>
+        <div class="pl-row sub">
+          <span class="pl-row-label">🔧 Materiaal</span>
+          <span class="pl-row-val text-rood" id="pl-materiaal">€ 0,00</span>
+        </div>
+        <div class="pl-row sub">
+          <span class="pl-row-label">🏥 Dierenarts</span>
+          <span class="pl-row-val text-rood" id="pl-dierenarts">€ 0,00</span>
+        </div>
+        <div class="pl-row sub">
+          <span class="pl-row-label">📦 Overig</span>
+          <span class="pl-row-val text-rood" id="pl-overig">€ 0,00</span>
+        </div>
+        <div class="pl-row total">
+          <span class="pl-row-label">TOTAAL LASTEN</span>
+          <span class="pl-row-val" id="pl-lasten">€ 0,00</span>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="pl-row result-pos" id="pl-result-row">
+        <span class="pl-row-label" id="pl-result-lbl">✅ NETTORESULTAAT</span>
+        <span class="pl-row-val" id="pl-result">€ 0,00</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🐓 Onze kippen</div>
+      <div class="kip-grid">
+        <div class="kip-card">
+          <div class="kip-emoji">🟠</div>
+          <div class="kip-ras">ISA Brown</div>
+          <div class="kip-namen">Max, Verstappen,<br>Isa & Brown</div>
+        </div>
+        <div class="kip-card">
+          <div class="kip-emoji">⚫</div>
+          <div class="kip-ras">Koekoek</div>
+          <div class="kip-namen">Buurman & Buurman</div>
+        </div>
+        <div class="kip-card">
+          <div class="kip-emoji">🟡</div>
+          <div class="kip-ras">Sussex</div>
+          <div class="kip-namen">Bib & Bob</div>
+        </div>
+        <div class="kip-card">
+          <div class="kip-emoji">🔵</div>
+          <div class="kip-ras">Blue des Landes</div>
+          <div class="kip-namen">Kwik, Kwek & Kwak</div>
+        </div>
+        <div class="kip-card" style="background:#fff0e8;border-color:#f5c9a0;">
+          <div class="kip-emoji">🐓</div>
+          <div class="kip-ras" style="color:#a03000;">Haan</div>
+          <div class="kip-namen" style="color:#c05000;">Frans</div>
+        </div>
+        <div class="kip-card" style="background:var(--geel-d);">
+          <div class="kip-emoji">🥚</div>
+          <div class="kip-ras">Eicode</div>
+          <div class="kip-namen">0 Biologisch · 🇳🇱 NL</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div><!-- end page-wrapper -->
+
+<!-- BOTTOM NAV -->
+<nav class="bottomnav">
+  <button class="nav-btn active" onclick="showPage('dashboard',this)">
+    <span>🏠</span><span>Dashboard</span>
+  </button>
+  <button class="nav-btn" onclick="showPage('legdagen',this)">
+    <span>🥚</span><span>Legdagen</span>
+  </button>
+  <button class="nav-btn" onclick="showPage('verkopen',this)">
+    <span>💰</span><span>Verkopen</span>
+  </button>
+  <button class="nav-btn" onclick="showPage('kosten',this)">
+    <span>📋</span><span>Kosten</span>
+  </button>
+  <button class="nav-btn" onclick="showPage('pl',this)">
+    <span>📊</span><span>P&L</span>
+  </button>
+</nav>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════
+// DATA STORE — localStorage
+// ══════════════════════════════════════
+const DB = {
+  get: (k, def=[]) => { try { return JSON.parse(localStorage.getItem(k)) ?? def; } catch { return def; } },
+  set: (k,v) => localStorage.setItem(k, JSON.stringify(v)),
+};
+
+// Keys
+const K_LEG  = 'ben_legdagen';
+const K_VK   = 'ben_verkopen';
+const K_KST  = 'ben_kosten';
+
+// ══════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════
+const fmt = (n) => '€ ' + n.toFixed(2).replace('.', ',');
+const fmtDatum = (d) => {
+  const dt = new Date(d);
+  return dt.toLocaleDateString('nl-NL', {day:'2-digit', month:'2-digit', year:'numeric'});
+};
+const today = () => new Date().toISOString().slice(0,10);
+const getWeek = (d) => {
+  const dt = new Date(d);
+  const thu = new Date(dt);
+  thu.setDate(dt.getDate() + (4 - (dt.getDay()||7)));
+  const yr = new Date(thu.getFullYear(), 0, 1);
+  return Math.ceil(((thu - yr) / 86400000 + 1) / 7);
+};
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// ══════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(btn) btn.classList.add('active');
+  refreshAll();
+}
+
+// ══════════════════════════════════════
+// LEGDAGEN
+// ══════════════════════════════════════
+function saveLegdag() {
+  const datum  = document.getElementById('leg-datum').value;
+  const aantal = parseInt(document.getElementById('leg-aantal').value) || 0;
+  const notitie= document.getElementById('leg-notitie').value.trim();
+  if(!datum) return toast('⚠️ Kies een datum');
+
+  const data = DB.get(K_LEG);
+  const idx = data.findIndex(r => r.datum === datum);
+  if(idx >= 0) { data[idx] = {datum, aantal, notitie}; }
+  else { data.push({datum, aantal, notitie}); data.sort((a,b)=>a.datum<b.datum?-1:1); }
+  DB.set(K_LEG, data);
+
+  document.getElementById('leg-datum').value = today();
+  document.getElementById('leg-aantal').value = '';
+  document.getElementById('leg-notitie').value = '';
+  toast('✅ Legdag opgeslagen!');
+  refreshAll();
+}
+
+function saveEieren() {
+  document.getElementById('leg-datum').value = document.getElementById('quick-datum').value;
+  document.getElementById('leg-aantal').value = document.getElementById('quick-eieren').value;
+  saveLegdag();
+  document.getElementById('quick-eieren').value = '';
+}
+
+// ══════════════════════════════════════
+// VERKOPEN
+// ══════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('vk-aantal').addEventListener('input', () => {
+    const n = parseInt(document.getElementById('vk-aantal').value)||0;
+    document.getElementById('vk-totaal').value = fmt(n * 0.40);
+  });
+});
+
+function saveVerkoop() {
+  const datum  = document.getElementById('vk-datum').value;
+  const aantal = parseInt(document.getElementById('vk-aantal').value)||0;
+  const koper  = document.getElementById('vk-koper').value.trim();
+  const betaal = document.getElementById('vk-betaal').value;
+  const notitie= document.getElementById('vk-notitie').value.trim();
+  if(!datum || aantal < 1) return toast('⚠️ Vul datum en aantal in');
+
+  const data = DB.get(K_VK);
+  data.unshift({id: Date.now(), datum, aantal, koper, betaal, totaal: aantal * 0.40, notitie});
+  DB.set(K_VK, data);
+
+  document.getElementById('vk-datum').value  = today();
+  document.getElementById('vk-aantal').value = '';
+  document.getElementById('vk-koper').value  = '';
+  document.getElementById('vk-totaal').value = '';
+  toast('✅ Verkoop opgeslagen!');
+  refreshAll();
+}
+
+function deleteVerkoop(id) {
+  if(!confirm('Verkoop verwijderen?')) return;
+  DB.set(K_VK, DB.get(K_VK).filter(r => r.id !== id));
+  refreshAll();
+}
+
+// ══════════════════════════════════════
+// KOSTEN
+// ══════════════════════════════════════
+function saveKost() {
+  const datum      = document.getElementById('kst-datum').value;
+  const bedrag     = parseFloat(document.getElementById('kst-bedrag').value)||0;
+  const omschr     = document.getElementById('kst-omschrijving').value.trim();
+  const cat        = document.getElementById('kst-categorie').value;
+  const leverancier= document.getElementById('kst-leverancier').value.trim();
+  if(!datum || bedrag <= 0) return toast('⚠️ Vul datum en bedrag in');
+
+  const data = DB.get(K_KST);
+  data.unshift({id: Date.now(), datum, bedrag, omschr, cat, leverancier});
+  DB.set(K_KST, data);
+
+  document.getElementById('kst-datum').value       = today();
+  document.getElementById('kst-bedrag').value      = '';
+  document.getElementById('kst-omschrijving').value= '';
+  document.getElementById('kst-leverancier').value = '';
+  toast('✅ Kosten opgeslagen!');
+  refreshAll();
+}
+
+function deleteKost(id) {
+  if(!confirm('Kosten verwijderen?')) return;
+  DB.set(K_KST, DB.get(K_KST).filter(r => r.id !== id));
+  refreshAll();
+}
+
+// ══════════════════════════════════════
+// RENDER FUNCTIONS
+// ══════════════════════════════════════
+function refreshAll() {
+  renderDashboard();
+  renderLegdagen();
+  renderVerkopen();
+  renderKosten();
+  renderPL();
+}
+
+function renderDashboard() {
+  const leg = DB.get(K_LEG);
+  const vk  = DB.get(K_VK);
+  const t   = today();
+  const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
+
+  const vandaag = (leg.find(r=>r.datum===t)||{aantal:0}).aantal;
+  const week    = leg.filter(r=>new Date(r.datum)>=weekStart).reduce((s,r)=>s+r.aantal,0);
+  const maand   = leg.filter(r=>r.datum.slice(0,7)===t.slice(0,7)).reduce((s,r)=>s+r.aantal,0);
+  const omzet   = vk.reduce((s,r)=>s+r.totaal,0);
+
+  document.getElementById('stat-vandaag').textContent = vandaag;
+  document.getElementById('stat-week').textContent    = week;
+  document.getElementById('stat-maand').textContent   = maand;
+  document.getElementById('stat-omzet').textContent   = '€'+omzet.toFixed(0);
+
+  // Laatste 5 dagen
+  const recent = [...leg].reverse().slice(0,7);
+  const el = document.getElementById('laatste-dagen');
+  if(!recent.length) { el.innerHTML = '<div class="empty"><div class="emoji">🐣</div><p>Nog geen gegevens</p></div>'; return; }
+  el.innerHTML = recent.map(r => `
+    <div class="list-item">
+      <div class="list-item-left">
+        <div class="list-item-title">${fmtDatum(r.datum)}</div>
+        ${r.notitie ? `<div class="list-item-sub">${r.notitie}</div>` : ''}
+      </div>
+      <div class="list-item-right">
+        <span class="badge badge-oranje">🥚 ${r.aantal}</span>
+      </div>
+    </div>`).join('');
+}
+
+function renderLegdagen() {
+  const leg = DB.get(K_LEG);
+  // Maand tabs
+  const maanden = [...new Set(leg.map(r=>r.datum.slice(0,7)))].sort().reverse();
+  const tabsEl = document.getElementById('maand-tabs');
+  const mnamen = ['Jan','Feb','Mrt','Apr','Mei','Jun','Jul','Aug','Sep','Okt','Nov','Dec'];
+
+  if(!maanden.length) {
+    tabsEl.innerHTML = '';
+    document.getElementById('maand-overzicht').innerHTML = '<div class="empty"><div class="emoji">📅</div><p>Nog geen legdagen</p></div>';
+    return;
+  }
+
+  const activeM = tabsEl.dataset.active || maanden[0];
+  tabsEl.innerHTML = maanden.map(m => {
+    const [y,mo] = m.split('-');
+    return `<div class="tab-pill${m===activeM?' active':''}" onclick="setMaandTab('${m}',this)">${mnamen[parseInt(mo)-1]} ${y}</div>`;
+  }).join('');
+
+  const rows = leg.filter(r=>r.datum.startsWith(activeM)).reverse();
+  const totaal = rows.reduce((s,r)=>s+r.aantal,0);
+  document.getElementById('maand-overzicht').innerHTML = `
+    <div class="list-item" style="border-bottom:2px solid var(--geel-d);">
+      <span style="font-size:12px;font-weight:800;color:var(--bruin-l);">Totaal maand</span>
+      <span class="badge badge-oranje fw-bold">🥚 ${totaal} eieren</span>
+    </div>
+    ${rows.map(r => `
+    <div class="list-item">
+      <div class="list-item-left">
+        <div class="list-item-title">${fmtDatum(r.datum)}</div>
+        ${r.notitie?`<div class="list-item-sub">${r.notitie}</div>`:''}
+      </div>
+      <div class="list-item-right" style="display:flex;align-items:center;gap:4px;">
+        <span class="badge badge-oranje">🥚 ${r.aantal}</span>
+        <button class="del-btn" onclick="deleteLegdag('${r.datum}')">🗑</button>
+      </div>
+    </div>`).join('')}`;
+}
+
+function setMaandTab(m, el) {
+  document.getElementById('maand-tabs').dataset.active = m;
+  document.querySelectorAll('.tab-pill').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderLegdagen();
+}
+
+function deleteLegdag(datum) {
+  if(!confirm('Legdag verwijderen?')) return;
+  DB.set(K_LEG, DB.get(K_LEG).filter(r=>r.datum!==datum));
+  refreshAll();
+}
+
+function renderVerkopen() {
+  const vk = DB.get(K_VK);
+  const el = document.getElementById('verkoop-lijst');
+  if(!vk.length) { el.innerHTML='<div class="empty"><div class="emoji">🛒</div><p>Nog geen verkopen</p></div>'; return; }
+  const betaalBadge = {Cash:'badge-groen', Tikkie:'badge-blauw', Overboeking:'badge-oranje'};
+  el.innerHTML = vk.slice(0,30).map(r=>`
+    <div class="list-item">
+      <div class="list-item-left">
+        <div class="list-item-title">${fmtDatum(r.datum)}${r.koper?' · '+r.koper:''}</div>
+        <div class="list-item-sub">🥚 ${r.aantal} eieren · <span class="badge ${betaalBadge[r.betaal]||'badge-oranje'}">${r.betaal}</span>${r.notitie?' · '+r.notitie:''}</div>
+      </div>
+      <div class="list-item-right" style="display:flex;align-items:center;gap:4px;">
+        <span class="fw-bold text-groen">${fmt(r.totaal)}</span>
+        <button class="del-btn" onclick="deleteVerkoop(${r.id})">🗑</button>
+      </div>
+    </div>`).join('');
+}
+
+function renderKosten() {
+  const kst  = DB.get(K_KST);
+  const cats = ['Voer','Verzorging','Materiaal','Dierenarts','Overig'];
+  const icons= {'Voer':'🌾','Verzorging':'💊','Materiaal':'🔧','Dierenarts':'🏥','Overig':'📦'};
+
+  // Chart
+  const totals = {};
+  cats.forEach(c => totals[c] = kst.filter(r=>r.cat===c).reduce((s,r)=>s+r.bedrag,0));
+  const max = Math.max(...Object.values(totals), 1);
+  document.getElementById('kosten-chart').innerHTML = cats.map(c=>`
+    <div class="bar-row">
+      <span class="bar-lbl">${icons[c]}</span>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${(totals[c]/max*100)}%">
+          <span class="bar-val">${totals[c]>0?fmt(totals[c]):''}</span>
+        </div>
+      </div>
+    </div>`).join('');
+
+  // Lijst
+  const el = document.getElementById('kosten-lijst');
+  if(!kst.length) { el.innerHTML='<div class="empty"><div class="emoji">🧾</div><p>Nog geen kosten</p></div>'; return; }
+  el.innerHTML = kst.slice(0,30).map(r=>`
+    <div class="list-item">
+      <div class="list-item-left">
+        <div class="list-item-title">${icons[r.cat]||'📦'} ${r.omschr||r.cat}</div>
+        <div class="list-item-sub">${fmtDatum(r.datum)}${r.leverancier?' · '+r.leverancier:''}</div>
+      </div>
+      <div class="list-item-right" style="display:flex;align-items:center;gap:4px;">
+        <span class="fw-bold text-rood">${fmt(r.bedrag)}</span>
+        <button class="del-btn" onclick="deleteKost(${r.id})">🗑</button>
+      </div>
+    </div>`).join('');
+}
+
+function renderPL() {
+  const vk  = DB.get(K_VK);
+  const kst = DB.get(K_KST);
+  const cats= ['Voer','Verzorging','Materiaal','Dierenarts','Overig'];
+  const ids = ['pl-voer','pl-verzorging','pl-materiaal','pl-dierenarts','pl-overig'];
+
+  const totaalEieren = vk.reduce((s,r)=>s+r.aantal,0);
+  const omzet  = vk.reduce((s,r)=>s+r.totaal,0);
+  const lasten = kst.reduce((s,r)=>s+r.bedrag,0);
+  const result = omzet - lasten;
+
+  document.getElementById('pl-eieren').textContent = totaalEieren + ' stuks';
+  document.getElementById('pl-omzet').textContent  = fmt(omzet);
+  document.getElementById('pl-baten').textContent  = fmt(omzet);
+  document.getElementById('pl-lasten').textContent = fmt(lasten);
+
+  cats.forEach((c,i) => {
+    const t = kst.filter(r=>r.cat===c).reduce((s,r)=>s+r.bedrag,0);
+    document.getElementById(ids[i]).textContent = fmt(t);
+  });
+
+  const row = document.getElementById('pl-result-row');
+  row.className = 'pl-row ' + (result >= 0 ? 'result-pos' : 'result-neg');
+  document.getElementById('pl-result-lbl').textContent = result >= 0 ? '✅ NETTORESULTAAT' : '❌ NETTORESULTAAT';
+  document.getElementById('pl-result').textContent = fmt(result);
+}
+
+// ══════════════════════════════════════
+// INIT
+// ══════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  // Datum velden op vandaag
+  ['quick-datum','leg-datum','vk-datum','kst-datum'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.value = today();
+  });
+
+  // Datum header
+  document.getElementById('topdate').textContent = new Date().toLocaleDateString('nl-NL',{weekday:'short',day:'numeric',month:'short'});
+
+  refreshAll();
+});
+</script>
+</body>
+</html>
