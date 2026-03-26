@@ -229,7 +229,6 @@ async function saveVk() {
   const notitie = val("vk-notitie");
   if(!datum||aantal<1) return toast("⚠️ Vul datum en aantal in");
   const key = uid();
-  await dbSave("verkopen/"+key, {datum,aantal,koper,betaal,totaal:antal*0.40,notitie});
   await dbSave("verkopen/"+key, {datum,aantal,koper,betaal,totaal:aantal*0.40,notitie});
   ["vk-aantal","vk-koper","vk-notitie"].forEach(id=>set_val(id,""));
   set_val("vk-datum",today()); set_val("vk-totaal","");
