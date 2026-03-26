@@ -25,9 +25,9 @@ body{font-family:'Nunito',sans-serif;background:var(--gl);color:var(--tx);min-he
 .sync-err{background:rgba(192,57,43,.3);color:#f5b7b1}
 .pages{padding:14px 14px calc(var(--safe-bot) + 80px)}
 .bottomnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:linear-gradient(90deg,var(--bd),var(--bl),var(--bd));display:flex;justify-content:space-around;padding:8px 0 calc(var(--safe-bot) + 8px);box-shadow:0 -2px 12px rgba(0,0,0,.15);z-index:50}
-.navbtn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 8px;background:none;border:none;cursor:pointer;border-radius:10px;min-width:54px;transition:background .15s}
+.navbtn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 4px;background:none;border:none;cursor:pointer;border-radius:10px;min-width:46px;transition:background .15s}
 .navbtn.active{background:rgba(255,255,255,.18)}
-.navbtn .ni{font-size:20px}.navbtn .nl{font-size:8.5px;color:rgba(255,255,255,.85);font-weight:700}
+.navbtn .ni{font-size:18px}.navbtn .nl{font-size:7.5px;color:rgba(255,255,255,.85);font-weight:700}
 .page{display:none}.page.active{display:block}
 .card{background:#fff;border-radius:16px;border:1.5px solid var(--gd);box-shadow:0 2px 12px rgba(200,134,10,.12);padding:16px;margin-bottom:14px}
 .card-title{font-family:'Fredoka One',cursive;font-size:15px;color:var(--bd);margin-bottom:12px}
@@ -129,7 +129,7 @@ const MNAMEN= ["Jan","Feb","Mrt","Apr","Mei","Jun","Jul","Aug","Sep","Okt","Nov"
 const BB    = {Cash:"bg",Tikkie:"bb",Overboeking:"bo"};
 
 // ── State ──────────────────────────────────────────────────────────────────
-let leg=[], vk=[], kst=[], activePage="dashboard", activeM=null, modalState=null;
+let leg=[], vk=[], kst=[], klanten=[], activePage="dashboard", activeM=null, activeKlant=null, modalState=null;
 
 // ── Utils ──────────────────────────────────────────────────────────────────
 const fmt   = n => "€ " + Number(n).toFixed(2).replace(".",",");
@@ -170,6 +170,11 @@ function startListeners() {
   onValue(ref(db,"kosten"), snap => {
     const val = snap.val() || {};
     kst = Object.entries(val).map(([k,v])=>({...v,_key:k})).sort((a,b)=>b.datum.localeCompare(a.datum));
+    render(); setSyncBadge("ok");
+  });
+  onValue(ref(db,"klanten"), snap => {
+    const val = snap.val() || {};
+    klanten = Object.entries(val).map(([k,v])=>({...v,_key:k})).sort((a,b)=>a.naam.localeCompare(b.naam));
     render(); setSyncBadge("ok");
   });
 }
@@ -222,17 +227,64 @@ async function updateLeg() {
 
 // ── CRUD — Verkopen ───────────────────────────────────────────────────────
 async function saveVk() {
-  const datum   = val("vk-datum");
-  const aantal  = parseInt(val("vk-aantal"))||0;
-  const koper   = val("vk-koper");
-  const betaal  = val("vk-betaal");
-  const notitie = val("vk-notitie");
+  const datum      = val("vk-datum");
+  const aantal     = parseInt(val("vk-aantal"))||0;
+  const klantKey   = val("vk-klant-select");
+  const nieuweNaam = val("vk-nieuwe-klant").trim();
+  const betaal     = val("vk-betaal");
+  const notitie    = val("vk-notitie");
   if(!datum||aantal<1) return toast("⚠️ Vul datum en aantal in");
+
+  // Resolve klant
+  let koper="", klantId="";
+  if(klantKey==="nieuw" && nieuweNaam) {
+    // Maak nieuwe klant aan
+    const nk = uid();
+    await dbSave("klanten/"+nk, {naam:nieuweNaam, notitie:""});
+    klantId=nk; koper=nieuweNaam;
+  } else if(klantKey && klantKey!=="") {
+    const k = klanten.find(k=>k._key===klantKey);
+    klantId=klantKey; koper=k?k.naam:"";
+  }
+
   const key = uid();
-  await dbSave("verkopen/"+key, {datum,aantal,koper,betaal,totaal:aantal*0.40,notitie});
-  ["vk-aantal","vk-koper","vk-notitie"].forEach(id=>set_val(id,""));
-  set_val("vk-datum",today()); set_val("vk-totaal","");
+  await dbSave("verkopen/"+key, {datum,aantal,koper,klantId,betaal,totaal:aantal*0.40,notitie});
+  ["vk-aantal","vk-notitie","vk-nieuwe-klant"].forEach(id=>set_val(id,""));
+  set_val("vk-datum",today()); set_val("vk-totaal",""); set_val("vk-klant-select","");
   toast("✅ Verkoop opgeslagen!");
+}
+
+// ── CRUD — Klanten ────────────────────────────────────────────────────────
+async function saveKlant() {
+  const naam    = val("klant-naam").trim();
+  const notitie = val("klant-notitie").trim();
+  if(!naam) return toast("⚠️ Vul een naam in");
+  if(klanten.find(k=>k.naam.toLowerCase()===naam.toLowerCase()))
+    return toast("⚠️ Klant bestaat al");
+  const key = uid();
+  await dbSave("klanten/"+key, {naam, notitie});
+  set_val("klant-naam",""); set_val("klant-notitie","");
+  toast("✅ Klant opgeslagen!");
+}
+async function deleteKlant(key) {
+  if(!confirm("Klant verwijderen?")) return;
+  await dbRemove("klanten/"+key);
+  if(activeKlant===key) activeKlant=null;
+  toast("🗑 Klant verwijderd");
+}
+async function updateKlant() {
+  const key     = val("edit-klant-key");
+  const naam    = val("edit-klant-naam").trim();
+  const notitie = val("edit-klant-notitie").trim();
+  if(!naam) return toast("⚠️ Vul een naam in");
+  await dbSave("klanten/"+key, {naam, notitie});
+  closeModal(); toast("✅ Klant bijgewerkt!");
+}
+function setActiveKlant(key) { activeKlant = activeKlant===key?null:key; render(); }
+function calcNieuweKlantVeld() {
+  const v = val("vk-klant-select");
+  const nieuweDiv = document.getElementById("vk-nieuwe-klant-div");
+  if(nieuweDiv) nieuweDiv.style.display = v==="nieuw"?"block":"none";
 }
 async function deleteVk(key) {
   if(!confirm("Verkoop verwijderen?")) return;
@@ -337,6 +389,13 @@ function renderModal() {
         <div class="fg"><label class="fl">Leverancier</label><input type="text" id="edit-kst-lev" value="${esc(data.leverancier||'')}"></div>
       </div>
       <div class="brow"><button class="btn btn-g" onclick="closeModal()">Annuleren</button><button class="btn btn-d" onclick="updateKst()">✅ Opslaan</button></div>`;
+  } else if(type==="klant") {
+    el.innerHTML = `
+      <div class="modal-title">✏️ Klant aanpassen <button onclick="closeModal()">✕</button></div>
+      <input type="hidden" id="edit-klant-key" value="${esc(data._key)}">
+      <div class="fg"><label class="fl">Naam</label><input type="text" id="edit-klant-naam" value="${esc(data.naam||'')}"></div>
+      <div class="fg"><label class="fl">Notities</label><input type="text" id="edit-klant-notitie" value="${esc(data.notitie||'')}"></div>
+      <div class="brow"><button class="btn btn-g" onclick="closeModal()">Annuleren</button><button class="btn btn-p" onclick="updateKlant()">✅ Opslaan</button></div>`;
   }
 }
 
@@ -465,7 +524,17 @@ function render() {
           <div class="fg"><label class="fl">Datum</label><input type="date" id="vk-datum" value="${t}"></div>
           <div class="fg"><label class="fl">Aantal eieren</label><input type="number" id="vk-aantal" placeholder="0" min="1" inputmode="numeric" oninput="calcVkTot()"></div>
         </div>
-        <div class="fg"><label class="fl">Koper (optioneel)</label><input type="text" id="vk-koper" placeholder="naam koper..."></div>
+        <div class="fg"><label class="fl">Klant</label>
+          <select id="vk-klant-select" onchange="calcNieuweKlantVeld()">
+            <option value="">— geen / onbekend —</option>
+            ${klanten.map(k=>`<option value="${esc(k._key)}">${esc(k.naam)}</option>`).join("")}
+            <option value="nieuw">➕ Nieuwe klant toevoegen...</option>
+          </select>
+        </div>
+        <div id="vk-nieuwe-klant-div" style="display:none" class="fg">
+          <label class="fl">Naam nieuwe klant</label>
+          <input type="text" id="vk-nieuwe-klant" placeholder="Naam nieuwe klant...">
+        </div>
         <div class="frow">
           <div class="fg"><label class="fl">Betaalwijze</label>
             <select id="vk-betaal"><option>Cash</option><option>Tikkie</option><option>Overboeking</option></select>
@@ -489,6 +558,55 @@ function render() {
               <button class="ebtn" onclick='openModal("vk",${JSON.stringify(r)})'>✏️</button>
               <button class="dbtn" onclick="deleteVk('${r._key}')">🗑</button></div>
           </div>`).join("")}
+      </div>
+    </div>
+
+    <!-- KLANTEN -->
+    <div class="page${activePage==="klanten"?" active":""}" id="page-klanten">
+      <div class="card">
+        <div class="sec-hdr">👤 Klant toevoegen</div>
+        <div class="fg"><label class="fl">Naam</label><input type="text" id="klant-naam" placeholder="Naam klant..."></div>
+        <div class="fg"><label class="fl">Notities (optioneel)</label><input type="text" id="klant-notitie" placeholder="bijv. buurvrouw, collega..."></div>
+        <button class="btn btn-p" onclick="saveKlant()">👤 Klant opslaan</button>
+      </div>
+      <div class="card">
+        <div class="card-title">👥 Alle klanten (${klanten.length})</div>
+        ${klanten.length===0?'<div class="empty"><div class="em">👤</div><p>Nog geen klanten</p></div>':
+          klanten.map(k=>{
+            const kvk = vk.filter(r=>r.klantId===k._key||r.koper===k.naam);
+            const totEieren = kvk.reduce((s,r)=>s+(r.aantal||0),0);
+            const totBedrag = kvk.reduce((s,r)=>s+(r.totaal||0),0);
+            const isOpen = activeKlant===k._key;
+            return `<div style="border-bottom:1px solid var(--gd)">
+              <div class="li" style="border:none;cursor:pointer" onclick="setActiveKlant('${k._key}')">
+                <div class="li-l">
+                  <div class="li-t">👤 ${esc(k.naam)}</div>
+                  <div class="li-s">${kvk.length} aankopen · 🥚 ${totEieren} eieren · ${fmt(totBedrag)}</div>
+                  ${k.notitie?`<div class="li-s" style="font-style:italic">${esc(k.notitie)}</div>`:""}
+                </div>
+                <div class="li-r">
+                  <span style="font-size:12px;color:var(--txl)">${isOpen?"▲":"▼"}</span>
+                  <button class="ebtn" onclick='event.stopPropagation();openModal("klant",${JSON.stringify(k)})'>✏️</button>
+                  <button class="dbtn" onclick="event.stopPropagation();deleteKlant('${k._key}')">🗑</button>
+                </div>
+              </div>
+              ${isOpen && kvk.length>0?`
+              <div style="background:var(--gl);border-radius:10px;padding:8px 12px;margin-bottom:8px">
+                <div style="font-size:11px;font-weight:800;color:var(--bl);margin-bottom:6px">Aankoophistorie</div>
+                ${kvk.sort((a,b)=>b.datum.localeCompare(a.datum)).map(r=>`
+                <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--gd);font-size:12px">
+                  <span style="color:var(--tx)">${fmtD(r.datum)}</span>
+                  <span style="color:var(--txl)">🥚 ${r.aantal} · <span class="badge ${BB[r.betaal]||"bo"}" style="font-size:10px">${r.betaal}</span></span>
+                  <span style="font-weight:800;color:var(--gn)">${fmt(r.totaal)}</span>
+                </div>`).join("")}
+                <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:12px;font-weight:800">
+                  <span style="color:var(--bd)">Totaal</span>
+                  <span style="color:var(--bd)">🥚 ${totEieren}</span>
+                  <span style="color:var(--gn)">${fmt(totBedrag)}</span>
+                </div>
+              </div>`:isOpen?`<div style="font-size:12px;color:var(--txl);padding:6px 12px 10px;font-style:italic">Nog geen aankopen</div>`:""}
+            </div>`;
+          }).join("")}
       </div>
     </div>
 
@@ -579,7 +697,7 @@ function render() {
   </div><!-- pages -->
 
   <nav class="bottomnav">
-    ${[["dashboard","🏠","Dashboard"],["legdagen","🥚","Legdagen"],["verkopen","💰","Verkopen"],["kosten","📋","Kosten"],["pl","📊","P&L"]].map(([id,ni,nl])=>
+    ${[["dashboard","🏠","Dashboard"],["legdagen","🥚","Legdagen"],["verkopen","💰","Verkopen"],["klanten","👤","Klanten"],["kosten","📋","Kosten"],["pl","📊","P&L"]].map(([id,ni,nl])=>
       `<button class="navbtn${activePage===id?" active":""}" onclick="goPage('${id}')"><span class="ni">${ni}</span><span class="nl">${nl}</span></button>`
     ).join("")}
   </nav>
@@ -596,16 +714,23 @@ function render() {
 // ── Navigation ─────────────────────────────────────────────────────────────
 function goPage(id) { activePage=id; render(); }
 function setM(m) { activeM=m; render(); }
+function setActiveKlant(key) { activeKlant = activeKlant===key?null:key; render(); }
 function calcVkTot() {
   const n=parseInt(val("vk-aantal"))||0;
   set_val("vk-totaal", n>0?fmt(n*0.40):"");
 }
+function calcNieuweKlantVeld() {
+  const v = val("vk-klant-select");
+  const div = document.getElementById("vk-nieuwe-klant-div");
+  if(div) div.style.display = v==="nieuw"?"block":"none";
+}
 
 // ── Expose to global scope (needed for onclick handlers) ───────────────────
 Object.assign(window, {
-  goPage, setM, saveLeg, saveLegQuick, deleteLeg, updateLeg,
-  saveVk, deleteVk, updateVk, calcVkTot,
+  goPage, setM, setActiveKlant, saveLeg, saveLegQuick, deleteLeg, updateLeg,
+  saveVk, deleteVk, updateVk, calcVkTot, calcNieuweKlantVeld,
   saveKst, deleteKst, updateKst,
+  saveKlant, deleteKlant, updateKlant,
   openModal, closeModal, exportCSV, setSyncBadge
 });
 
