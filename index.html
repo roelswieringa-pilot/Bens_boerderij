@@ -280,12 +280,6 @@ async function updateKlant() {
   await dbSave("klanten/"+key, {naam, notitie});
   closeModal(); toast("✅ Klant bijgewerkt!");
 }
-function setActiveKlant(key) { activeKlant = activeKlant===key?null:key; render(); }
-function calcNieuweKlantVeld() {
-  const v = val("vk-klant-select");
-  const nieuweDiv = document.getElementById("vk-nieuwe-klant-div");
-  if(nieuweDiv) nieuweDiv.style.display = v==="nieuw"?"block":"none";
-}
 async function deleteVk(key) {
   if(!confirm("Verkoop verwijderen?")) return;
   await dbRemove("verkopen/"+key);
