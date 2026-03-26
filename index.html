@@ -90,6 +90,17 @@ input:focus,select:focus,textarea:focus{border-color:var(--or);background:#fff}
 .loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:16px;color:var(--bd)}
 .loading-screen .big-egg{font-size:64px;animation:bounce 1s ease-in-out infinite alternate}
 @keyframes bounce{from{transform:translateY(0)}to{transform:translateY(-12px)}}
+.login-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;min-height:-webkit-fill-available;padding:32px 24px;background:linear-gradient(160deg,var(--gl) 0%,var(--gm) 60%,var(--gd) 100%)}
+.login-logo{font-size:64px;margin-bottom:8px}
+.login-title{font-family:'Fredoka One',cursive;font-size:28px;color:var(--bd);margin-bottom:4px;text-align:center}
+.login-sub{font-size:13px;color:var(--txl);margin-bottom:32px;text-align:center}
+.login-card{background:#fff;border-radius:20px;border:1.5px solid var(--gd);box-shadow:0 4px 24px rgba(200,134,10,.18);padding:24px;width:100%;max-width:360px}
+.login-card h2{font-family:'Fredoka One',cursive;font-size:18px;color:var(--bd);margin-bottom:20px;text-align:center}
+.login-error{background:#fadbd8;border:1px solid #e74c3c;border-radius:10px;padding:10px 14px;font-size:12px;color:#922b21;margin-bottom:14px;display:none}
+.login-error.show{display:block}
+.logout-btn{background:none;border:1.5px solid rgba(255,255,255,.4);border-radius:8px;color:rgba(255,255,255,.9);font-size:10px;font-weight:700;padding:3px 8px;cursor:pointer;font-family:'Nunito',sans-serif}
+.logout-btn:active{background:rgba(255,255,255,.15)}
+
 .chart-modal{background:#fff;border-radius:20px 20px 0 0;padding:20px 16px calc(var(--safe-bot) + 16px);width:100%;max-width:480px;max-height:92vh;overflow-y:auto}
 .chart-modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 .chart-view-tabs{display:flex;gap:8px;margin-bottom:12px}
@@ -118,6 +129,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--or);background:#fff}
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, set, get, onValue, push, remove, update }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 // ── Firebase config ────────────────────────────────────────────────────────
 const firebaseConfig = {
@@ -133,6 +146,7 @@ const firebaseConfig = {
 
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getDatabase(firebaseApp);
+const auth = getAuth(firebaseApp);
 
 // ── Constants ──────────────────────────────────────────────────────────────
 const CATS  = ["Voer","Kippen","Verzorging","Materiaal","Dierenarts","Overig"];
@@ -144,6 +158,7 @@ const BB    = {Cash:"bg",Tikkie:"bb",Overboeking:"bo"};
 let leg=[], vk=[], kst=[], klanten=[], activePage="dashboard", activeM=null, activeKlant=null, modalState=null;
 let instellingen = { prijsPerEi: 0.40 };
 let zoekKlant = "";
+let currentUser = null;
 
 // ── Utils ──────────────────────────────────────────────────────────────────
 const fmt   = n => "€ " + Number(n).toFixed(2).replace(".",",");
@@ -504,6 +519,7 @@ function render() {
     <div class="topbar-right">
       <span class="topbar-date">${new Date().toLocaleDateString("nl-NL",{weekday:"short",day:"numeric",month:"short"})}</span>
       <span class="sync-badge sync-ok" id="sync-badge">☁️ Gesync</span>
+      <button class="logout-btn" onclick="doLogout()">Uitloggen</button>
     </div>
   </div>
 
@@ -1069,17 +1085,86 @@ Object.assign(window, {
   saveKlant, deleteKlant, updateKlant,
   saveInstellingen, setZoekKlant,
   openModal, closeModal, exportCSV, setSyncBadge,
-  openChart, closeChart, switchChartView, setChartM
+  openChart, closeChart, switchChartView, setChartM,
+  doLogin, doLogout
 });
+
+// ── Auth functions ─────────────────────────────────────────────────────────
+function renderLogin(errorMsg) {
+  const app = $("app");
+  if(!app) return;
+  app.innerHTML = `
+  <div class="login-screen">
+    <div class="login-logo">🐔</div>
+    <div class="login-title">Ben's Boerderij</div>
+    <div class="login-sub">Administratie voor de boerderij</div>
+    <div class="login-card">
+      <h2>🔐 Inloggen</h2>
+      <div class="login-error${errorMsg?" show":""}" id="login-err">${errorMsg||""}</div>
+      <div class="fg"><label class="fl">E-mailadres</label>
+        <input type="email" id="login-email" placeholder="jouw@email.nl" inputmode="email" autocomplete="email">
+      </div>
+      <div class="fg"><label class="fl">Wachtwoord</label>
+        <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password"
+          onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <button class="btn btn-p" id="login-btn" onclick="doLogin()" style="margin-top:4px">🔑 Inloggen</button>
+    </div>
+    <div style="font-size:11px;color:var(--txl);margin-top:20px;text-align:center">
+      Toegang alleen voor geautoriseerde gebruikers
+    </div>
+  </div>`;
+}
+
+async function doLogin() {
+  const email = val("login-email").trim();
+  const pass  = val("login-pass");
+  if(!email||!pass) return showLoginError("Vul e-mail en wachtwoord in");
+  const btn = $("login-btn");
+  if(btn){ btn.textContent="⏳ Bezig..."; btn.disabled=true; }
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+    // onAuthStateChanged handles the rest
+  } catch(e) {
+    const msgs = {
+      "auth/user-not-found":    "Onbekend e-mailadres",
+      "auth/wrong-password":    "Onjuist wachtwoord",
+      "auth/invalid-email":     "Ongeldig e-mailadres",
+      "auth/too-many-requests": "Te veel pogingen, probeer later opnieuw",
+      "auth/invalid-credential":"Onjuist e-mailadres of wachtwoord",
+    };
+    showLoginError(msgs[e.code] || "Inloggen mislukt: "+e.message);
+  }
+}
+
+function showLoginError(msg) {
+  renderLogin(msg);
+}
+
+async function doLogout() {
+  if(!confirm("Uitloggen?")) return;
+  await signOut(auth);
+}
+
+// ── Topbar logout button ────────────────────────────────────────────────────
+// Injected into topbar after render — handled in render() topbar section
 
 // ── Boot ───────────────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
-  // Hide loading, show app shell while listeners start
-  setTimeout(() => {
-    $("loading") && ($("loading").style.display="none");
-    render();
-    startListeners();
-  }, 800);
+  // Watch auth state — this is the single entry point
+  onAuthStateChanged(auth, user => {
+    currentUser = user;
+    if(user) {
+      // Logged in: show app
+      $("loading") && ($("loading").style.display="none");
+      render();
+      startListeners();
+    } else {
+      // Not logged in: show login screen
+      $("loading") && ($("loading").style.display="none");
+      renderLogin();
+    }
+  });
 });
 </script>
 </body>
