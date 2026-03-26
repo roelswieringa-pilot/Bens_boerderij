@@ -1,2 +1,2 @@
 # Bens_boerderij
-Ben kippenboerderij afdministratie
+Ben kippenboerderij administratie
