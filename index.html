@@ -141,6 +141,8 @@ const BB    = {Cash:"bg",Tikkie:"bb",Overboeking:"bo"};
 
 // ── State ──────────────────────────────────────────────────────────────────
 let leg=[], vk=[], kst=[], klanten=[], activePage="dashboard", activeM=null, activeKlant=null, modalState=null;
+let instellingen = { prijsPerEi: 0.40 };
+let zoekKlant = "";
 
 // ── Utils ──────────────────────────────────────────────────────────────────
 const fmt   = n => "€ " + Number(n).toFixed(2).replace(".",",");
@@ -148,6 +150,22 @@ const fmtD  = d => new Date(d+"T12:00:00").toLocaleDateString("nl-NL",{day:"2-di
 const today = () => new Date().toISOString().slice(0,10);
 const uid   = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
 const esc   = s => (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+const prijs = () => instellingen.prijsPerEi || 0.40;
+
+function calcStreak() {
+  // Count consecutive days ending today where eieren were filled in
+  const dates = new Set(leg.map(r=>r.datum));
+  let streak = 0;
+  const d = new Date(); 
+  // If today not filled, start counting from yesterday
+  if(!dates.has(today())) d.setDate(d.getDate()-1);
+  while(true) {
+    const ds = d.toISOString().slice(0,10);
+    if(dates.has(ds)) { streak++; d.setDate(d.getDate()-1); }
+    else break;
+  }
+  return streak;
+}
 
 let toastTimer;
 function toast(msg) {
@@ -186,6 +204,11 @@ function startListeners() {
   onValue(ref(db,"klanten"), snap => {
     const val = snap.val() || {};
     klanten = Object.entries(val).map(([k,v])=>({...v,_key:k})).sort((a,b)=>a.naam.localeCompare(b.naam));
+    render(); setSyncBadge("ok");
+  });
+  onValue(ref(db,"instellingen"), snap => {
+    const val = snap.val() || {};
+    instellingen = { prijsPerEi: val.prijsPerEi ?? 0.40 };
     render(); setSyncBadge("ok");
   });
 }
@@ -259,7 +282,7 @@ async function saveVk() {
   }
 
   const key = uid();
-  await dbSave("verkopen/"+key, {datum,aantal,koper,klantId,betaal,totaal:aantal*0.40,notitie});
+  await dbSave("verkopen/"+key, {datum,aantal,koper,klantId,betaal,totaal:aantal*prijs(),notitie});
   ["vk-aantal","vk-notitie","vk-nieuwe-klant"].forEach(id=>set_val(id,""));
   set_val("vk-datum",today()); set_val("vk-totaal",""); set_val("vk-klant-select","");
   toast("✅ Verkoop opgeslagen!");
@@ -303,7 +326,7 @@ async function updateVk() {
   const koper  = val("edit-vk-koper");
   const betaal = val("edit-vk-betaal");
   const notitie= val("edit-vk-notitie");
-  await dbSave("verkopen/"+key, {datum,aantal,koper,betaal,totaal:aantal*0.40,notitie});
+  await dbSave("verkopen/"+key, {datum,aantal,koper,betaal,totaal:aantal*prijs(),notitie});
   closeModal(); toast("✅ Bijgewerkt!");
 }
 
@@ -450,6 +473,22 @@ function render() {
   const lasten  = kst.reduce((s,r)=>s+(r.bedrag||0),0);
   const result  = omzet-lasten;
 
+  // Voorraad: gelegd - verkocht
+  const totGelegd   = leg.reduce((s,r)=>s+(r.aantal||0),0);
+  const totVerkocht = vk.reduce((s,r)=>s+(r.aantal||0),0);
+  const voorraad    = totGelegd - totVerkocht;
+
+  // Streak
+  const streak = calcStreak();
+  const todayFilled = !!leg.find(r=>r.datum===t);
+
+  // Betaalwijze totalen
+  const bwTotals = {};
+  ["Cash","Tikkie","Overboeking"].forEach(bw => {
+    bwTotals[bw] = { n: vk.filter(r=>r.betaal===bw).reduce((s,r)=>s+(r.aantal||0),0),
+                     e: vk.filter(r=>r.betaal===bw).reduce((s,r)=>s+(r.totaal||0),0) };
+  });
+
   const maanden = [...new Set(leg.map(r=>r.datum.slice(0,7)))].sort().reverse();
   const curM = activeM&&maanden.includes(activeM)?activeM:(maanden[0]||null);
 
@@ -471,11 +510,18 @@ function render() {
 
     <!-- DASHBOARD -->
     <div class="page${activePage==="dashboard"?" active":""}" id="page-dashboard">
+      ${!todayFilled?`<div style="background:linear-gradient(90deg,#e07b00,#f5a623);border-radius:12px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px">
+        <span style="font-size:22px">⚠️</span>
+        <div><div style="font-family:'Fredoka One',cursive;font-size:13px;color:#fff">Nog niet ingevuld vandaag!</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.85)">Vergeet de eieren niet te registreren</div></div>
+      </div>`:""}
       <div class="stats">
         <div class="stat"><div class="em">🥚</div><div class="vl">${vandaag}</div><div class="lb">VANDAAG</div></div>
         <div class="stat"><div class="em">📅</div><div class="vl">${week}</div><div class="lb">DEZE WEEK</div></div>
         <div class="stat"><div class="em">📦</div><div class="vl">${maand}</div><div class="lb">DEZE MAAND</div></div>
         <div class="stat"><div class="em">💰</div><div class="vl">€${omzet.toFixed(0)}</div><div class="lb">TOTAAL OMZET</div></div>
+        <div class="stat"><div class="em">🗃️</div><div class="vl" style="${voorraad<0?"color:var(--rd)":""}">${voorraad}</div><div class="lb">VOORRAAD</div></div>
+        <div class="stat"><div class="em">${streak>=7?"🔥":streak>=3?"⭐":"📆"}</div><div class="vl" style="${streak>=7?"color:var(--rd)":streak>=3?"color:var(--or):":""}">${streak}</div><div class="lb">DAGEN STREAK</div></div>
       </div>
       <div class="card">
         <div class="card-title">⚡ Snel invullen</div>
@@ -510,7 +556,13 @@ function render() {
         ${(()=>{
           const rows=leg.filter(r=>r.datum.startsWith(curM)).reverse();
           const tot=rows.reduce((s,r)=>s+(r.aantal||0),0);
-          return `<div class="li" style="border-bottom:2px solid var(--gd)"><span style="font-size:12px;font-weight:800;color:var(--bl)">Totaal maand</span><span class="badge bo fw">🥚 ${tot} eieren</span></div>`+
+          const gem=rows.length>0?(tot/rows.length).toFixed(1):0;
+          return `<div class="li" style="border-bottom:2px solid var(--gd)">
+            <span style="font-size:12px;font-weight:800;color:var(--bl)">Totaal maand</span>
+            <div style="display:flex;gap:6px;align-items:center">
+              <span style="font-size:11px;color:var(--txl)">gem ${gem}/dag</span>
+              <span class="badge bo fw">🥚 ${tot}</span>
+            </div></div>`+
           rows.map(r=>`<div class="li">
             <div class="li-l"><div class="li-t">${fmtD(r.datum)}</div>${r.notitie?`<div class="li-s">${esc(r.notitie)}</div>`:""}</div>
             <div class="li-r"><span class="badge bo">🥚 ${r.aantal}</span>
@@ -555,9 +607,21 @@ function render() {
         <button class="btn btn-s" onclick="saveVk()">💰 Verkoop opslaan</button>
       </div>
       <div class="card">
+        <div class="card-title">📊 Per betaalwijze</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+          ${["Cash","Tikkie","Overboeking"].map(bw=>`
+          <div style="background:var(--gl);border-radius:10px;border:1.5px solid var(--gd);padding:10px;text-align:center">
+            <div style="font-size:18px">${bw==="Cash"?"💵":bw==="Tikkie"?"📱":"🏦"}</div>
+            <div style="font-family:'Fredoka One',cursive;font-size:15px;color:var(--or)">${fmt(bwTotals[bw].e)}</div>
+            <div style="font-size:9px;color:var(--txl);font-weight:700">${bwTotals[bw].n} eieren</div>
+            <div style="font-size:9px;color:var(--txl);margin-top:1px">${bw}</div>
+          </div>`).join("")}
+        </div>
+      </div>
+      <div class="card">
         <div class="card-title">🧾 Verkoophistorie</div>
         ${vk.length===0?'<div class="empty"><div class="em">🛒</div><p>Nog geen verkopen</p></div>':
-          vk.slice(0,50).map(r=>`<div class="li">
+          vk.map(r=>`<div class="li">
             <div class="li-l">
               <div class="li-t">${fmtD(r.datum)}${r.koper?" · "+esc(r.koper):""}</div>
               <div class="li-s">🥚 ${r.aantal} · <span class="badge ${BB[r.betaal]||"bo"}">${r.betaal}</span>${r.notitie?" · "+esc(r.notitie):""}</div>
@@ -579,8 +643,14 @@ function render() {
       </div>
       <div class="card">
         <div class="card-title">👥 Alle klanten (${klanten.length})</div>
-        ${klanten.length===0?'<div class="empty"><div class="em">👤</div><p>Nog geen klanten</p></div>':
-          klanten.map(k=>{
+        ${klanten.length===0?'<div class="empty"><div class="em">👤</div><p>Nog geen klanten</p></div>':`
+        <div class="fg" style="margin-bottom:10px">
+          <input type="text" id="klant-zoek" placeholder="🔍 Zoek klant..." value="${esc(zoekKlant)}" oninput="setZoekKlant()" style="background:#f9f5e8">
+        </div>
+        ${(()=>{
+          const gefilterd = klanten.filter(k=>!zoekKlant||k.naam.toLowerCase().includes(zoekKlant));
+          if(gefilterd.length===0) return '<div class="empty"><div class="em">🔍</div><p>Geen klanten gevonden</p></div>';
+          return gefilterd.map(k=>{
             const kvk = vk.filter(r=>r.klantId===k._key||r.koper===k.naam);
             const totEieren = kvk.reduce((s,r)=>s+(r.aantal||0),0);
             const totBedrag = kvk.reduce((s,r)=>s+(r.totaal||0),0);
@@ -614,7 +684,8 @@ function render() {
                 </div>
               </div>`:isOpen?`<div style="font-size:12px;color:var(--txl);padding:6px 12px 10px;font-style:italic">Nog geen aankopen</div>`:""}
             </div>`;
-          }).join("")}
+          }).join("");
+        })()}`}
       </div>
     </div>
 
@@ -647,7 +718,7 @@ function render() {
       <div class="card">
         <div class="card-title">🧾 Kostenhistorie</div>
         ${kst.length===0?'<div class="empty"><div class="em">🧾</div><p>Nog geen kosten</p></div>':
-          kst.slice(0,50).map(r=>`<div class="li">
+          kst.map(r=>`<div class="li">
             <div class="li-l">
               <div class="li-t">${ICONS[r.cat]||"📦"} ${esc(r.omschr||r.cat)}</div>
               <div class="li-s">${fmtD(r.datum)}${r.leverancier?" · "+esc(r.leverancier):""} · ${r.cat}</div>
@@ -702,10 +773,43 @@ function render() {
       </div>
     </div>
 
+    <!-- INSTELLINGEN -->
+    <div class="page${activePage==="instellingen"?" active":""}" id="page-instellingen">
+      <div class="card">
+        <div class="sec-hdr">⚙️ Instellingen</div>
+        <div class="fg">
+          <label class="fl">Prijs per ei (€)</label>
+          <input type="number" id="inst-prijs" value="${instellingen.prijsPerEi.toFixed(2)}" step="0.01" min="0.01" inputmode="decimal">
+          <div style="font-size:11px;color:var(--txl);margin-top:4px">Huidige prijs: <strong>${fmt(instellingen.prijsPerEi)}</strong> per ei · wordt toegepast op nieuwe verkopen</div>
+        </div>
+        <button class="btn btn-p" onclick="saveInstellingen()">💾 Opslaan</button>
+      </div>
+      <div class="card">
+        <div class="card-title">📊 Statistieken</div>
+        <div class="li"><div class="li-l"><div class="li-t">Totaal gelegde eieren</div></div><div class="li-r"><span class="fw text-or">${totGelegd}</span></div></div>
+        <div class="li"><div class="li-l"><div class="li-t">Totaal verkochte eieren</div></div><div class="li-r"><span class="fw text-gn">${totVerkocht}</span></div></div>
+        <div class="li"><div class="li-l"><div class="li-t">Huidige voorraad</div></div><div class="li-r"><span class="fw" style="${voorraad<0?"color:var(--rd)":"color:var(--or)"}">${voorraad}</span></div></div>
+        <div class="li"><div class="li-l"><div class="li-t">Invul-streak</div></div><div class="li-r"><span class="fw text-or">${streak} dagen ${streak>=7?"🔥":streak>=3?"⭐":"📆"}</span></div></div>
+        <div class="li"><div class="li-l"><div class="li-t">Totaal klanten</div></div><div class="li-r"><span class="fw text-or">${klanten.length}</span></div></div>
+        <div class="li" style="border:none"><div class="li-l"><div class="li-t">Totaal omzet</div></div><div class="li-r"><span class="fw text-gn">${fmt(omzet)}</span></div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">💾 Back-up (CSV)</div>
+        <div class="data-box"><h4>📥 Downloaden</h4>
+          <div class="brow">
+            <button class="btn btn-g" onclick="exportCSV('legdagen')">🥚 Legdagen</button>
+            <button class="btn btn-g" onclick="exportCSV('verkopen')">💰 Verkopen</button>
+            <button class="btn btn-g" onclick="exportCSV('kosten')">📋 Kosten</button>
+          </div>
+        </div>
+        <p style="font-size:11px;color:var(--txl);text-align:center;margin-top:4px">☁️ Data wordt live gesynchroniseerd via Firebase op alle apparaten</p>
+      </div>
+    </div>
+
   </div><!-- pages -->
 
   <nav class="bottomnav">
-    ${[["dashboard","🏠","Dashboard"],["legdagen","🥚","Legdagen"],["verkopen","💰","Verkopen"],["klanten","👤","Klanten"],["kosten","📋","Kosten"],["pl","📊","P&L"]].map(([id,ni,nl])=>
+    ${[["dashboard","🏠","Dashboard"],["legdagen","🥚","Legdagen"],["verkopen","💰","Verkopen"],["klanten","👤","Klanten"],["kosten","📋","Kosten"],["pl","📊","P&L"],["instellingen","⚙️","Beheer"]].map(([id,ni,nl])=>
       `<button class="navbtn${activePage===id?" active":""}" onclick="goPage('${id}')"><span class="ni">${ni}</span><span class="nl">${nl}</span></button>`
     ).join("")}
   </nav>
@@ -930,13 +1034,25 @@ function renderYearChart(container) {
     </div>`;
 }
 
+// ── Instellingen ──────────────────────────────────────────────────────────
+async function saveInstellingen() {
+  const p = parseFloat(val("inst-prijs").replace(",",".")) || 0.40;
+  if(p <= 0) return toast("⚠️ Voer een geldige prijs in");
+  await dbSave("instellingen", { prijsPerEi: p });
+  toast("✅ Instellingen opgeslagen!");
+}
+function setZoekKlant() {
+  zoekKlant = (document.getElementById("klant-zoek")||{value:""}).value.toLowerCase();
+  render();
+}
+
 // ── Navigation ─────────────────────────────────────────────────────────────
 function goPage(id) { activePage=id; render(); }
 function setM(m) { activeM=m; render(); }
 function setActiveKlant(key) { activeKlant = activeKlant===key?null:key; render(); }
 function calcVkTot() {
   const n=parseInt(val("vk-aantal"))||0;
-  set_val("vk-totaal", n>0?fmt(n*0.40):"");
+  set_val("vk-totaal", n>0?fmt(n*prijs()):"");
 }
 function calcNieuweKlantVeld() {
   const v = val("vk-klant-select");
@@ -950,6 +1066,7 @@ Object.assign(window, {
   saveVk, deleteVk, updateVk, calcVkTot, calcNieuweKlantVeld,
   saveKst, deleteKst, updateKst,
   saveKlant, deleteKlant, updateKlant,
+  saveInstellingen, setZoekKlant,
   openModal, closeModal, exportCSV, setSyncBadge,
   openChart, closeChart, switchChartView, setChartM
 });
