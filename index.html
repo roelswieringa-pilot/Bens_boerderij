@@ -89,6 +89,17 @@ input:focus,select:focus,textarea:focus{border-color:var(--or);background:#fff}
 .loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:16px;color:var(--bd)}
 .loading-screen .big-egg{font-size:64px;animation:bounce 1s ease-in-out infinite alternate}
 @keyframes bounce{from{transform:translateY(0)}to{transform:translateY(-12px)}}
+.chart-modal{background:#fff;border-radius:20px 20px 0 0;padding:20px 16px calc(var(--safe-bot) + 16px);width:100%;max-width:480px;max-height:92vh;overflow-y:auto}
+.chart-modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.chart-view-tabs{display:flex;gap:8px;margin-bottom:12px}
+.chart-view-tabs .tab{flex:1;text-align:center;padding:7px;border-radius:10px;border:1.5px solid var(--gd);background:var(--gl);font-size:13px;font-weight:700;color:var(--txl);cursor:pointer}
+.chart-view-tabs .tab.active{background:var(--or);border-color:var(--or);color:#fff}
+.chart-wrap{overflow-x:auto;padding-bottom:4px}
+.chart-svg{display:block}
+.chart-stats{display:flex;gap:8px;margin-top:10px}
+.chart-stat{flex:1;background:var(--gl);border-radius:10px;border:1.5px solid var(--gd);padding:8px;text-align:center}
+.chart-stat .csv{font-family:'Fredoka One',cursive;font-size:20px;color:var(--or)}
+.chart-stat .csl{font-size:9px;color:var(--txl);font-weight:700;margin-top:1px}
 </style>
 </head>
 <body>
@@ -506,7 +517,10 @@ function render() {
               <button class="ebtn" onclick='openModal("leg",${JSON.stringify(r)})'>✏️</button>
               <button class="dbtn" onclick="deleteLeg('${r._key}')">🗑</button></div>
           </div>`).join("");
-        })()}`}
+        })()}
+        <div style="margin-top:12px">
+          <button class="btn btn-p" onclick="openChart('${curM}','maand')">📈 Bekijk grafiek</button>
+        </div>`}
       </div>
     </div>
 
@@ -702,7 +716,218 @@ function render() {
     <div class="modal" onclick="event.stopPropagation()">
       <div id="modal-body"></div>
     </div>
+  </div>
+
+  <!-- CHART OVERLAY -->
+  <div class="overlay" id="chart-overlay" onclick="closeChart()">
+    <div class="chart-modal" onclick="event.stopPropagation()">
+      <div class="chart-modal-header">
+        <span id="chart-title" style="font-family:'Fredoka One',cursive;font-size:17px;color:var(--bd)"></span>
+        <button onclick="closeChart()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--txl)">✕</button>
+      </div>
+      <div class="chart-view-tabs">
+        <div id="ctab-maand" class="tab active" onclick="switchChartView('maand')">📅 Maand</div>
+        <div id="ctab-jaar"  class="tab"        onclick="switchChartView('jaar')">📆 Jaar</div>
+      </div>
+      <div id="chart-maand-tabs" class="tabs" style="padding:0 0 8px"></div>
+      <div id="chart-container"></div>
+    </div>
   </div>`;
+}
+
+// ── CHART ──────────────────────────────────────────────────────────────────
+let chartView = "maand";
+let chartM    = null;
+
+function openChart(m, view) {
+  chartM    = m || (today().slice(0,7));
+  chartView = view || "maand";
+  const ov = document.getElementById("chart-overlay");
+  if(ov) ov.classList.add("open");
+  renderChart();
+}
+function closeChart() {
+  const ov = document.getElementById("chart-overlay");
+  if(ov) ov.classList.remove("open");
+}
+function switchChartView(v) {
+  chartView = v;
+  renderChart();
+}
+function setChartM(m) {
+  chartM = m;
+  renderChart();
+}
+
+function renderChart() {
+  // Update tab highlights
+  ["maand","jaar"].forEach(v => {
+    const el = document.getElementById("ctab-"+v);
+    if(el) el.className = "tab" + (chartView===v?" active":"");
+  });
+
+  const maanden = [...new Set(leg.map(r=>r.datum.slice(0,7)))].sort().reverse();
+
+  // Month selector tabs (only show in maand view)
+  const tabsEl = document.getElementById("chart-maand-tabs");
+  if(tabsEl) {
+    if(chartView==="maand") {
+      tabsEl.style.display = "flex";
+      tabsEl.innerHTML = maanden.map(m=>{
+        const [y,mo]=m.split("-");
+        return `<div class="tab${m===chartM?" active":""}" style="flex-shrink:0;padding:5px 12px;font-size:11px" onclick="setChartM('${m}')">${MNAMEN[parseInt(mo)-1]} ${y}</div>`;
+      }).join("");
+    } else {
+      tabsEl.style.display = "none";
+    }
+  }
+
+  const container = document.getElementById("chart-container");
+  if(!container) return;
+
+  if(chartView === "maand") {
+    renderMonthChart(container);
+  } else {
+    renderYearChart(container);
+  }
+}
+
+function renderMonthChart(container) {
+  if(!chartM) { container.innerHTML='<div class="empty"><div class="em">📅</div><p>Nog geen data</p></div>'; return; }
+
+  const [y,mo] = chartM.split("-");
+  const title = document.getElementById("chart-title");
+  if(title) title.textContent = `🥚 ${MNAMEN[parseInt(mo)-1]} ${y}`;
+
+  // Build days array for full month
+  const daysInMonth = new Date(parseInt(y), parseInt(mo), 0).getDate();
+  const days = [];
+  for(let d=1; d<=daysInMonth; d++) {
+    const datum = `${y}-${mo}-${String(d).padStart(2,"0")}`;
+    const rec   = leg.find(r=>r.datum===datum);
+    days.push({ d, datum, n: rec ? (rec.aantal||0) : 0, hasData: !!rec });
+  }
+
+  const maxN  = Math.max(...days.map(x=>x.n), 1);
+  const tot   = days.reduce((s,x)=>s+x.n, 0);
+  const gem   = tot / daysInMonth;
+  const maxDag= days.reduce((a,b)=>b.n>a.n?b:a, days[0]);
+
+  // SVG bar chart
+  const W=420, H=160, padL=28, padB=24, padT=10, padR=8;
+  const chartW = W-padL-padR, chartH = H-padB-padT;
+  const barW   = Math.max(2, Math.floor(chartW/daysInMonth)-1);
+  const gap    = (chartW - barW*daysInMonth) / (daysInMonth+1);
+
+  // Y axis ticks
+  const yTicks = [0, Math.round(maxN/2), maxN];
+
+  let bars = days.map((x,i) => {
+    const bh  = x.n === 0 ? 0 : Math.max(2, Math.round((x.n/maxN)*chartH));
+    const bx  = padL + gap + i*(barW+gap);
+    const by  = padT + chartH - bh;
+    const isWe = new Date(x.datum+"T12:00:00").getDay() % 6 === 0;
+    const col  = x.n===0 ? "#e8d5a0" : isWe ? "#c8860a" : "#e07b00";
+    const lbl  = x.d % 5 === 0 || x.d===1 ? String(x.d) : "";
+    return `
+      <rect x="${bx}" y="${by}" width="${barW}" height="${bh}" fill="${col}" rx="2"
+        style="cursor:pointer" title="${x.datum}: ${x.n} eieren"/>
+      ${lbl?`<text x="${bx+barW/2}" y="${H-8}" text-anchor="middle" font-size="9" fill="#a06020">${lbl}</text>`:""}
+    `;
+  }).join("");
+
+  let yAxisLines = yTicks.map(tick=>{
+    const y2 = padT + chartH - (tick/maxN)*chartH;
+    return `
+      <line x1="${padL}" y1="${y2}" x2="${W-padR}" y2="${y2}" stroke="#e8d5a0" stroke-dasharray="3,3"/>
+      <text x="${padL-4}" y="${y2+4}" text-anchor="end" font-size="9" fill="#a06020">${tick}</text>
+    `;
+  }).join("");
+
+  // Average line
+  const avgY = padT + chartH - (gem/maxN)*chartH;
+  const avgLine = gem>0 ? `<line x1="${padL}" y1="${avgY}" x2="${W-padR}" y2="${avgY}" stroke="#27ae60" stroke-width="1.5" stroke-dasharray="5,3"/><text x="${W-padR+2}" y="${avgY+4}" font-size="8" fill="#27ae60">gem</text>` : "";
+
+  const svg = `<svg class="chart-svg" viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px">
+    ${yAxisLines}
+    ${bars}
+    ${avgLine}
+    <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT+chartH}" stroke="#c8860a" stroke-width="1"/>
+    <line x1="${padL}" y1="${padT+chartH}" x2="${W-padR}" y2="${padT+chartH}" stroke="#c8860a" stroke-width="1"/>
+  </svg>`;
+
+  container.innerHTML = `
+    <div class="chart-wrap">${svg}</div>
+    <div style="display:flex;gap:6px;margin-top:4px;font-size:10px;color:var(--txl);align-items:center">
+      <span style="display:inline-block;width:12px;height:10px;background:#e07b00;border-radius:2px"></span> Weekdag
+      <span style="display:inline-block;width:12px;height:10px;background:#c8860a;border-radius:2px;margin-left:6px"></span> Weekend
+      <span style="display:inline-block;width:18px;height:2px;background:#27ae60;margin-left:6px"></span> Gemiddelde
+    </div>
+    <div class="chart-stats">
+      <div class="chart-stat"><div class="csv">${tot}</div><div class="csl">TOTAAL</div></div>
+      <div class="chart-stat"><div class="csv">${gem.toFixed(1)}</div><div class="csl">GEM/DAG</div></div>
+      <div class="chart-stat"><div class="csv">${maxDag.n}</div><div class="csl">MAX DAG</div></div>
+      <div class="chart-stat"><div class="csv">${days.filter(x=>x.n>0).length}</div><div class="csl">RAAP DAGEN</div></div>
+    </div>`;
+}
+
+function renderYearChart(container) {
+  const year = (chartM||today().slice(0,7)).slice(0,4);
+  const title = document.getElementById("chart-title");
+  if(title) title.textContent = `🥚 Jaaroverzicht ${year}`;
+
+  const monthData = Array.from({length:12}, (_,mi)=>{
+    const m = `${year}-${String(mi+1).padStart(2,"0")}`;
+    const rows = leg.filter(r=>r.datum.startsWith(m));
+    return { mi, m, n: rows.reduce((s,r)=>s+(r.aantal||0),0) };
+  });
+
+  const maxN = Math.max(...monthData.map(x=>x.n), 1);
+  const tot  = monthData.reduce((s,x)=>s+x.n, 0);
+  const gem  = tot / 12;
+
+  const W=420, H=160, padL=32, padB=24, padT=10, padR=8;
+  const chartW=W-padL-padR, chartH=H-padB-padT;
+  const barW=Math.floor(chartW/12)-3;
+
+  const bars = monthData.map((x,i)=>{
+    const bh = x.n===0?0:Math.max(2,Math.round((x.n/maxN)*chartH));
+    const bx = padL + i*(barW+3) + 4;
+    const by = padT+chartH-bh;
+    return `
+      <rect x="${bx}" y="${by}" width="${barW}" height="${bh}" fill="#e07b00" rx="3"
+        onclick="setChartM('${x.m}');switchChartView('maand')" style="cursor:pointer"/>
+      <text x="${bx+barW/2}" y="${H-8}" text-anchor="middle" font-size="9" fill="#a06020">${MNAMEN[x.mi].slice(0,1)}</text>
+      ${x.n>0?`<text x="${bx+barW/2}" y="${by-3}" text-anchor="middle" font-size="8" fill="#7a4500">${x.n}</text>`:""}
+    `;
+  }).join("");
+
+  const yTicks = [0, Math.round(maxN/2), maxN];
+  const yLines = yTicks.map(tick=>{
+    const y2=padT+chartH-(tick/maxN)*chartH;
+    return `<line x1="${padL}" y1="${y2}" x2="${W-padR}" y2="${y2}" stroke="#e8d5a0" stroke-dasharray="3,3"/>
+            <text x="${padL-4}" y="${y2+4}" text-anchor="end" font-size="9" fill="#a06020">${tick}</text>`;
+  }).join("");
+
+  const avgY = padT+chartH-(gem/maxN)*chartH;
+  const avgLine = gem>0?`<line x1="${padL}" y1="${avgY}" x2="${W-padR}" y2="${avgY}" stroke="#27ae60" stroke-width="1.5" stroke-dasharray="5,3"/>
+    <text x="${W-padR+2}" y="${avgY+4}" font-size="8" fill="#27ae60">gem</text>`:"";
+
+  const svg = `<svg class="chart-svg" viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px">
+    ${yLines}${bars}${avgLine}
+    <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT+chartH}" stroke="#c8860a" stroke-width="1"/>
+    <line x1="${padL}" y1="${padT+chartH}" x2="${W-padR}" y2="${padT+chartH}" stroke="#c8860a" stroke-width="1"/>
+  </svg>`;
+
+  container.innerHTML = `
+    <div class="chart-wrap">${svg}</div>
+    <p style="font-size:10px;color:var(--txl);text-align:center;margin-top:4px">Tik op een maand voor dagdetail</p>
+    <div class="chart-stats">
+      <div class="chart-stat"><div class="csv">${tot}</div><div class="csl">JAAR TOTAAL</div></div>
+      <div class="chart-stat"><div class="csv">${Math.round(gem)}</div><div class="csl">GEM/MAAND</div></div>
+      <div class="chart-stat"><div class="csv">${(tot/365).toFixed(1)}</div><div class="csl">GEM/DAG</div></div>
+      <div class="chart-stat"><div class="csv">${monthData.filter(x=>x.n>0).length}</div><div class="csl">ACTIEVE MNDN</div></div>
+    </div>`;
 }
 
 // ── Navigation ─────────────────────────────────────────────────────────────
@@ -725,7 +950,8 @@ Object.assign(window, {
   saveVk, deleteVk, updateVk, calcVkTot, calcNieuweKlantVeld,
   saveKst, deleteKst, updateKst,
   saveKlant, deleteKlant, updateKlant,
-  openModal, closeModal, exportCSV, setSyncBadge
+  openModal, closeModal, exportCSV, setSyncBadge,
+  openChart, closeChart, switchChartView, setChartM
 });
 
 // ── Boot ───────────────────────────────────────────────────────────────────
