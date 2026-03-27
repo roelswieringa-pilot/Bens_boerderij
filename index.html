@@ -1531,9 +1531,8 @@ async function syncPubliekeData() {
   // Bereken voorraad en gemiddelde
   const totGelegd      = leg.reduce((s,r)=>s+(r.aantal||0),0);
   const totVerkocht    = vk.reduce((s,r)=>s+(r.aantal||0),0);
-  // Reserveringen met status "nieuw" tellen als gereserveerd (nog niet verkocht)
-  const totGereserveerd= reserveringen.filter(r=>r.status==="nieuw").reduce((s,r)=>s+(r.aantal||0),0);
-  const voorraad       = totGelegd - totVerkocht - totGereserveerd;
+  // Sla basisvoorraad op (zonder reserveringen) — loginpagina trekt reserveringen zelf af
+  const voorraad       = totGelegd - totVerkocht;
   const recent7     = [...leg].reverse().slice(0,7).filter(r=>r.aantal>0);
   const gemDag      = recent7.length
     ? Math.round(recent7.reduce((s,r)=>s+(r.aantal||0),0)/recent7.length)
@@ -1685,15 +1684,15 @@ document.addEventListener("DOMContentLoaded", () => {
         get(ref(db,"publiek")),
         get(ref(db,"reserveringen"))
       ]).then(([pubSnap, resSnap]) => {
-        const p = pubSnap.val() || {};
-        const resVal = resSnap.val() || {};
+        const p      = pubSnap.exists()  ? pubSnap.val()  : null;
+        const resVal = resSnap.exists()  ? resSnap.val()  : {};
         const openRes = Object.values(resVal)
           .filter(r=>r.status==="nieuw")
           .reduce((s,r)=>s+(r.aantal||0),0);
-        const basisVoorraad = p.voorraad ?? null;
+        const basisVoorraad = (p && typeof p.voorraad === "number") ? p.voorraad : null;
         window._pubVoorraad = basisVoorraad !== null ? basisVoorraad - openRes : null;
-        window._pubGemDag   = p.gemDag   ?? null;
-        window._pubDoosje   = p.doosjeGrootte ?? 6;
+        window._pubGemDag   = (p && typeof p.gemDag === "number") ? p.gemDag : null;
+        window._pubDoosje   = (p && p.doosjeGrootte) ? p.doosjeGrootte : 6;
         renderLogin();
       }).catch(() => renderLogin());
     }
