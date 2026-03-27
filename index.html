@@ -250,12 +250,12 @@ function startListeners() {
   onValue(ref(db,"legdagen"), snap => {
     const val = snap.val() || {};
     leg = Object.entries(val).map(([k,v])=>({...v,_key:k})).sort((a,b)=>a.datum<b.datum?-1:1);
-    render(); setSyncBadge("ok");
+    render(); setSyncBadge("ok"); if(currentUser) syncPubliekeData();
   });
   onValue(ref(db,"verkopen"), snap => {
     const val = snap.val() || {};
     vk = Object.entries(val).map(([k,v])=>({...v,_key:k})).sort((a,b)=>b.datum.localeCompare(a.datum));
-    render(); setSyncBadge("ok");
+    render(); setSyncBadge("ok"); if(currentUser) syncPubliekeData();
   });
   onValue(ref(db,"kosten"), snap => {
     const val = snap.val() || {};
@@ -1515,7 +1515,7 @@ Object.assign(window, {
   saveInstellingen, setZoekKlant,
   openModal, closeModal, exportCSV, setSyncBadge,
   openChart, closeChart, switchChartView, setChartM,
-  doLogin, doLogout, renderLogin, showResBevestiging,
+  doLogin, doLogout, renderLogin, showResBevestiging, syncPubliekeData,
   saveInv, deleteInv, updateInv, setKstTab,
   renderKostenTabContent,
   saveKip, deleteKip, updateKip,
@@ -1523,6 +1523,23 @@ Object.assign(window, {
   saveReservering, accepteerRes, weigerRes, deleteRes, showResBevestiging
 });
 
+
+
+// ── Sync publieke data naar Firebase ──────────────────────────────────────
+async function syncPubliekeData() {
+  // Bereken voorraad en gemiddelde
+  const totGelegd   = leg.reduce((s,r)=>s+(r.aantal||0),0);
+  const totVerkocht = vk.reduce((s,r)=>s+(r.aantal||0),0);
+  const voorraad    = totGelegd - totVerkocht;
+  const recent7     = [...leg].reverse().slice(0,7).filter(r=>r.aantal>0);
+  const gemDag      = recent7.length
+    ? Math.round(recent7.reduce((s,r)=>s+(r.aantal||0),0)/recent7.length)
+    : null;
+  const doosjeGrootte = instellingen.doosjeGrootte || 6;
+  try {
+    await set(ref(db,"publiek"), { voorraad, gemDag, doosjeGrootte, bijgewerkt: today() });
+  } catch(e) { /* silently fail */ }
+}
 
 // ── Offline detection ──────────────────────────────────────────────────────
 function updateOfflineBanner() {
@@ -1543,14 +1560,10 @@ function renderLogin(errorMsg) {
   if(!app) return;
   const today2 = today();
 
-  // Calc voorraad
-  const totGelegdPub  = leg.reduce((s,r)=>s+(r.aantal||0),0);
-  const totVerkochtPub= vk.reduce((s,r)=>s+(r.aantal||0),0);
-  const voorraadPub   = totGelegdPub - totVerkochtPub;
-
-  // Verwachting morgen: gemiddelde van laatste 7 raap-dagen
-  const recent7 = [...leg].reverse().slice(0,7).filter(r=>r.aantal>0);
-  const gemDag  = recent7.length ? Math.round(recent7.reduce((s,r)=>s+(r.aantal||0),0)/recent7.length) : null;
+  // Use pre-fetched public data
+  const voorraadPub  = window._pubVoorraad ?? null;
+  const gemDag       = window._pubGemDag   ?? null;
+  const pubDoosje    = window._pubDoosje   || 6;
 
   app.innerHTML = `
   <div style="background:linear-gradient(160deg,var(--gl),var(--gm),var(--gd));min-height:100vh;padding:24px 16px">
@@ -1568,7 +1581,7 @@ function renderLogin(errorMsg) {
             ${voorraadPub<=0?"Uitverkocht":voorraadPub}
           </div>
           <div style="font-size:9px;color:var(--txl);font-weight:700;margin-top:2px">VOORRAAD</div>
-          ${voorraadPub>0?`<div style="font-size:9px;color:var(--txl);margin-top:1px">${Math.floor(voorraadPub/(instellingen.doosjeGrootte||6))} doosjes + ${voorraadPub%(instellingen.doosjeGrootte||6)} los</div>`:""}
+          ${voorraadPub>0?`<div style="font-size:9px;color:var(--txl);margin-top:1px">${Math.floor(voorraadPub/pubDoosje)} doosjes + ${voorraadPub%pubDoosje} los</div>`:""}
         </div>
         <div style="background:linear-gradient(135deg,var(--gl),var(--gd));border-radius:12px;border:1.5px solid var(--gd);padding:12px;text-align:center">
           <div style="font-size:26px;margin-bottom:2px">📅</div>
@@ -1663,17 +1676,12 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       // Not logged in: fetch minimal public data then show login
       $("loading") && ($("loading").style.display="none");
-      Promise.all([
-        get(ref(db,"legdagen")),
-        get(ref(db,"verkopen")),
-        get(ref(db,"instellingen"))
-      ]).then(([legSnap, vkSnap, instSnap]) => {
-        const lv = legSnap.val() || {};
-        leg = Object.entries(lv).map(([k,v])=>({...v,_key:k})).sort((a,b)=>a.datum<b.datum?-1:1);
-        const vv = vkSnap.val() || {};
-        vk  = Object.entries(vv).map(([k,v])=>({...v,_key:k}));
-        const iv = instSnap.val() || {};
-        instellingen = { prijsPerEi: iv.prijsPerEi ?? 0.40, doosjeGrootte: iv.doosjeGrootte ?? 6 };
+      get(ref(db,"publiek")).then(snap => {
+        const p = snap.val() || {};
+        // Store publieke data in temp vars for renderLogin
+        window._pubVoorraad = p.voorraad ?? null;
+        window._pubGemDag   = p.gemDag   ?? null;
+        window._pubDoosje   = p.doosjeGrootte ?? 6;
         renderLogin();
       }).catch(() => renderLogin());
     }
