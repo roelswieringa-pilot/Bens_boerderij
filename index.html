@@ -100,6 +100,12 @@ input:focus,select:focus,textarea:focus{border-color:var(--or);background:#fff}
 .login-error.show{display:block}
 .logout-btn{background:none;border:1.5px solid rgba(255,255,255,.4);border-radius:8px;color:rgba(255,255,255,.9);font-size:10px;font-weight:700;padding:3px 8px;cursor:pointer;font-family:'Nunito',sans-serif}
 .logout-btn:active{background:rgba(255,255,255,.15)}
+.res-screen{background:linear-gradient(160deg,var(--gl) 0%,var(--gm) 60%,var(--gd) 100%);padding:16px;min-height:100vh}
+.res-card{background:#fff;border-radius:16px;border:1.5px solid var(--gd);box-shadow:0 2px 12px rgba(200,134,10,.12);padding:16px;margin-bottom:14px}
+.res-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:#fef3cd;color:#b7770d}
+.res-badge.acc{background:#d5f5e3;color:#1e8449}
+.res-badge.den{background:#fadbd8;color:#922b21}
+
 
 .chart-modal{background:#fff;border-radius:20px 20px 0 0;padding:20px 16px calc(var(--safe-bot) + 16px);width:100%;max-width:480px;max-height:92vh;overflow-y:auto}
 .chart-modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
@@ -132,7 +138,10 @@ import { getDatabase, ref, set, get, onValue, push, remove, update }
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-// ── Firebase config ────────────────────────────────────────────────────────
+// ── Firebase config
+// NOTE: Firebase rules must allow public WRITE to "reserveringen"
+// ".read": "auth != null", ".write": "auth != null" for all EXCEPT:
+// "reserveringen": { ".read": "auth != null", ".write": true } ────────────────────────────────────────────────────────
 const firebaseConfig = {
   apiKey: "AIzaSyB415451nX2ZMTlv2A3EiznlWC8KyhmPn8",
   authDomain: "benboerderij-6e7c2.firebaseapp.com",
@@ -156,7 +165,7 @@ const MNAMEN= ["Jan","Feb","Mrt","Apr","Mei","Jun","Jul","Aug","Sep","Okt","Nov"
 const BB    = {Cash:"bg",Tikkie:"bb",Overboeking:"bo"};
 
 // ── State ──────────────────────────────────────────────────────────────────
-let leg=[], vk=[], kst=[], inv=[], klanten=[], kippen=[], activePage="dashboard", activeM=null, activeKlant=null, modalState=null;
+let leg=[], vk=[], kst=[], inv=[], klanten=[], kippen=[], reserveringen=[], activePage="dashboard", activeM=null, activeKlant=null, modalState=null;
 let instellingen = { prijsPerEi: 0.40, doosjeGrootte: 6 };
 let zoekKlant = "";
 let currentUser = null;
@@ -254,6 +263,11 @@ function startListeners() {
   onValue(ref(db,"investeringen"), snap => {
     const val = snap.val() || {};
     inv = Object.entries(val).map(([k,v])=>({...v,_key:k})).sort((a,b)=>b.datum.localeCompare(a.datum));
+    render(); setSyncBadge("ok");
+  });
+  onValue(ref(db,"reserveringen"), snap => {
+    const val = snap.val() || {};
+    reserveringen = Object.entries(val).map(([k,v])=>({...v,_key:k})).sort((a,b)=>a.datum.localeCompare(b.datum));
     render(); setSyncBadge("ok");
   });
   onValue(ref(db,"kippen"), snap => {
@@ -690,6 +704,41 @@ function render() {
 
     <!-- VERKOPEN -->
     <div class="page${activePage==="verkopen"?" active":""}" id="page-verkopen">
+      ${(()=>{
+        const nieuweRes = reserveringen.filter(r=>r.status==="nieuw");
+        if(!nieuweRes.length) return "";
+        return `<div class="card" style="border-color:var(--oranje-l);border-width:2px">`+
+          `<div class="card-title" style="color:var(--oranje)">🔔 Reserveringen (${nieuweRes.length} nieuw)</div>`+
+          nieuweRes.map(r=>`<div class="li">`+
+            `<div class="li-l">`+
+            `<div class="li-t">👤 ${esc(r.naam)}</div>`+
+            `<div class="li-s">🥚 ${r.aantal} eieren · 📅 ${fmtD(r.datum)}${r.tel?" · 📱 "+esc(r.tel):""}</div>`+
+            `</div>`+
+            `<div class="li-r" style="gap:4px">`+
+            `<button class="btn btn-s" style="padding:5px 8px;font-size:11px;width:auto;box-shadow:none" onclick='accepteerRes("${r._key}",${JSON.stringify(r)})'>✅ OK</button>`+
+            `<button class="btn btn-d" style="padding:5px 8px;font-size:11px;width:auto;box-shadow:none" onclick='weigerRes("${r._key}",${JSON.stringify(r)})'>❌ Nee</button>`+
+            `<button class="dbtn" onclick="deleteRes('${r._key}')">🗑</button>`+
+            `</div></div>`
+          ).join("")+
+          `</div>`;
+      })()}
+      ${(()=>{
+        const oudeRes = reserveringen.filter(r=>r.status!=="nieuw");
+        if(!oudeRes.length) return "";
+        return `<div class="card">`+
+          `<div class="card-title">📋 Reserveringshistorie</div>`+
+          oudeRes.map(r=>`<div class="li">`+
+            `<div class="li-l">`+
+            `<div class="li-t">${esc(r.naam)} · 🥚 ${r.aantal} · ${fmtD(r.datum)}</div>`+
+            `<div class="li-s">Aangemeld: ${fmtD(r.aangemeld||r.datum)}</div>`+
+            `</div>`+
+            `<div class="li-r">`+
+            `<span class="res-badge ${r.status==="geaccepteerd"?"acc":"den"}">${r.status==="geaccepteerd"?"✅ Geaccepteerd":"❌ Geweigerd"}</span>`+
+            `<button class="dbtn" onclick="deleteRes('${r._key}')">🗑</button>`+
+            `</div></div>`
+          ).join("")+
+          `</div>`;
+      })()}
       <div class="card">
         <div class="sec-hdr">💰 Verkoop registreren</div>
         <div class="frow">
@@ -1197,6 +1246,65 @@ function renderYearChart(container) {
     </div>`;
 }
 
+
+// ── CRUD — Reserveringen ────────────────────────────────────────────────────
+async function saveReservering() {
+  const naam  = val("res-naam").trim();
+  const datum = val("res-datum");
+  const aantal= parseInt(val("res-aantal"))||0;
+  const tel   = val("res-tel").trim();
+  if(!naam||!datum||aantal<1) return showResError("⚠️ Vul naam, datum en aantal in");
+  const key = uid();
+  await dbSave("reserveringen/"+key, {naam, datum, aantal, tel, status:"nieuw", aangemeld: today()});
+  showResBevestiging(naam, datum, aantal);
+}
+function showResError(msg) {
+  const el = document.getElementById("res-error");
+  if(el){ el.textContent=msg; el.classList.add("show"); }
+}
+function showResBevestiging(naam, datum, aantal) {
+  const app = $("app");
+  if(!app) return;
+  app.innerHTML = `
+  <div class="login-screen">
+    <div class="login-logo">🥚</div>
+    <div class="login-title">Reservering ontvangen!</div>
+    <div class="login-sub">Ben neemt contact met je op om te bevestigen</div>
+    <div class="login-card" style="text-align:center">
+      <div style="font-size:40px;margin-bottom:12px">✅</div>
+      <div style="font-family:'Fredoka One',cursive;font-size:16px;color:var(--bd);margin-bottom:8px">${esc(naam)}</div>
+      <div style="font-size:13px;color:var(--txl);margin-bottom:4px">🥚 ${aantal} eieren</div>
+      <div style="font-size:13px;color:var(--txl);margin-bottom:16px">📅 ${fmtD(datum)}</div>
+      <div style="font-size:11px;color:var(--txl);background:var(--gl);border-radius:10px;padding:10px">
+        Ben's Boerderij · Vrije uitloop · 0 Biologisch · 🇳🇱 NL
+      </div>
+    </div>
+    <button class="btn btn-p" onclick="renderLogin()" style="max-width:360px;margin-top:16px">← Terug</button>
+  </div>`;
+}
+async function accepteerRes(key, r) {
+  if(!confirm("Reservering accepteren en omzetten naar verkoop?")) return;
+  // Save as verkoop
+  const vkKey = uid();
+  await dbSave("verkopen/"+vkKey, {
+    datum: r.datum, aantal: r.aantal, koper: r.naam,
+    betaal: "Reservering", totaal: r.aantal*prijs(), notitie: "Via reservering"+( r.tel?" · "+r.tel:""), klantId:""
+  });
+  // Mark as accepted
+  await dbSave("reserveringen/"+key, {...r, status:"geaccepteerd"});
+  toast("✅ Reservering omgezet naar verkoop!");
+}
+async function weigerRes(key, r) {
+  if(!confirm("Reservering weigeren?")) return;
+  await dbSave("reserveringen/"+key, {...r, status:"geweigerd"});
+  toast("🗑 Reservering geweigerd");
+}
+async function deleteRes(key) {
+  if(!confirm("Reservering verwijderen?")) return;
+  await dbRemove("reserveringen/"+key);
+  toast("🗑 Verwijderd");
+}
+
 // ── CRUD — Investeringen ───────────────────────────────────────
 async function saveInv() {
   const datum      = val("inv-datum");
@@ -1404,7 +1512,8 @@ Object.assign(window, {
   saveInv, deleteInv, updateInv, setKstTab,
   renderKostenTabContent,
   saveKip, deleteKip, updateKip,
-  updateOfflineBanner
+  updateOfflineBanner,
+  saveReservering, accepteerRes, weigerRes, deleteRes, showResBevestiging
 });
 
 
@@ -1425,13 +1534,36 @@ window.addEventListener("offline", () => { updateOfflineBanner(); toast("📵 Ge
 function renderLogin(errorMsg) {
   const app = $("app");
   if(!app) return;
+  const today2 = today();
   app.innerHTML = `
-  <div class="login-screen">
-    <div class="login-logo">🐔</div>
-    <div class="login-title">Ben's Boerderij</div>
-    <div class="login-sub">Administratie voor de boerderij</div>
-    <div class="login-card">
-      <h2>🔐 Inloggen</h2>
+  <div style="background:linear-gradient(160deg,var(--gl),var(--gm),var(--gd));min-height:100vh;padding:24px 16px">
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-size:52px">🐔</div>
+      <div style="font-family:'Fredoka One',cursive;font-size:26px;color:var(--bd)">Ben's Boerderij</div>
+      <div style="font-size:12px;color:var(--txl);margin-top:4px">Verse eieren · Vrije uitloop · Biologisch</div>
+    </div>
+    <div class="res-card">
+      <h2 style="font-family:'Fredoka One',cursive;font-size:18px;color:var(--bd);margin-bottom:14px">🥚 Eieren reserveren</h2>
+      <div class="login-error" id="res-error"></div>
+      <div class="fg"><label class="fl">Jouw naam</label>
+        <input type="text" id="res-naam" placeholder="Bijv. Jan de Vries..." autocomplete="name">
+      </div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Gewenste datum</label>
+          <input type="date" id="res-datum" value="${today2}" min="${today2}">
+        </div>
+        <div class="fg"><label class="fl">Aantal eieren</label>
+          <input type="number" id="res-aantal" placeholder="6" min="1" inputmode="numeric">
+        </div>
+      </div>
+      <div class="fg"><label class="fl">Telefoonnummer (optioneel)</label>
+        <input type="tel" id="res-tel" placeholder="06-12345678" inputmode="tel" autocomplete="tel">
+      </div>
+      <button class="btn btn-s" onclick="saveReservering()" style="margin-top:4px">🥚 Reservering plaatsen</button>
+    </div>
+    <div class="res-card">
+      <h2 style="font-family:'Fredoka One',cursive;font-size:16px;color:var(--bd);margin-bottom:4px">🔐 Ben's Boerderij login</h2>
+      <div style="font-size:11px;color:var(--txl);margin-bottom:12px">Alleen voor beheerders</div>
       <div class="login-error${errorMsg?" show":""}" id="login-err">${errorMsg||""}</div>
       <div class="fg"><label class="fl">E-mailadres</label>
         <input type="email" id="login-email" placeholder="jouw@email.nl" inputmode="email" autocomplete="email">
@@ -1442,9 +1574,7 @@ function renderLogin(errorMsg) {
       </div>
       <button class="btn btn-p" id="login-btn" onclick="doLogin()" style="margin-top:4px">🔑 Inloggen</button>
     </div>
-    <div style="font-size:11px;color:var(--txl);margin-top:20px;text-align:center">
-      Toegang alleen voor geautoriseerde gebruikers
-    </div>
+    <div style="font-size:10px;color:var(--txl);text-align:center;margin-top:8px">🥚 Eicode: 0 Biologisch · 🇳🇱 NL</div>
   </div>`;
 }
 
