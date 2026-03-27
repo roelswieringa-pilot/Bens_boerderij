@@ -177,6 +177,7 @@ window._pubVoorraad    = null;
 window._pubGemDag      = null;
 window._pubDoosje      = 6;
 window._pubGereserveerd= 0;
+window._pubPrijs       = 0.40;
 
 // ── Utils ──────────────────────────────────────────────────────────────────
 const fmt   = n => "€ " + Number(n).toFixed(2).replace(".",",");
@@ -1283,6 +1284,8 @@ function showResError(msg) {
 function showResBevestiging(naam, datum, aantal) {
   const app = $("app");
   if(!app) return;
+  const prijsPerEi = window._pubPrijs || 0.40;
+  const totaal = (aantal * prijsPerEi).toFixed(2).replace(".", ",");
   app.innerHTML = `
   <div class="login-screen">
     <div class="login-logo">🥚</div>
@@ -1292,7 +1295,8 @@ function showResBevestiging(naam, datum, aantal) {
       <div style="font-size:40px;margin-bottom:12px">✅</div>
       <div style="font-family:'Fredoka One',cursive;font-size:16px;color:var(--bd);margin-bottom:8px">${esc(naam)}</div>
       <div style="font-size:13px;color:var(--txl);margin-bottom:4px">🥚 ${aantal} eieren</div>
-      <div style="font-size:13px;color:var(--txl);margin-bottom:16px">📅 ${fmtD(datum)}</div>
+      <div style="font-size:13px;color:var(--txl);margin-bottom:4px">📅 ${fmtD(datum)}</div>
+      <div style="font-family:'Fredoka One',cursive;font-size:20px;color:var(--gn);margin-bottom:16px">💰 € ${totaal}</div>
       <div style="font-size:11px;color:var(--txl);background:var(--gl);border-radius:10px;padding:10px">
         Ben's Boerderij · Vrije uitloop · 0 Biologisch · 🇳🇱 NL
       </div>
@@ -1550,7 +1554,8 @@ async function syncPubliekeData() {
   const doosjeGrootte = instellingen.doosjeGrootte || 6;
   const gereserveerd = reserveringen.filter(r=>r.status==="nieuw").reduce((s,r)=>s+(r.aantal||0),0);
   try {
-    await set(ref(db,"publiek"), { voorraad, gemDag, doosjeGrootte, gereserveerd, bijgewerkt: today() });
+    const prijsPerEi2 = instellingen.prijsPerEi || 0.40;
+    await set(ref(db,"publiek"), { voorraad, gemDag, doosjeGrootte, gereserveerd, prijsPerEi: prijsPerEi2, bijgewerkt: today() });
   } catch(e) { /* silently fail */ }
 }
 
@@ -1624,8 +1629,12 @@ function renderLogin(errorMsg) {
           '<input type="date" id="res-datum" value="' + today2 + '" min="' + today2 + '">' +
         '</div>' +
         '<div class="fg"><label class="fl">Aantal eieren</label>' +
-          '<input type="number" id="res-aantal" value="6" min="1" inputmode="numeric">' +
+          '<input type="number" id="res-aantal" value="6" min="1" inputmode="numeric"' +
+        ' oninput="var n=parseInt(this.value)||0;var p=(window._pubPrijs||0.40);var el=document.getElementById(\'res-bedrag\');if(el)el.textContent=\'💰 € \'+(n*p).toFixed(2).replace(\'.\',\',\');">' +
         '</div>' +
+      '</div>' +
+      '<div style="text-align:center;margin:-4px 0 10px;font-family:\'Fredoka One\',cursive;font-size:18px;color:var(--gn)" id="res-bedrag">' +
+        '💰 € ' + ((6*(window._pubPrijs||0.40)).toFixed(2).replace('.',',')) +
       '</div>' +
       '<div class="fg"><label class="fl">Telefoonnummer (optioneel)</label>' +
         '<input type="tel" id="res-tel" placeholder="06-12345678" inputmode="tel" autocomplete="tel">' +
@@ -1720,6 +1729,7 @@ document.addEventListener("DOMContentLoaded", () => {
         window._pubGemDag        = gemDag;
         window._pubDoosje        = inst.doosjeGrootte || 6;
         window._pubGereserveerd  = totGereserveerd;
+        window._pubPrijs         = inst.prijsPerEi || 0.40;
         renderLogin();
       }).catch(err => {
         console.warn("Publieke data niet beschikbaar:", err.message);
@@ -1731,6 +1741,7 @@ document.addEventListener("DOMContentLoaded", () => {
             window._pubGemDag   = typeof p.gemDag==="number"   ? p.gemDag   : null;
             window._pubDoosje        = p.doosjeGrootte || 6;
             window._pubGereserveerd  = typeof p.gereserveerd==="number" ? p.gereserveerd : 0;
+            window._pubPrijs         = p.prijsPerEi || 0.40;
           }
           renderLogin();
         }).catch(() => renderLogin());
