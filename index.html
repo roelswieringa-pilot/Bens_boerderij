@@ -796,28 +796,26 @@ function render() {
           }
           const byRas = {};
           kippen.forEach(k=>{ if(!byRas[k.ras]) byRas[k.ras]=[]; byRas[k.ras].push(k); });
-          return Object.entries(byRas).map(([ras,kips])=>
-            `<div style="margin-bottom:10px">`+
-            `<div style="font-size:11px;font-weight:800;color:var(--bl);margin-bottom:6px">${RAS_ICONS[ras]||"🐔"} ${ras}</div>`+
-            `<div class="kip-grid">`+
-            kips.map(k=>`<div class="kip"><div class="ke">${RAS_ICONS[k.ras]||"🐔"}</div><div class="kr">${esc(k.naam)}</div></div>`).join("")+
-            `</div></div>`
-          ).join("");
+          // Per ras één kaartje met icoon + namen samengevoegd
+          const rasCards = Object.entries(byRas).map(([ras,kips])=>{
+            const namen = kips.map(k=>esc(k.naam)).join(", ");
+            const isHaan = ras==="Haan";
+            const style = isHaan?'style="background:#fff0e8;border-color:#f5c9a0"':'' ;
+            const krStyle = isHaan?'style="color:#a03000"':'' ;
+            const knStyle = isHaan?'style="color:#c05000"':'' ;
+            return `<div class="kip" ${style}>`+
+              `<div class="ke">${RAS_ICONS[ras]||"🐔"}</div>`+
+              `<div class="kr" ${krStyle}>${ras}</div>`+
+              `<div class="kn" ${knStyle}>${namen}</div>`+
+              `</div>`;
+          });
+          // Voeg eicode-kaartje toe
+          rasCards.push('<div class="kip" style="background:var(--gd)"><div class="ke">🥚</div><div class="kr">Eicode</div><div class="kn">0 Biologisch · 🇳🇱 NL</div></div>');
+          return '<div class="kip-grid">'+rasCards.join("")+'</div>';
         })()}
         <div style="font-size:11px;color:var(--txl);margin-top:8px;text-align:center">🥚 Eicode: 0 Biologisch · 🇳🇱 NL · Beheer via ⚙️ Beheer</div>
       </div>
-      <div class="card">
-        <div class="card-title">💾 Back-up (CSV)</div>
-        <div class="data-box"><h4>📥 Downloaden</h4>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
-            <button class="btn btn-g" onclick="exportCSV('legdagen')">🥚 Legdagen</button>
-            <button class="btn btn-g" onclick="exportCSV('verkopen')">💰 Verkopen</button>
-            <button class="btn btn-g" onclick="exportCSV('investeringen')">📈 Investering</button>
-            <button class="btn btn-g" onclick="exportCSV('kosten')">📋 Kosten</button>
-          </div>
-        </div>
-        <p style="font-size:11px;color:var(--txl);text-align:center;margin-top:4px">☁️ Data wordt live gesynchroniseerd via Firebase op alle apparaten</p>
-      </div>
+
     </div>
 
     <!-- INSTELLINGEN -->
@@ -876,9 +874,10 @@ function render() {
       <div class="card">
         <div class="card-title">💾 Back-up (CSV)</div>
         <div class="data-box"><h4>📥 Downloaden</h4>
-          <div class="brow">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
             <button class="btn btn-g" onclick="exportCSV('legdagen')">🥚 Legdagen</button>
             <button class="btn btn-g" onclick="exportCSV('verkopen')">💰 Verkopen</button>
+            <button class="btn btn-g" onclick="exportCSV('investeringen')">📈 Investering</button>
             <button class="btn btn-g" onclick="exportCSV('kosten')">📋 Kosten</button>
           </div>
         </div>
