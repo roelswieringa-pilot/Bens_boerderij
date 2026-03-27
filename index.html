@@ -1535,8 +1535,8 @@ async function syncPubliekeData() {
   // Bereken voorraad en gemiddelde
   const totGelegd      = leg.reduce((s,r)=>s+(r.aantal||0),0);
   const totVerkocht    = vk.reduce((s,r)=>s+(r.aantal||0),0);
-  // Sla basisvoorraad op (zonder reserveringen) — loginpagina trekt reserveringen zelf af
-  const voorraad       = totGelegd - totVerkocht;
+  const totGereserveerd= reserveringen.filter(r=>r.status==="nieuw").reduce((s,r)=>s+(r.aantal||0),0);
+  const voorraad       = totGelegd - totVerkocht - totGereserveerd;
   const recent7     = [...leg].reverse().slice(0,7).filter(r=>r.aantal>0);
   const gemDag      = recent7.length
     ? Math.round(recent7.reduce((s,r)=>s+(r.aantal||0),0)/recent7.length)
@@ -1690,27 +1690,33 @@ document.addEventListener("DOMContentLoaded", () => {
         get(ref(db,"reserveringen")),
         get(ref(db,"instellingen"))
       ]).then(([legSnap, vkSnap, resSnap, instSnap]) => {
-        // Legdagen
         const legData = legSnap.exists() ? Object.values(legSnap.val()) : [];
         const totGelegd = legData.reduce((s,r)=>s+(r.aantal||0),0);
-        // Verkopen
         const vkData = vkSnap.exists() ? Object.values(vkSnap.val()) : [];
         const totVerkocht = vkData.reduce((s,r)=>s+(r.aantal||0),0);
-        // Openstaande reserveringen
         const resData = resSnap.exists() ? Object.values(resSnap.val()) : [];
         const totGereserveerd = resData.filter(r=>r.status==="nieuw").reduce((s,r)=>s+(r.aantal||0),0);
-        // Instellingen
         const inst = instSnap.exists() ? instSnap.val() : {};
-        // Gemiddelde laatste 7 raap-dagen
         const gesorteerd = legData.filter(r=>r.aantal>0).sort((a,b)=>b.datum.localeCompare(a.datum));
         const recent7 = gesorteerd.slice(0,7);
         const gemDag = recent7.length ? Math.round(recent7.reduce((s,r)=>s+(r.aantal||0),0)/recent7.length) : null;
-        // Set public vars
         window._pubVoorraad = totGelegd - totVerkocht - totGereserveerd;
         window._pubGemDag   = gemDag;
         window._pubDoosje   = inst.doosjeGrootte || 6;
         renderLogin();
-      }).catch(() => renderLogin());
+      }).catch(err => {
+        console.warn("Publieke data niet beschikbaar:", err.message);
+        // Fallback: probeer alleen /publiek te lezen (geschreven door Ben na inlog)
+        get(ref(db,"publiek")).then(snap => {
+          if(snap.exists()) {
+            const p = snap.val();
+            window._pubVoorraad = typeof p.voorraad==="number" ? p.voorraad : null;
+            window._pubGemDag   = typeof p.gemDag==="number"   ? p.gemDag   : null;
+            window._pubDoosje   = p.doosjeGrootte || 6;
+          }
+          renderLogin();
+        }).catch(() => renderLogin());
+      });
     }
   });
 });
