@@ -270,7 +270,7 @@ function startListeners() {
   onValue(ref(db,"reserveringen"), snap => {
     const val = snap.val() || {};
     reserveringen = Object.entries(val).map(([k,v])=>({...v,_key:k})).sort((a,b)=>a.datum.localeCompare(b.datum));
-    render(); setSyncBadge("ok");
+    render(); setSyncBadge("ok"); if(currentUser) syncPubliekeData();
   });
   onValue(ref(db,"kippen"), snap => {
     const val = snap.val() || {};
@@ -1528,9 +1528,11 @@ Object.assign(window, {
 // ── Sync publieke data naar Firebase ──────────────────────────────────────
 async function syncPubliekeData() {
   // Bereken voorraad en gemiddelde
-  const totGelegd   = leg.reduce((s,r)=>s+(r.aantal||0),0);
-  const totVerkocht = vk.reduce((s,r)=>s+(r.aantal||0),0);
-  const voorraad    = totGelegd - totVerkocht;
+  const totGelegd      = leg.reduce((s,r)=>s+(r.aantal||0),0);
+  const totVerkocht    = vk.reduce((s,r)=>s+(r.aantal||0),0);
+  // Reserveringen met status "nieuw" tellen als gereserveerd (nog niet verkocht)
+  const totGereserveerd= reserveringen.filter(r=>r.status==="nieuw").reduce((s,r)=>s+(r.aantal||0),0);
+  const voorraad       = totGelegd - totVerkocht - totGereserveerd;
   const recent7     = [...leg].reverse().slice(0,7).filter(r=>r.aantal>0);
   const gemDag      = recent7.length
     ? Math.round(recent7.reduce((s,r)=>s+(r.aantal||0),0)/recent7.length)
