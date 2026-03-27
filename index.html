@@ -173,9 +173,10 @@ let zoekKlant = "";
 let currentUser = null;
 let kstTab = "kosten";
 // Public data cache for login page
-window._pubVoorraad = null;
-window._pubGemDag   = null;
-window._pubDoosje   = 6;
+window._pubVoorraad    = null;
+window._pubGemDag      = null;
+window._pubDoosje      = 6;
+window._pubGereserveerd= 0;
 
 // ── Utils ──────────────────────────────────────────────────────────────────
 const fmt   = n => "€ " + Number(n).toFixed(2).replace(".",",");
@@ -1265,6 +1266,11 @@ async function saveReservering() {
   const key = uid();
   try {
     await dbSave("reserveringen/"+key, {naam, datum, aantal, tel, status:"nieuw", aangemeld: today()});
+    // Update live teller on inlog page
+    window._pubGereserveerd = (window._pubGereserveerd || 0) + aantal;
+    window._pubVoorraad     = (window._pubVoorraad !== null) ? window._pubVoorraad - aantal : null;
+    const teller = document.getElementById("res-teller");
+    if(teller) teller.textContent = window._pubGereserveerd;
     showResBevestiging(naam, datum, aantal);
   } catch(e) {
     showResError("❌ Kon niet opslaan. Controleer je internetverbinding.");
@@ -1568,6 +1574,7 @@ function renderLogin(errorMsg) {
   const vrd    = window._pubVoorraad ?? null;
   const gd     = window._pubGemDag   ?? null;
   const doos   = window._pubDoosje   || 6;
+  const res    = window._pubGereserveerd ?? 0;
 
   const vrdKleur = (vrd !== null && vrd <= 0) ? "var(--rd)" : "var(--or)";
   const vrdTekst = vrd === null ? "–" : vrd <= 0 ? "Uitverkocht" : String(vrd);
@@ -1584,18 +1591,24 @@ function renderLogin(errorMsg) {
       '<div style="font-size:12px;color:var(--txl);margin-top:4px">Verse eieren · Vrije uitloop · Biologisch</div>' +
     '</div>' +
     '<div class="res-card" style="margin-bottom:14px">' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
-        '<div style="background:linear-gradient(135deg,var(--gl),var(--gd));border-radius:12px;border:1.5px solid var(--gd);padding:12px;text-align:center">' +
-          '<div style="font-size:26px;margin-bottom:2px">🗃️</div>' +
-          '<div style="font-family:\'Fredoka One\',cursive;font-size:22px;color:' + vrdKleur + '">' + vrdTekst + '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">' +
+        '<div style="background:linear-gradient(135deg,var(--gl),var(--gd));border-radius:12px;border:1.5px solid var(--gd);padding:10px;text-align:center">' +
+          '<div style="font-size:22px;margin-bottom:2px">🗃️</div>' +
+          '<div style="font-family:\'Fredoka One\',cursive;font-size:20px;color:' + vrdKleur + '">' + vrdTekst + '</div>' +
           '<div style="font-size:9px;color:var(--txl);font-weight:700;margin-top:2px">VOORRAAD</div>' +
-          (vrdSub ? '<div style="font-size:9px;color:var(--txl);margin-top:1px">' + vrdSub + '</div>' : '') +
+          (vrdSub ? '<div style="font-size:8px;color:var(--txl);margin-top:1px">' + vrdSub + '</div>' : '') +
         '</div>' +
-        '<div style="background:linear-gradient(135deg,var(--gl),var(--gd));border-radius:12px;border:1.5px solid var(--gd);padding:12px;text-align:center">' +
-          '<div style="font-size:26px;margin-bottom:2px">📅</div>' +
-          '<div style="font-family:\'Fredoka One\',cursive;font-size:22px;color:var(--or)">' + gdTekst + '</div>' +
-          '<div style="font-size:9px;color:var(--txl);font-weight:700;margin-top:2px">VERWACHT MORGEN</div>' +
-          '<div style="font-size:9px;color:var(--txl);margin-top:1px">' + gdSub + '</div>' +
+        '<div style="background:linear-gradient(135deg,var(--gl),var(--gd));border-radius:12px;border:1.5px solid var(--gd);padding:10px;text-align:center">' +
+          '<div style="font-size:22px;margin-bottom:2px">📅</div>' +
+          '<div style="font-family:\'Fredoka One\',cursive;font-size:20px;color:var(--or)">' + gdTekst + '</div>' +
+          '<div style="font-size:9px;color:var(--txl);font-weight:700;margin-top:2px">VERWACHT</div>' +
+          '<div style="font-size:8px;color:var(--txl);margin-top:1px">' + gdSub + '</div>' +
+        '</div>' +
+        '<div style="background:linear-gradient(135deg,#fff8f0,#ffe8d0);border-radius:12px;border:1.5px solid #f5c9a0;padding:10px;text-align:center">' +
+          '<div style="font-size:22px;margin-bottom:2px">📋</div>' +
+          '<div style="font-family:\'Fredoka One\',cursive;font-size:20px;color:var(--bd)" id="res-teller">' + res + '</div>' +
+          '<div style="font-size:9px;color:var(--txl);font-weight:700;margin-top:2px">GERESERVEERD</div>' +
+          '<div style="font-size:8px;color:var(--txl);margin-top:1px">openstaand</div>' +
         '</div>' +
       '</div>' +
     '</div>' +
@@ -1700,9 +1713,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const gesorteerd = legData.filter(r=>r.aantal>0).sort((a,b)=>b.datum.localeCompare(a.datum));
         const recent7 = gesorteerd.slice(0,7);
         const gemDag = recent7.length ? Math.round(recent7.reduce((s,r)=>s+(r.aantal||0),0)/recent7.length) : null;
-        window._pubVoorraad = totGelegd - totVerkocht - totGereserveerd;
-        window._pubGemDag   = gemDag;
-        window._pubDoosje   = inst.doosjeGrootte || 6;
+        window._pubVoorraad      = totGelegd - totVerkocht - totGereserveerd;
+        window._pubGemDag        = gemDag;
+        window._pubDoosje        = inst.doosjeGrootte || 6;
+        window._pubGereserveerd  = totGereserveerd;
         renderLogin();
       }).catch(err => {
         console.warn("Publieke data niet beschikbaar:", err.message);
