@@ -1266,14 +1266,11 @@ async function saveReservering() {
   const key = uid();
   try {
     await dbSave("reserveringen/"+key, {naam, datum, aantal, tel, status:"nieuw", aangemeld: today()});
-    // Re-fetch reserveringen for accurate count
-    get(ref(db,"reserveringen")).then(snap => {
-      const resData = snap.exists() ? Object.values(snap.val()) : [];
-      const openRes = resData.filter(r=>r.status==="nieuw").reduce((s,r)=>s+(r.aantal||0),0);
-      window._pubGereserveerd = openRes;
-      window._pubVoorraad = (window._pubVoorraad !== null)
-        ? (window._pubVoorraad + (window._pubGereserveerd||0) - openRes) : null;
-    }).catch(()=>{});
+    // Update local counters immediately (Firebase /publiek updated by Ben on next login)
+    window._pubGereserveerd = (window._pubGereserveerd || 0) + aantal;
+    window._pubVoorraad = (window._pubVoorraad !== null) ? window._pubVoorraad - aantal : null;
+    // Write updated gereserveerd to /publiek so refresh shows correct value
+    set(ref(db,"publiek/gereserveerd"), window._pubGereserveerd).catch(()=>{});
     showResBevestiging(naam, datum, aantal);
   } catch(e) {
     showResError("❌ Kon niet opslaan. Controleer je internetverbinding.");
@@ -1701,26 +1698,28 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       // Not logged in: fetch minimal public data then show login
       $("loading") && ($("loading").style.display="none");
+      // Lees publiek leesbare nodes + /publiek voor gereserveerd
       Promise.all([
         get(ref(db,"legdagen")),
         get(ref(db,"verkopen")),
-        get(ref(db,"reserveringen")),
-        get(ref(db,"instellingen"))
-      ]).then(([legSnap, vkSnap, resSnap, instSnap]) => {
+        get(ref(db,"instellingen")),
+        get(ref(db,"publiek"))
+      ]).then(([legSnap, vkSnap, instSnap, pubSnap]) => {
         const legData = legSnap.exists() ? Object.values(legSnap.val()) : [];
         const totGelegd = legData.reduce((s,r)=>s+(r.aantal||0),0);
         const vkData = vkSnap.exists() ? Object.values(vkSnap.val()) : [];
         const totVerkocht = vkData.reduce((s,r)=>s+(r.aantal||0),0);
-        const resData = resSnap.exists() ? Object.values(resSnap.val()) : [];
-        const totGereserveerd = resData.filter(r=>r.status==="nieuw").reduce((s,r)=>s+(r.aantal||0),0);
         const inst = instSnap.exists() ? instSnap.val() : {};
+        // Gereserveerd uit /publiek (weggeschreven door Ben, altijd leesbaar)
+        const pub = pubSnap.exists() ? pubSnap.val() : {};
+        const totGereserveerd = typeof pub.gereserveerd==="number" ? pub.gereserveerd : 0;
         const gesorteerd = legData.filter(r=>r.aantal>0).sort((a,b)=>b.datum.localeCompare(a.datum));
         const recent7 = gesorteerd.slice(0,7);
         const gemDag = recent7.length ? Math.round(recent7.reduce((s,r)=>s+(r.aantal||0),0)/recent7.length) : null;
         window._pubVoorraad      = totGelegd - totVerkocht - totGereserveerd;
         window._pubGemDag        = gemDag;
         window._pubDoosje        = inst.doosjeGrootte || 6;
-        window._pubGereserveerd  = totGereserveerd; // eieren gereserveerd (niet aantal reserveringen)
+        window._pubGereserveerd  = totGereserveerd;
         renderLogin();
       }).catch(err => {
         console.warn("Publieke data niet beschikbaar:", err.message);
