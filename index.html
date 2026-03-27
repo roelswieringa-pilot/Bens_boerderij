@@ -1266,11 +1266,14 @@ async function saveReservering() {
   const key = uid();
   try {
     await dbSave("reserveringen/"+key, {naam, datum, aantal, tel, status:"nieuw", aangemeld: today()});
-    // Update live teller on inlog page
-    window._pubGereserveerd = (window._pubGereserveerd || 0) + aantal;
-    window._pubVoorraad     = (window._pubVoorraad !== null) ? window._pubVoorraad - aantal : null;
-    const teller = document.getElementById("res-teller");
-    if(teller) teller.textContent = window._pubGereserveerd;
+    // Re-fetch reserveringen for accurate count
+    get(ref(db,"reserveringen")).then(snap => {
+      const resData = snap.exists() ? Object.values(snap.val()) : [];
+      const openRes = resData.filter(r=>r.status==="nieuw").reduce((s,r)=>s+(r.aantal||0),0);
+      window._pubGereserveerd = openRes;
+      window._pubVoorraad = (window._pubVoorraad !== null)
+        ? (window._pubVoorraad + (window._pubGereserveerd||0) - openRes) : null;
+    }).catch(()=>{});
     showResBevestiging(naam, datum, aantal);
   } catch(e) {
     showResError("❌ Kon niet opslaan. Controleer je internetverbinding.");
@@ -1548,8 +1551,9 @@ async function syncPubliekeData() {
     ? Math.round(recent7.reduce((s,r)=>s+(r.aantal||0),0)/recent7.length)
     : null;
   const doosjeGrootte = instellingen.doosjeGrootte || 6;
+  const gereserveerd = reserveringen.filter(r=>r.status==="nieuw").reduce((s,r)=>s+(r.aantal||0),0);
   try {
-    await set(ref(db,"publiek"), { voorraad, gemDag, doosjeGrootte, bijgewerkt: today() });
+    await set(ref(db,"publiek"), { voorraad, gemDag, doosjeGrootte, gereserveerd, bijgewerkt: today() });
   } catch(e) { /* silently fail */ }
 }
 
@@ -1716,7 +1720,7 @@ document.addEventListener("DOMContentLoaded", () => {
         window._pubVoorraad      = totGelegd - totVerkocht - totGereserveerd;
         window._pubGemDag        = gemDag;
         window._pubDoosje        = inst.doosjeGrootte || 6;
-        window._pubGereserveerd  = totGereserveerd;
+        window._pubGereserveerd  = totGereserveerd; // eieren gereserveerd (niet aantal reserveringen)
         renderLogin();
       }).catch(err => {
         console.warn("Publieke data niet beschikbaar:", err.message);
@@ -1726,7 +1730,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const p = snap.val();
             window._pubVoorraad = typeof p.voorraad==="number" ? p.voorraad : null;
             window._pubGemDag   = typeof p.gemDag==="number"   ? p.gemDag   : null;
-            window._pubDoosje   = p.doosjeGrootte || 6;
+            window._pubDoosje        = p.doosjeGrootte || 6;
+            window._pubGereserveerd  = typeof p.gereserveerd==="number" ? p.gereserveerd : 0;
           }
           renderLogin();
         }).catch(() => renderLogin());
