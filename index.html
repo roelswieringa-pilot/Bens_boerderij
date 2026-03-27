@@ -739,94 +739,10 @@ function render() {
         <button class="btn${kstTab==='kosten'?' btn-d':' btn-g'}" style="font-size:13px;padding:10px" onclick="setKstTab('kosten')">💸 Kosten</button>
         <button class="btn${kstTab==='investeringen'?' btn-p':' btn-g'}" style="font-size:13px;padding:10px" onclick="setKstTab('investeringen')">📈 Investeringen</button>
       </div>
-      ${kstTab==="kosten"?`
-      <div class="card">
-        <div class="sec-hdr">📋 Kosten registreren</div>
-        <div class="frow">
-          <div class="fg"><label class="fl">Datum</label><input type="date" id="kst-datum" value="${t}"></div>
-          <div class="fg"><label class="fl">Bedrag (€)</label><input type="number" id="kst-bedrag" placeholder="0.00" step="0.01" inputmode="decimal"></div>
-        </div>
-        <div class="fg"><label class="fl">Omschrijving</label><input type="text" id="kst-omschrijving" placeholder="bijv. zakje kippenvoer..."></div>
-        <div class="frow">
-          <div class="fg"><label class="fl">Categorie</label>
-            <select id="kst-categorie">${CATS.map(c=>`<option>${c}</option>`).join("")}</select>
-          </div>
-          <div class="fg"><label class="fl">Leverancier</label><input type="text" id="kst-leverancier" placeholder="optioneel..."></div>
-        </div>
-        <button class="btn btn-d" onclick="saveKst()">💸 Kosten opslaan</button>
-      </div>
-      <div class="card">
-        <div class="card-title">📊 Kosten per categorie</div>
-        <div class="bar-wrap">${CATS.map(c=>`
-          <div class="bar-row"><span class="bar-lbl">${ICONS[c]}</span>
-            <div class="bar-tr"><div class="bar-fill" style="width:${catTotals[c]/maxCat*100}%">
-              <span class="bar-v">${catTotals[c]>0?fmt(catTotals[c]):""}</span>
-            </div></div></div>`).join("")}
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-title">🧾 Kostenhistorie</div>
-        ${kst.length===0?'<div class="empty"><div class="em">🧾</div><p>Nog geen kosten</p></div>':
-          kst.map(r=>`<div class="li">
-            <div class="li-l">
-              <div class="li-t">${ICONS[r.cat]||"📦"} ${esc(r.omschr||r.cat)}</div>
-              <div class="li-s">${fmtD(r.datum)}${r.leverancier?" · "+esc(r.leverancier):""} · ${r.cat}</div>
-            </div>
-            <div class="li-r"><span class="fw text-ro">${fmt(r.bedrag)}</span>
-              <button class="ebtn" onclick='openModal("kst",${JSON.stringify(r)})'>✏️</button>
-              <button class="dbtn" onclick="deleteKst('${r._key}')">🗑</button></div>
-          </div>`).join("")}
-      </div>
-    </div>`:(
-      <div>
-      <div class="card">
-        <div class="sec-hdr">📈 Investering registreren</div>
-        <div class="frow">
-          <div class="fg"><label class="fl">Datum</label><input type="date" id="inv-datum" value="${t}"></div>
-          <div class="fg"><label class="fl">Bedrag (€)</label><input type="number" id="inv-bedrag" placeholder="0.00" step="0.01" inputmode="decimal"></div>
-        </div>
-        <div class="fg"><label class="fl">Omschrijving</label><input type="text" id="inv-omschrijving" placeholder="bijv. nieuw kippenhok..."></div>
-        <div class="frow">
-          <div class="fg"><label class="fl">Categorie</label>
-            <select id="inv-categorie">${INV_CATS.map(c=>`<option>${c}</option>`).join("")}</select>
-          </div>
-          <div class="fg"><label class="fl">Leverancier</label><input type="text" id="inv-leverancier" placeholder="optioneel..."></div>
-        </div>
-        <button class="btn btn-p" onclick="saveInv()">📈 Investering opslaan</button>
-      </div>
-      <div class="card">
-        <div class="card-title">📊 Investeringen per categorie</div>
-        <div class="bar-wrap">${(()=>{
-          const maxInv=Math.max(...INV_CATS.map(c=>inv.filter(r=>r.cat===c).reduce((s,r)=>s+(r.bedrag||0),0)),1);
-          return INV_CATS.map(c=>{
-            const t2=inv.filter(r=>r.cat===c).reduce((s,r)=>s+(r.bedrag||0),0);
-            return`<div class="bar-row"><span class="bar-lbl">${ICONS[c]||"📈"}</span>
-              <div class="bar-tr"><div class="bar-fill" style="width:${t2/maxInv*100}%;background:linear-gradient(90deg,#1a5276,#4a6fa5)">
-              <span class="bar-v">${t2>0?fmt(t2):""}</span></div></div></div>`;
-          }).join("");
-        })()}</div>
-      </div>
-      <div class="card">
-        <div class="card-title">🧾 Investeringen</div>
-        ${inv.length===0?'<div class="empty"><div class="em">📈</div><p>Nog geen investeringen</p></div>':
-          `<div class="li" style="border-bottom:2px solid #d6eaf8">
-            <span style="font-size:12px;font-weight:800;color:var(--bu)">Totaal geïnvesteerd</span>
-            <span class="fw" style="color:var(--bu)">${fmt(totInv)}</span>
-          </div>`+
-          inv.map(r=>`<div class="li">
-            <div class="li-l">
-              <div class="li-t">${ICONS[r.cat]||"📈"} ${esc(r.omschr||r.cat)}</div>
-              <div class="li-s">${fmtD(r.datum)}${r.leverancier?" · "+esc(r.leverancier):""} · ${r.cat}</div>
-            </div>
-            <div class="li-r"><span class="fw" style="color:var(--bu)">${fmt(r.bedrag)}</span>
-              <button class="ebtn" onclick='openModal("inv",${JSON.stringify(r)})'>✏️</button>
-              <button class="dbtn" onclick="deleteInv('${r._key}')">🗑</button></div>
-          </div>`).join("")}
-      </div>
-      </div>)}
+      <div id="kst-tab-content"></div>
     </div>
 
-    <!-- P&L -->
+        <!-- P&L -->
     <div class="page${activePage==="pl"?" active":""}" id="page-pl">
       <div class="card">
         <div class="sec-hdr">📊 Winst & Verlies</div>
@@ -948,6 +864,8 @@ function render() {
       <div id="chart-container"></div>
     </div>
   </div>`;
+  // Render tab content after main render
+  setTimeout(renderKostenTabContent, 0);
 }
 
 // ── CHART ──────────────────────────────────────────────────────────────────
@@ -1174,6 +1092,115 @@ async function updateInv() {
   await dbSave("investeringen/"+key, {datum,bedrag,omschr,cat,leverancier});
   closeModal(); toast("✅ Bijgewerkt!");
 }
+
+// ── Render kosten/investering tab content (separate to avoid nested template literals) ─
+function renderKostenTabContent() {
+  const el = document.getElementById("kst-tab-content");
+  if(!el) return;
+  const t = today();
+
+  if(kstTab === "kosten") {
+    const catTotals2 = {};
+    CATS.forEach(c => catTotals2[c] = kst.filter(r=>r.cat===c).reduce((s,r)=>s+(r.bedrag||0),0));
+    const maxCat2 = Math.max(...Object.values(catTotals2), 1);
+
+    const barsHtml = CATS.map(c =>
+      '<div class="bar-row"><span class="bar-lbl">' + ICONS[c] + '</span>' +
+      '<div class="bar-tr"><div class="bar-fill" style="width:' + (catTotals2[c]/maxCat2*100) + '%">' +
+      '<span class="bar-v">' + (catTotals2[c]>0?fmt(catTotals2[c]):"") + '</span>' +
+      '</div></div></div>'
+    ).join("");
+
+    const histHtml = kst.length===0
+      ? '<div class="empty"><div class="em">🧾</div><p>Nog geen kosten</p></div>'
+      : kst.map(r =>
+          '<div class="li">' +
+          '<div class="li-l">' +
+          '<div class="li-t">' + (ICONS[r.cat]||"📦") + " " + esc(r.omschr||r.cat) + '</div>' +
+          '<div class="li-s">' + fmtD(r.datum) + (r.leverancier?" · "+esc(r.leverancier):"") + " · " + r.cat + '</div>' +
+          '</div>' +
+          '<div class="li-r"><span class="fw text-ro">' + fmt(r.bedrag) + '</span>' +
+          '<button class="ebtn" onclick=\'openModal("kst",' + JSON.stringify(r) + ')\'>✏️</button>' +
+          '<button class="dbtn" onclick="deleteKst(\'' + r._key + '\')">🗑</button></div>' +
+          '</div>'
+        ).join("");
+
+    el.innerHTML =
+      '<div class="card">' +
+      '<div class="sec-hdr">📋 Kosten registreren</div>' +
+      '<div class="frow">' +
+      '<div class="fg"><label class="fl">Datum</label><input type="date" id="kst-datum" value="' + t + '"></div>' +
+      '<div class="fg"><label class="fl">Bedrag (€)</label><input type="number" id="kst-bedrag" placeholder="0.00" step="0.01" inputmode="decimal"></div>' +
+      '</div>' +
+      '<div class="fg"><label class="fl">Omschrijving</label><input type="text" id="kst-omschrijving" placeholder="bijv. zakje kippenvoer..."></div>' +
+      '<div class="frow">' +
+      '<div class="fg"><label class="fl">Categorie</label>' +
+      '<select id="kst-categorie">' + CATS.map(c=>'<option>'+c+'</option>').join("") + '</select>' +
+      '</div>' +
+      '<div class="fg"><label class="fl">Leverancier</label><input type="text" id="kst-leverancier" placeholder="optioneel..."></div>' +
+      '</div>' +
+      '<button class="btn btn-d" onclick="saveKst()">💸 Kosten opslaan</button>' +
+      '</div>' +
+      '<div class="card"><div class="card-title">📊 Kosten per categorie</div>' +
+      '<div class="bar-wrap">' + barsHtml + '</div></div>' +
+      '<div class="card"><div class="card-title">🧾 Kostenhistorie</div>' + histHtml + '</div>';
+
+  } else {
+    // INVESTERINGEN tab
+    const invCatTotals = {};
+    INV_CATS.forEach(c => invCatTotals[c] = inv.filter(r=>r.cat===c).reduce((s,r)=>s+(r.bedrag||0),0));
+    const maxInv2 = Math.max(...Object.values(invCatTotals), 1);
+    const totInv2 = inv.reduce((s,r)=>s+(r.bedrag||0), 0);
+
+    const invBarsHtml = INV_CATS.map(c =>
+      '<div class="bar-row"><span class="bar-lbl">' + (ICONS[c]||"📈") + '</span>' +
+      '<div class="bar-tr"><div class="bar-fill" style="width:' + (invCatTotals[c]/maxInv2*100) + '%;background:linear-gradient(90deg,#1a5276,var(--bu))">' +
+      '<span class="bar-v">' + (invCatTotals[c]>0?fmt(invCatTotals[c]):"") + '</span>' +
+      '</div></div></div>'
+    ).join("");
+
+    const totaalRow = inv.length > 0
+      ? '<div class="li" style="border-bottom:2px solid #d6eaf8">' +
+        '<span style="font-size:12px;font-weight:800;color:var(--bu)">Totaal geïnvesteerd</span>' +
+        '<span class="fw" style="color:var(--bu)">' + fmt(totInv2) + '</span></div>'
+      : '';
+
+    const invHistHtml = inv.length===0
+      ? '<div class="empty"><div class="em">📈</div><p>Nog geen investeringen</p></div>'
+      : totaalRow + inv.map(r =>
+          '<div class="li">' +
+          '<div class="li-l">' +
+          '<div class="li-t">' + (ICONS[r.cat]||"📈") + " " + esc(r.omschr||r.cat) + '</div>' +
+          '<div class="li-s">' + fmtD(r.datum) + (r.leverancier?" · "+esc(r.leverancier):"") + " · " + r.cat + '</div>' +
+          '</div>' +
+          '<div class="li-r"><span class="fw" style="color:var(--bu)">' + fmt(r.bedrag) + '</span>' +
+          '<button class="ebtn" onclick=\'openModal("inv",' + JSON.stringify(r) + ')\'>✏️</button>' +
+          '<button class="dbtn" onclick="deleteInv(\'' + r._key + '\')">🗑</button></div>' +
+          '</div>'
+        ).join("");
+
+    el.innerHTML =
+      '<div class="card">' +
+      '<div class="sec-hdr">📈 Investering registreren</div>' +
+      '<div class="frow">' +
+      '<div class="fg"><label class="fl">Datum</label><input type="date" id="inv-datum" value="' + t + '"></div>' +
+      '<div class="fg"><label class="fl">Bedrag (€)</label><input type="number" id="inv-bedrag" placeholder="0.00" step="0.01" inputmode="decimal"></div>' +
+      '</div>' +
+      '<div class="fg"><label class="fl">Omschrijving</label><input type="text" id="inv-omschrijving" placeholder="bijv. nieuw kippenhok..."></div>' +
+      '<div class="frow">' +
+      '<div class="fg"><label class="fl">Categorie</label>' +
+      '<select id="inv-categorie">' + INV_CATS.map(c=>'<option>'+c+'</option>').join("") + '</select>' +
+      '</div>' +
+      '<div class="fg"><label class="fl">Leverancier</label><input type="text" id="inv-leverancier" placeholder="optioneel..."></div>' +
+      '</div>' +
+      '<button class="btn btn-p" onclick="saveInv()">📈 Investering opslaan</button>' +
+      '</div>' +
+      '<div class="card"><div class="card-title">📊 Investeringen per categorie</div>' +
+      '<div class="bar-wrap">' + invBarsHtml + '</div></div>' +
+      '<div class="card"><div class="card-title">🧾 Investeringen</div>' + invHistHtml + '</div>';
+  }
+}
+
 function setKstTab(tab) { kstTab=tab; render(); }
 
 // ── Instellingen ──────────────────────────────────────────────────────────
@@ -1212,7 +1239,8 @@ Object.assign(window, {
   openModal, closeModal, exportCSV, setSyncBadge,
   openChart, closeChart, switchChartView, setChartM,
   doLogin, doLogout,
-  saveInv, deleteInv, updateInv, setKstTab
+  saveInv, deleteInv, updateInv, setKstTab,
+  renderKostenTabContent
 });
 
 // ── Auth functions ─────────────────────────────────────────────────────────
