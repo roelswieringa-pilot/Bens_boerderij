@@ -157,7 +157,7 @@ const BB    = {Cash:"bg",Tikkie:"bb",Overboeking:"bo"};
 
 // ── State ──────────────────────────────────────────────────────────────────
 let leg=[], vk=[], kst=[], inv=[], klanten=[], kippen=[], activePage="dashboard", activeM=null, activeKlant=null, modalState=null;
-let instellingen = { prijsPerEi: 0.40 };
+let instellingen = { prijsPerEi: 0.40, doosjeGrootte: 6 };
 let zoekKlant = "";
 let currentUser = null;
 let kstTab = "kosten";
@@ -169,6 +169,38 @@ const today = () => new Date().toISOString().slice(0,10);
 const uid   = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
 const esc   = s => (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 const prijs = () => instellingen.prijsPerEi || 0.40;
+
+
+function doosjes(n) {
+  const d = instellingen.doosjeGrootte || 6;
+  return Math.floor(n / d) + " doosjes + " + (n % d) + " los";
+}
+
+function getMaandSamenvatting(ym) {
+  // ym = "2026-03"
+  const legM  = leg.filter(r=>r.datum.startsWith(ym));
+  const vkM   = vk.filter(r=>r.datum.startsWith(ym));
+  const kstM  = kst.filter(r=>r.datum.startsWith(ym));
+  const totLeg = legM.reduce((s,r)=>s+(r.aantal||0),0);
+  const totVk  = vkM.reduce((s,r)=>s+(r.totaal||0),0);
+  const totKst = kstM.reduce((s,r)=>s+(r.bedrag||0),0);
+  const bestedag = legM.length ? legM.reduce((a,b)=>(b.aantal||0)>(a.aantal||0)?b:a, legM[0]) : null;
+  // Beste klant
+  const klantTotals = {};
+  vkM.forEach(r=>{ const k=r.koper||"Onbekend"; klantTotals[k]=(klantTotals[k]||0)+(r.totaal||0); });
+  const besteKlant = Object.entries(klantTotals).sort((a,b)=>b[1]-a[1])[0] || null;
+  return { totLeg, totVk, totKst, bestedag, besteKlant, aantalVk: vkM.length };
+}
+
+function getKlantFrequentie(klantNaam) {
+  const kvk = vk.filter(r=>r.koper===klantNaam||r.klantId);
+  if(!kvk.length) return null;
+  kvk.sort((a,b)=>a.datum.localeCompare(b.datum));
+  const eerste = kvk[0].datum;
+  const laatste = kvk[kvk.length-1].datum;
+  const dagenGeleden = Math.floor((new Date() - new Date(laatste+"T12:00:00")) / 86400000);
+  return { eerste, laatste, dagenGeleden, aantalBezoeken: kvk.length };
+}
 
 function calcStreak() {
   // Count consecutive days ending today where eieren were filled in
@@ -236,7 +268,7 @@ function startListeners() {
   });
   onValue(ref(db,"instellingen"), snap => {
     const val = snap.val() || {};
-    instellingen = { prijsPerEi: val.prijsPerEi ?? 0.40 };
+    instellingen = { prijsPerEi: val.prijsPerEi ?? 0.40, doosjeGrootte: val.doosjeGrootte ?? 6 };
     render(); setSyncBadge("ok");
   });
 }
@@ -567,6 +599,7 @@ function render() {
 
     <!-- DASHBOARD -->
     <div class="page${activePage==="dashboard"?" active":""}" id="page-dashboard">
+      <div id="offline-banner" style="display:none;background:linear-gradient(90deg,#7b241c,#c0392b);border-radius:12px;padding:10px 14px;margin-bottom:12px;display:none;align-items:center;gap:10px"><span style="font-size:22px">📵</span><div><div style="font-family:'Fredoka One',cursive;font-size:13px;color:#fff">Geen internetverbinding</div><div style="font-size:11px;color:rgba(255,255,255,.85)">Data wordt gesynchroniseerd zodra je weer online bent</div></div></div>
       ${!todayFilled?`<div style="background:linear-gradient(90deg,#e07b00,#f5a623);border-radius:12px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px">
         <span style="font-size:22px">⚠️</span>
         <div><div style="font-family:'Fredoka One',cursive;font-size:13px;color:#fff">Nog niet ingevuld vandaag!</div>
@@ -595,6 +628,28 @@ function render() {
             <div class="li-r"><span class="badge bo">🥚 ${r.aantal}</span></div>
           </div>`).join("")}
       </div>
+      ${(()=>{
+        const ym = t.slice(0,7);
+        const sm = getMaandSamenvatting(ym);
+        if(sm.totLeg===0&&sm.aantalVk===0) return "";
+        const [y,mo] = ym.split("-");
+        return `<div class="card">`+
+          `<div class="card-title">📆 Samenvatting ${MNAMEN[parseInt(mo)-1]} ${y}</div>`+
+          `<div class="li"><div class="li-l"><div class="li-t">🥚 Gelegde eieren</div></div>`+
+          `<div class="li-r"><span class="fw text-or">${sm.totLeg}</span>&nbsp;`+
+          `<span style="font-size:10px;color:var(--txl)">${doosjes(sm.totLeg)}</span></div></div>`+
+          `<div class="li"><div class="li-l"><div class="li-t">💰 Omzet</div></div>`+
+          `<div class="li-r"><span class="fw text-gn">${fmt(sm.totVk)}</span></div></div>`+
+          `<div class="li"><div class="li-l"><div class="li-t">📋 Kosten</div></div>`+
+          `<div class="li-r"><span class="fw text-ro">${fmt(sm.totKst)}</span></div></div>`+
+          `<div class="li"><div class="li-l"><div class="li-t">📊 Resultaat maand</div></div>`+
+          `<div class="li-r"><span class="fw ${sm.totVk-sm.totKst>=0?"text-gn":"text-ro"}">${fmt(sm.totVk-sm.totKst)}</span></div></div>`+
+          (sm.bestedag?`<div class="li"><div class="li-l"><div class="li-t">⭐ Beste dag</div></div>`+
+          `<div class="li-r"><span class="fw text-or">${fmtD(sm.bestedag.datum)}: ${sm.bestedag.aantal} eieren</span></div></div>`:"")+ 
+          (sm.besteKlant?`<div class="li" style="border:none"><div class="li-l"><div class="li-t">🏆 Beste klant</div></div>`+
+          `<div class="li-r"><span class="fw text-gn">${esc(sm.besteKlant[0])}: ${fmt(sm.besteKlant[1])}</span></div></div>`:"")+ 
+          `</div>`;
+      })()}
     </div>
 
     <!-- LEGDAGEN -->
@@ -717,6 +772,7 @@ function render() {
                 <div class="li-l">
                   <div class="li-t">👤 ${esc(k.naam)}</div>
                   <div class="li-s">${kvk.length} aankopen · 🥚 ${totEieren} eieren · ${fmt(totBedrag)}</div>
+                  ${(()=>{ const freq=getKlantFrequentie(k.naam); if(!freq||freq.aantalBezoeken===0) return ""; const kleur=freq.dagenGeleden>60?"color:var(--rd)":freq.dagenGeleden>30?"color:var(--or)":"color:var(--gn)"; return `<div class="li-s" style="${kleur};font-weight:700">${freq.dagenGeleden===0?"🟢 Vandaag gekocht":freq.dagenGeleden===1?"🟢 Gisteren gekocht":"🔴 Laatste aankoop "+freq.dagenGeleden+" dagen geleden"}</div>`; })()}
                   ${k.notitie?`<div class="li-s" style="font-style:italic">${esc(k.notitie)}</div>`:""}
                 </div>
                 <div class="li-r">
@@ -826,6 +882,15 @@ function render() {
           <label class="fl">Prijs per ei (€)</label>
           <input type="number" id="inst-prijs" value="${instellingen.prijsPerEi.toFixed(2)}" step="0.01" min="0.01" inputmode="decimal">
           <div style="font-size:11px;color:var(--txl);margin-top:4px">Huidige prijs: <strong>${fmt(instellingen.prijsPerEi)}</strong> per ei · wordt toegepast op nieuwe verkopen</div>
+        </div>
+        <div class="fg">
+          <label class="fl">Doosjes grootte (stuks per doosje)</label>
+          <select id="inst-doosje">
+            <option value="6"${instellingen.doosjeGrootte===6?" selected":""}>6 eieren per doosje</option>
+            <option value="10"${instellingen.doosjeGrootte===10?" selected":""}>10 eieren per doosje</option>
+            <option value="12"${instellingen.doosjeGrootte===12?" selected":""}>12 eieren per doosje</option>
+          </select>
+          <div style="font-size:11px;color:var(--txl);margin-top:4px">Huidig: <strong>${instellingen.doosjeGrootte} stuks</strong> per doosje</div>
         </div>
         <button class="btn btn-p" onclick="saveInstellingen()">💾 Opslaan</button>
       </div>
@@ -1058,6 +1123,7 @@ function renderMonthChart(container) {
 
 function renderYearChart(container) {
   const year = (chartM||today().slice(0,7)).slice(0,4);
+  const prevYear = String(parseInt(year)-1);
   const title = document.getElementById("chart-title");
   if(title) title.textContent = `🥚 Jaaroverzicht ${year}`;
 
@@ -1075,8 +1141,14 @@ function renderYearChart(container) {
   const chartW=W-padL-padR, chartH=H-padB-padT;
   const barW=Math.floor(chartW/12)-3;
 
+  // Previous year data for comparison
+  const prevMonthData = Array.from({length:12}, (_,mi)=>{
+    const m = `${prevYear}-${String(mi+1).padStart(2,'0')}`;
+    return leg.filter(r=>r.datum.startsWith(m)).reduce((s,r)=>s+(r.aantal||0),0);
+  });
+  const maxNAll = Math.max(...monthData.map(x=>x.n), ...prevMonthData, 1);
   const bars = monthData.map((x,i)=>{
-    const bh = x.n===0?0:Math.max(2,Math.round((x.n/maxN)*chartH));
+    const bh = x.n===0?0:Math.max(2,Math.round((x.n/maxNAll)*chartH));
     const bx = padL + i*(barW+3) + 4;
     const by = padT+chartH-bh;
     return `
@@ -1098,15 +1170,25 @@ function renderYearChart(container) {
   const avgLine = gem>0?`<line x1="${padL}" y1="${avgY}" x2="${W-padR}" y2="${avgY}" stroke="#27ae60" stroke-width="1.5" stroke-dasharray="5,3"/>
     <text x="${W-padR+2}" y="${avgY+4}" font-size="8" fill="#27ae60">gem</text>`:"";
 
+  const prevBars = prevMonthData.map((pn,i)=>{
+    const bh2 = pn===0?0:Math.max(2,Math.round((pn/maxNAll)*chartH));
+    const bx2 = padL + i*(barW+3) + 4;
+    const by2 = padT+chartH-bh2;
+    return pn>0?`<rect x="${bx2}" y="${by2}" width="${barW}" height="${bh2}" fill="none" stroke="#c8860a" stroke-width="1" stroke-dasharray="3,2" rx="2" opacity="0.5"/>`:""
+  }).join("");
   const svg = `<svg class="chart-svg" viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px">
-    ${yLines}${bars}${avgLine}
+    ${yLines}${prevBars}${bars}${avgLine}
     <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT+chartH}" stroke="#c8860a" stroke-width="1"/>
     <line x1="${padL}" y1="${padT+chartH}" x2="${W-padR}" y2="${padT+chartH}" stroke="#c8860a" stroke-width="1"/>
   </svg>`;
 
   container.innerHTML = `
     <div class="chart-wrap">${svg}</div>
-    <p style="font-size:10px;color:var(--txl);text-align:center;margin-top:4px">Tik op een maand voor dagdetail</p>
+    <div style="display:flex;gap:12px;margin-top:4px;font-size:10px;color:var(--txl);align-items:center;justify-content:center">
+      <span style="display:inline-block;width:12px;height:10px;background:#e07b00;border-radius:2px"></span> ${year}
+      <span style="display:inline-block;width:18px;height:10px;border:1px dashed #c8860a;border-radius:2px;opacity:0.6"></span> ${prevYear}
+      &nbsp;· Tik op maand voor detail
+    </div>
     <div class="chart-stats">
       <div class="chart-stat"><div class="csv">${tot}</div><div class="csl">JAAR TOTAAL</div></div>
       <div class="chart-stat"><div class="csv">${Math.round(gem)}</div><div class="csl">GEM/MAAND</div></div>
@@ -1286,7 +1368,8 @@ async function updateKip() {
 async function saveInstellingen() {
   const p = parseFloat(val("inst-prijs").replace(",",".")) || 0.40;
   if(p <= 0) return toast("⚠️ Voer een geldige prijs in");
-  await dbSave("instellingen", { prijsPerEi: p });
+  const dg = parseInt(val("inst-doosje")) || 6;
+  await dbSave("instellingen", { prijsPerEi: p, doosjeGrootte: dg });
   toast("✅ Instellingen opgeslagen!");
 }
 function setZoekKlant() {
@@ -1320,8 +1403,23 @@ Object.assign(window, {
   doLogin, doLogout,
   saveInv, deleteInv, updateInv, setKstTab,
   renderKostenTabContent,
-  saveKip, deleteKip, updateKip
+  saveKip, deleteKip, updateKip,
+  updateOfflineBanner
 });
+
+
+// ── Offline detection ──────────────────────────────────────────────────────
+function updateOfflineBanner() {
+  const banner = document.getElementById("offline-banner");
+  if(!banner) return;
+  if(!navigator.onLine) {
+    banner.style.display = "flex";
+  } else {
+    banner.style.display = "none";
+  }
+}
+window.addEventListener("online",  () => { updateOfflineBanner(); toast("✅ Weer online!"); });
+window.addEventListener("offline", () => { updateOfflineBanner(); toast("📵 Geen internet"); });
 
 // ── Auth functions ─────────────────────────────────────────────────────────
 function renderLogin(errorMsg) {
@@ -1393,6 +1491,7 @@ document.addEventListener("DOMContentLoaded", () => {
       $("loading") && ($("loading").style.display="none");
       render();
       startListeners();
+      updateOfflineBanner();
     } else {
       // Not logged in: show login screen
       $("loading") && ($("loading").style.display="none");
