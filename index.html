@@ -1685,18 +1685,30 @@ document.addEventListener("DOMContentLoaded", () => {
       // Not logged in: fetch minimal public data then show login
       $("loading") && ($("loading").style.display="none");
       Promise.all([
-        get(ref(db,"publiek")),
-        get(ref(db,"reserveringen"))
-      ]).then(([pubSnap, resSnap]) => {
-        const p      = pubSnap.exists()  ? pubSnap.val()  : null;
-        const resVal = resSnap.exists()  ? resSnap.val()  : {};
-        const openRes = Object.values(resVal)
-          .filter(r=>r.status==="nieuw")
-          .reduce((s,r)=>s+(r.aantal||0),0);
-        const basisVoorraad = (p && typeof p.voorraad === "number") ? p.voorraad : null;
-        window._pubVoorraad = basisVoorraad !== null ? basisVoorraad - openRes : null;
-        window._pubGemDag   = (p && typeof p.gemDag === "number") ? p.gemDag : null;
-        window._pubDoosje   = (p && p.doosjeGrootte) ? p.doosjeGrootte : 6;
+        get(ref(db,"legdagen")),
+        get(ref(db,"verkopen")),
+        get(ref(db,"reserveringen")),
+        get(ref(db,"instellingen"))
+      ]).then(([legSnap, vkSnap, resSnap, instSnap]) => {
+        // Legdagen
+        const legData = legSnap.exists() ? Object.values(legSnap.val()) : [];
+        const totGelegd = legData.reduce((s,r)=>s+(r.aantal||0),0);
+        // Verkopen
+        const vkData = vkSnap.exists() ? Object.values(vkSnap.val()) : [];
+        const totVerkocht = vkData.reduce((s,r)=>s+(r.aantal||0),0);
+        // Openstaande reserveringen
+        const resData = resSnap.exists() ? Object.values(resSnap.val()) : [];
+        const totGereserveerd = resData.filter(r=>r.status==="nieuw").reduce((s,r)=>s+(r.aantal||0),0);
+        // Instellingen
+        const inst = instSnap.exists() ? instSnap.val() : {};
+        // Gemiddelde laatste 7 raap-dagen
+        const gesorteerd = legData.filter(r=>r.aantal>0).sort((a,b)=>b.datum.localeCompare(a.datum));
+        const recent7 = gesorteerd.slice(0,7);
+        const gemDag = recent7.length ? Math.round(recent7.reduce((s,r)=>s+(r.aantal||0),0)/recent7.length) : null;
+        // Set public vars
+        window._pubVoorraad = totGelegd - totVerkocht - totGereserveerd;
+        window._pubGemDag   = gemDag;
+        window._pubDoosje   = inst.doosjeGrootte || 6;
         renderLogin();
       }).catch(() => renderLogin());
     }
