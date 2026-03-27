@@ -1307,13 +1307,21 @@ function showResBevestiging(naam, datum, aantal) {
 async function accepteerRes(key, r) {
   if(!confirm("Reservering accepteren en omzetten naar verkoop?")) return;
 
-  // Find or create klant
+  // Lees klanten vers uit Firebase om zeker te zijn dat we de laatste stand hebben
   let klantId = "";
-  const bestaand = klanten.find(k=>k.naam.toLowerCase()===r.naam.toLowerCase());
-  if(bestaand) {
-    klantId = bestaand._key;
-  } else {
-    // Maak nieuwe klant aan
+  try {
+    const klantSnap = await get(ref(db,"klanten"));
+    const klantData = klantSnap.exists() ? Object.entries(klantSnap.val()) : [];
+    const bestaand = klantData.find(([k,v])=>v.naam&&v.naam.toLowerCase()===r.naam.toLowerCase());
+    if(bestaand) {
+      klantId = bestaand[0];
+    } else {
+      // Nieuwe klant aanmaken
+      klantId = uid();
+      await dbSave("klanten/"+klantId, { naam: r.naam, notitie: r.tel ? "📱 "+r.tel : "" });
+    }
+  } catch(e) {
+    // Fallback: altijd nieuwe klant aanmaken als lezen mislukt
     klantId = uid();
     await dbSave("klanten/"+klantId, { naam: r.naam, notitie: r.tel ? "📱 "+r.tel : "" });
   }
@@ -1326,10 +1334,9 @@ async function accepteerRes(key, r) {
     notitie: "Via reservering" + (r.tel?" · "+r.tel:"")
   });
 
-  // Verwijder de reservering volledig (niet enkel status wijzigen)
+  // Verwijder de reservering volledig
   await dbRemove("reserveringen/"+key);
 
-  // Sync publieke voorraad
   syncPubliekeData();
   toast("✅ Reservering omgezet naar verkoop!");
 }
