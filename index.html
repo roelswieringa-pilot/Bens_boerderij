@@ -172,6 +172,10 @@ let instellingen = { prijsPerEi: 0.40, doosjeGrootte: 6 };
 let zoekKlant = "";
 let currentUser = null;
 let kstTab = "kosten";
+// Public data cache for login page
+window._pubVoorraad = null;
+window._pubGemDag   = null;
+window._pubDoosje   = 6;
 
 // ── Utils ──────────────────────────────────────────────────────────────────
 const fmt   = n => "€ " + Number(n).toFixed(2).replace(".",",");
@@ -1561,9 +1565,9 @@ function renderLogin(errorMsg) {
   const app = $("app");
   if(!app) return;
   const today2 = today();
-  const vrd    = window._pubVoorraad;
-  const gd     = window._pubGemDag;
-  const doos   = window._pubDoosje || 6;
+  const vrd    = window._pubVoorraad ?? null;
+  const gd     = window._pubGemDag   ?? null;
+  const doos   = window._pubDoosje   || 6;
 
   const vrdKleur = (vrd !== null && vrd <= 0) ? "var(--rd)" : "var(--or)";
   const vrdTekst = vrd === null ? "–" : vrd <= 0 ? "Uitverkocht" : String(vrd);
