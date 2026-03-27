@@ -1306,19 +1306,37 @@ function showResBevestiging(naam, datum, aantal) {
 }
 async function accepteerRes(key, r) {
   if(!confirm("Reservering accepteren en omzetten naar verkoop?")) return;
-  // Save as verkoop
+
+  // Find or create klant
+  let klantId = "";
+  const bestaand = klanten.find(k=>k.naam.toLowerCase()===r.naam.toLowerCase());
+  if(bestaand) {
+    klantId = bestaand._key;
+  } else {
+    // Maak nieuwe klant aan
+    klantId = uid();
+    await dbSave("klanten/"+klantId, { naam: r.naam, notitie: r.tel ? "📱 "+r.tel : "" });
+  }
+
+  // Sla op als verkoop
   const vkKey = uid();
   await dbSave("verkopen/"+vkKey, {
-    datum: r.datum, aantal: r.aantal, koper: r.naam,
-    betaal: "Reservering", totaal: r.aantal*prijs(), notitie: "Via reservering"+( r.tel?" · "+r.tel:""), klantId:""
+    datum: r.datum, aantal: r.aantal, koper: r.naam, klantId,
+    betaal: "Reservering", totaal: r.aantal*prijs(),
+    notitie: "Via reservering" + (r.tel?" · "+r.tel:"")
   });
-  // Mark as accepted
-  await dbSave("reserveringen/"+key, {...r, status:"geaccepteerd"});
+
+  // Verwijder de reservering volledig (niet enkel status wijzigen)
+  await dbRemove("reserveringen/"+key);
+
+  // Sync publieke voorraad
+  syncPubliekeData();
   toast("✅ Reservering omgezet naar verkoop!");
 }
 async function weigerRes(key, r) {
   if(!confirm("Reservering weigeren?")) return;
-  await dbSave("reserveringen/"+key, {...r, status:"geweigerd"});
+  await dbRemove("reserveringen/"+key);
+  syncPubliekeData();
   toast("🗑 Reservering geweigerd");
 }
 async function deleteRes(key) {
