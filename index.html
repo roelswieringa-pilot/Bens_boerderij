@@ -1252,13 +1252,18 @@ function renderYearChart(container) {
 // ── CRUD — Reserveringen ────────────────────────────────────────────────────
 async function saveReservering() {
   const naam  = val("res-naam").trim();
-  const datum = val("res-datum");
-  const aantal= parseInt(val("res-aantal"))||0;
+  const datum = val("res-datum") || today();
+  const aantalRaw = val("res-aantal");
+  const aantal= aantalRaw ? (parseInt(aantalRaw)||1) : 1;
   const tel   = val("res-tel").trim();
-  if(!naam||!datum||aantal<1) return showResError("⚠️ Vul naam, datum en aantal in");
+  if(!naam) return showResError("⚠️ Vul je naam in");
   const key = uid();
-  await dbSave("reserveringen/"+key, {naam, datum, aantal, tel, status:"nieuw", aangemeld: today()});
-  showResBevestiging(naam, datum, aantal);
+  try {
+    await dbSave("reserveringen/"+key, {naam, datum, aantal, tel, status:"nieuw", aangemeld: today()});
+    showResBevestiging(naam, datum, aantal);
+  } catch(e) {
+    showResError("❌ Kon niet opslaan. Controleer je internetverbinding.");
+  }
 }
 function showResError(msg) {
   const el = document.getElementById("res-error");
@@ -1281,7 +1286,7 @@ function showResBevestiging(naam, datum, aantal) {
         Ben's Boerderij · Vrije uitloop · 0 Biologisch · 🇳🇱 NL
       </div>
     </div>
-    <button class="btn btn-p" onclick="renderLogin()" style="max-width:360px;margin-top:16px">← Terug</button>
+    <button class="btn btn-p" onclick="window.renderLogin()" style="max-width:360px;margin-top:16px">← Nieuwe reservering</button>
   </div>`;
 }
 async function accepteerRes(key, r) {
@@ -1510,7 +1515,7 @@ Object.assign(window, {
   saveInstellingen, setZoekKlant,
   openModal, closeModal, exportCSV, setSyncBadge,
   openChart, closeChart, switchChartView, setChartM,
-  doLogin, doLogout,
+  doLogin, doLogout, renderLogin, showResBevestiging,
   saveInv, deleteInv, updateInv, setKstTab,
   renderKostenTabContent,
   saveKip, deleteKip, updateKip,
