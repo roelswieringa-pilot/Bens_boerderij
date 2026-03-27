@@ -156,7 +156,7 @@ const MNAMEN= ["Jan","Feb","Mrt","Apr","Mei","Jun","Jul","Aug","Sep","Okt","Nov"
 const BB    = {Cash:"bg",Tikkie:"bb",Overboeking:"bo"};
 
 // ── State ──────────────────────────────────────────────────────────────────
-let leg=[], vk=[], kst=[], inv=[], klanten=[], activePage="dashboard", activeM=null, activeKlant=null, modalState=null;
+let leg=[], vk=[], kst=[], inv=[], klanten=[], kippen=[], activePage="dashboard", activeM=null, activeKlant=null, modalState=null;
 let instellingen = { prijsPerEi: 0.40 };
 let zoekKlant = "";
 let currentUser = null;
@@ -222,6 +222,11 @@ function startListeners() {
   onValue(ref(db,"investeringen"), snap => {
     const val = snap.val() || {};
     inv = Object.entries(val).map(([k,v])=>({...v,_key:k})).sort((a,b)=>b.datum.localeCompare(a.datum));
+    render(); setSyncBadge("ok");
+  });
+  onValue(ref(db,"kippen"), snap => {
+    const val = snap.val() || {};
+    kippen = Object.entries(val).map(([k,v])=>({...v,_key:k}));
     render(); setSyncBadge("ok");
   });
   onValue(ref(db,"klanten"), snap => {
@@ -455,6 +460,14 @@ function renderModal() {
         <div class="fg"><label class="fl">Leverancier</label><input type="text" id="edit-inv-lev" value="${esc(data.leverancier||'')}"></div>
       </div>
       <div class="brow"><button class="btn btn-g" onclick="closeModal()">Annuleren</button><button class="btn btn-p" onclick="updateInv()">✅ Opslaan</button></div>`;
+  } else if(type==="kip") {
+    const rasOpts = RASSEN.map(r=>`<option${data.ras===r?" selected":""}>${r}</option>`).join("");
+    el.innerHTML = `
+      <div class="modal-title">✏️ Kip aanpassen <button onclick="closeModal()">✕</button></div>
+      <input type="hidden" id="edit-kip-key" value="${esc(data._key)}">
+      <div class="fg"><label class="fl">Naam</label><input type="text" id="edit-kip-naam" value="${esc(data.naam||'')}"></div>
+      <div class="fg"><label class="fl">Ras</label><select id="edit-kip-ras">${rasOpts}</select></div>
+      <div class="brow"><button class="btn btn-g" onclick="closeModal()">Annuleren</button><button class="btn btn-p" onclick="updateKip()">✅ Opslaan</button></div>`;
   } else if(type==="klant") {
     el.innerHTML = `
       <div class="modal-title">✏️ Klant aanpassen <button onclick="closeModal()">✕</button></div>
@@ -777,14 +790,21 @@ function render() {
       </div>`:""}
       <div class="card">
         <div class="card-title">🐓 Onze kippen</div>
-        <div class="kip-grid">
-          <div class="kip"><div class="ke">🟠</div><div class="kr">ISA Brown</div><div class="kn">Max, Verstappen,<br>Isa & Brown</div></div>
-          <div class="kip"><div class="ke">⚫</div><div class="kr">Koekoek</div><div class="kn">Buurman & Buurman</div></div>
-          <div class="kip"><div class="ke">🟡</div><div class="kr">Sussex</div><div class="kn">Bib & Bob</div></div>
-          <div class="kip"><div class="ke">🔵</div><div class="kr">Blue des Landes</div><div class="kn">Kwik, Kwek & Kwak</div></div>
-          <div class="kip" style="background:#fff0e8;border-color:#f5c9a0"><div class="ke">🐓</div><div class="kr" style="color:#a03000">Haan</div><div class="kn" style="color:#c05000">Frans</div></div>
-          <div class="kip" style="background:var(--gd)"><div class="ke">🥚</div><div class="kr">Eicode</div><div class="kn">0 Biologisch · 🇳🇱 NL</div></div>
-        </div>
+        ${(()=>{
+          if(kippen.length===0) {
+            return '<div class="kip-grid">'+            '<div class="kip"><div class="ke">🟠</div><div class="kr">ISA Brown</div><div class="kn">Max, Verstappen,<br>Isa & Brown</div></div>'+            '<div class="kip"><div class="ke">⚫</div><div class="kr">Koekoek</div><div class="kn">Buurman & Buurman</div></div>'+            '<div class="kip"><div class="ke">🟡</div><div class="kr">Sussex</div><div class="kn">Bib & Bob</div></div>'+            '<div class="kip"><div class="ke">🔵</div><div class="kr">Blue des Landes</div><div class="kn">Kwik, Kwek & Kwak</div></div>'+            '<div class="kip" style="background:#fff0e8;border-color:#f5c9a0"><div class="ke">🐓</div><div class="kr" style="color:#a03000">Haan</div><div class="kn" style="color:#c05000">Frans</div></div>'+            '<div class="kip" style="background:var(--gd)"><div class="ke">🥚</div><div class="kr">Eicode</div><div class="kn">0 Biologisch · 🇳🇱 NL</div></div>'+            '</div>';
+          }
+          const byRas = {};
+          kippen.forEach(k=>{ if(!byRas[k.ras]) byRas[k.ras]=[]; byRas[k.ras].push(k); });
+          return Object.entries(byRas).map(([ras,kips])=>
+            `<div style="margin-bottom:10px">`+
+            `<div style="font-size:11px;font-weight:800;color:var(--bl);margin-bottom:6px">${RAS_ICONS[ras]||"🐔"} ${ras}</div>`+
+            `<div class="kip-grid">`+
+            kips.map(k=>`<div class="kip"><div class="ke">${RAS_ICONS[k.ras]||"🐔"}</div><div class="kr">${esc(k.naam)}</div></div>`).join("")+
+            `</div></div>`
+          ).join("");
+        })()}
+        <div style="font-size:11px;color:var(--txl);margin-top:8px;text-align:center">🥚 Eicode: 0 Biologisch · 🇳🇱 NL · Beheer via ⚙️ Beheer</div>
       </div>
       <div class="card">
         <div class="card-title">💾 Back-up (CSV)</div>
@@ -810,6 +830,39 @@ function render() {
           <div style="font-size:11px;color:var(--txl);margin-top:4px">Huidige prijs: <strong>${fmt(instellingen.prijsPerEi)}</strong> per ei · wordt toegepast op nieuwe verkopen</div>
         </div>
         <button class="btn btn-p" onclick="saveInstellingen()">💾 Opslaan</button>
+      </div>
+      <div class="card">
+        <div class="sec-hdr">🐓 Kippen beheren</div>
+        <div class="frow">
+          <div class="fg"><label class="fl">Naam</label><input type="text" id="kip-naam" placeholder="bijv. Max..."></div>
+          <div class="fg"><label class="fl">Ras</label>
+            <select id="kip-ras">${RASSEN.map(r=>`<option>${r}</option>`).join("")}</select>
+          </div>
+        </div>
+        <button class="btn btn-p" onclick="saveKip()">🐣 Kip toevoegen</button>
+      </div>
+      <div class="card">
+        <div class="card-title">🐓 Onze kippen (${kippen.length})</div>
+        ${(()=>{
+          if(kippen.length===0) return '<div class="empty"><div class="em">🐣</div><p>Nog geen kippen toegevoegd</p></div>';
+          const byRas = {};
+          kippen.forEach(k=>{ if(!byRas[k.ras]) byRas[k.ras]=[]; byRas[k.ras].push(k); });
+          return Object.entries(byRas).map(([ras,kips])=>
+            `<div style="margin-bottom:10px">`+
+            `<div style="font-size:11px;font-weight:800;color:var(--bl);margin-bottom:6px">${RAS_ICONS[ras]||"🐔"} ${ras}</div>`+
+            `<div class="kip-grid">`+
+            kips.map(k=>
+              `<div class="kip" style="position:relative;padding-bottom:28px">`+
+              `<div class="ke">${RAS_ICONS[k.ras]||"🐔"}</div>`+
+              `<div class="kr">${esc(k.naam)}</div>`+
+              `<div style="position:absolute;bottom:6px;right:4px;display:flex;gap:2px">`+
+              `<button class="ebtn" onclick='openModal("kip",${JSON.stringify(k)})' style="font-size:13px">✏️</button>`+
+              `<button class="dbtn" onclick="deleteKip('${k._key}')" style="font-size:13px">🗑</button>`+
+              `</div></div>`
+            ).join("")+
+            `</div></div>`
+          ).join("");
+        })()}
       </div>
       <div class="card">
         <div class="card-title">📊 Statistieken</div>
@@ -1203,6 +1256,33 @@ function renderKostenTabContent() {
 
 function setKstTab(tab) { kstTab=tab; render(); }
 
+// ── CRUD — Kippen ───────────────────────────────────────────────
+const RAS_ICONS = {"ISA Brown":"🟠","Koekoek":"⚫","Sussex":"🟡","Blue des Landes":"🔵","Haan":"🐓","Anders":"🐔"};
+const RASSEN = ["ISA Brown","Koekoek","Sussex","Blue des Landes","Haan","Anders"];
+
+async function saveKip() {
+  const naam = val("kip-naam").trim();
+  const ras  = val("kip-ras");
+  if(!naam) return toast("⚠️ Vul een naam in");
+  const key = uid();
+  await dbSave("kippen/"+key, {naam, ras});
+  set_val("kip-naam","");
+  toast("✅ Kip opgeslagen!");
+}
+async function deleteKip(key) {
+  if(!confirm("Kip verwijderen?")) return;
+  await dbRemove("kippen/"+key);
+  toast("🗑 Kip verwijderd");
+}
+async function updateKip() {
+  const key  = val("edit-kip-key");
+  const naam = val("edit-kip-naam").trim();
+  const ras  = val("edit-kip-ras");
+  if(!naam) return toast("⚠️ Vul een naam in");
+  await dbSave("kippen/"+key, {naam, ras});
+  closeModal(); toast("✅ Bijgewerkt!");
+}
+
 // ── Instellingen ──────────────────────────────────────────────────────────
 async function saveInstellingen() {
   const p = parseFloat(val("inst-prijs").replace(",",".")) || 0.40;
@@ -1240,7 +1320,8 @@ Object.assign(window, {
   openChart, closeChart, switchChartView, setChartM,
   doLogin, doLogout,
   saveInv, deleteInv, updateInv, setKstTab,
-  renderKostenTabContent
+  renderKostenTabContent,
+  saveKip, deleteKip, updateKip
 });
 
 // ── Auth functions ─────────────────────────────────────────────────────────
