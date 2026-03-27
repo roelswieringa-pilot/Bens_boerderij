@@ -1254,7 +1254,7 @@ async function saveReservering() {
   const naam  = val("res-naam").trim();
   const datum = val("res-datum") || today();
   const aantalRaw = val("res-aantal");
-  const aantal= aantalRaw ? (parseInt(aantalRaw)||1) : 1;
+  const aantal= aantalRaw ? (parseInt(aantalRaw)||6) : 6;
   const tel   = val("res-tel").trim();
   if(!naam) return showResError("⚠️ Vul je naam in");
   const key = uid();
@@ -1560,7 +1560,7 @@ function renderLogin(errorMsg) {
           <input type="date" id="res-datum" value="${today2}" min="${today2}">
         </div>
         <div class="fg"><label class="fl">Aantal eieren</label>
-          <input type="number" id="res-aantal" placeholder="6" min="1" inputmode="numeric">
+          <input type="number" id="res-aantal" value="6" min="1" inputmode="numeric">
         </div>
       </div>
       <div class="fg"><label class="fl">Telefoonnummer (optioneel)</label>
