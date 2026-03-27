@@ -1559,75 +1559,76 @@ function renderLogin(errorMsg) {
   const app = $("app");
   if(!app) return;
   const today2 = today();
+  const vrd    = window._pubVoorraad;
+  const gd     = window._pubGemDag;
+  const doos   = window._pubDoosje || 6;
 
-  // Use pre-fetched public data
-  const voorraadPub  = window._pubVoorraad ?? null;
-  const gemDag       = window._pubGemDag   ?? null;
-  const pubDoosje    = window._pubDoosje   || 6;
+  const vrdKleur = (vrd !== null && vrd <= 0) ? "var(--rd)" : "var(--or)";
+  const vrdTekst = vrd === null ? "–" : vrd <= 0 ? "Uitverkocht" : String(vrd);
+  const vrdSub   = (vrd !== null && vrd > 0)
+    ? Math.floor(vrd/doos) + " doosjes + " + (vrd%doos) + " los" : "";
+  const gdTekst  = gd !== null ? "~" + gd : "–";
+  const gdSub    = gd !== null ? "gem. laatste 7 raap-dagen" : "wordt bijgewerkt";
 
-  app.innerHTML = `
-  <div style="background:linear-gradient(160deg,var(--gl),var(--gm),var(--gd));min-height:100vh;padding:24px 16px">
-    <div style="text-align:center;margin-bottom:20px">
-      <div style="font-size:52px">🐔</div>
-      <div style="font-family:'Fredoka One',cursive;font-size:26px;color:var(--bd)">Ben's Boerderij</div>
-      <div style="font-size:12px;color:var(--txl);margin-top:4px">Verse eieren · Vrije uitloop · Biologisch</div>
-    </div>
-    ${voorraadPub>=0 || gemDag!==null ? `
-    <div class="res-card" style="margin-bottom:14px">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div style="background:linear-gradient(135deg,var(--gl),var(--gd));border-radius:12px;border:1.5px solid var(--gd);padding:12px;text-align:center">
-          <div style="font-size:26px;margin-bottom:2px">🗃️</div>
-          <div style="font-family:'Fredoka One',cursive;font-size:22px;color:${voorraadPub<=0?"var(--rd)":"var(--or)"}">
-            ${voorraadPub<=0?"Uitverkocht":voorraadPub}
-          </div>
-          <div style="font-size:9px;color:var(--txl);font-weight:700;margin-top:2px">VOORRAAD</div>
-          ${voorraadPub>0?`<div style="font-size:9px;color:var(--txl);margin-top:1px">${Math.floor(voorraadPub/pubDoosje)} doosjes + ${voorraadPub%pubDoosje} los</div>`:""}
-        </div>
-        <div style="background:linear-gradient(135deg,var(--gl),var(--gd));border-radius:12px;border:1.5px solid var(--gd);padding:12px;text-align:center">
-          <div style="font-size:26px;margin-bottom:2px">📅</div>
-          <div style="font-family:'Fredoka One',cursive;font-size:22px;color:var(--or)">
-            ${gemDag!==null?"~"+gemDag:"–"}
-          </div>
-          <div style="font-size:9px;color:var(--txl);font-weight:700;margin-top:2px">VERWACHT MORGEN</div>
-          <div style="font-size:9px;color:var(--txl);margin-top:1px">${gemDag!==null?"gem. laatste 7 raap-dagen":"nog geen data"}</div>
-        </div>
-      </div>
-    </div>`:""}
-    <div class="res-card">
-      <h2 style="font-family:'Fredoka One',cursive;font-size:18px;color:var(--bd);margin-bottom:14px">🥚 Eieren reserveren</h2>
-      <div class="login-error" id="res-error"></div>
-      <div class="fg"><label class="fl">Jouw naam</label>
-        <input type="text" id="res-naam" placeholder="Bijv. Jan de Vries..." autocomplete="name">
-      </div>
-      <div class="frow">
-        <div class="fg"><label class="fl">Gewenste datum</label>
-          <input type="date" id="res-datum" value="${today2}" min="${today2}">
-        </div>
-        <div class="fg"><label class="fl">Aantal eieren</label>
-          <input type="number" id="res-aantal" value="6" min="1" inputmode="numeric">
-        </div>
-      </div>
-      <div class="fg"><label class="fl">Telefoonnummer (optioneel)</label>
-        <input type="tel" id="res-tel" placeholder="06-12345678" inputmode="tel" autocomplete="tel">
-      </div>
-      <button class="btn btn-s" onclick="saveReservering()" style="margin-top:4px">🥚 Reservering plaatsen</button>
-    </div>
-    <div class="res-card">
-      <h2 style="font-family:'Fredoka One',cursive;font-size:16px;color:var(--bd);margin-bottom:4px">🔐 Ben's Boerderij login</h2>
-      <div style="font-size:11px;color:var(--txl);margin-bottom:12px">Alleen voor beheerders</div>
-      <div class="login-error${errorMsg?" show":""}" id="login-err">${errorMsg||""}</div>
-      <div class="fg"><label class="fl">E-mailadres</label>
-        <input type="email" id="login-email" placeholder="jouw@email.nl" inputmode="email" autocomplete="email">
-      </div>
-      <div class="fg"><label class="fl">Wachtwoord</label>
-        <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password"
-          onkeydown="if(event.key==='Enter')doLogin()">
-      </div>
-      <button class="btn btn-p" id="login-btn" onclick="doLogin()" style="margin-top:4px">🔑 Inloggen</button>
-    </div>
-    <div style="font-size:10px;color:var(--txl);text-align:center;margin-top:8px">🥚 Eicode: 0 Biologisch · 🇳🇱 NL</div>
-  </div>`;
+  app.innerHTML =
+    '<div style="background:linear-gradient(160deg,var(--gl),var(--gm),var(--gd));min-height:100vh;padding:24px 16px">' +
+    '<div style="text-align:center;margin-bottom:20px">' +
+      '<div style="font-size:52px">🐔</div>' +
+      '<div style="font-family:\'Fredoka One\',cursive;font-size:26px;color:var(--bd)">Ben\'s Boerderij</div>' +
+      '<div style="font-size:12px;color:var(--txl);margin-top:4px">Verse eieren · Vrije uitloop · Biologisch</div>' +
+    '</div>' +
+    '<div class="res-card" style="margin-bottom:14px">' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
+        '<div style="background:linear-gradient(135deg,var(--gl),var(--gd));border-radius:12px;border:1.5px solid var(--gd);padding:12px;text-align:center">' +
+          '<div style="font-size:26px;margin-bottom:2px">🗃️</div>' +
+          '<div style="font-family:\'Fredoka One\',cursive;font-size:22px;color:' + vrdKleur + '">' + vrdTekst + '</div>' +
+          '<div style="font-size:9px;color:var(--txl);font-weight:700;margin-top:2px">VOORRAAD</div>' +
+          (vrdSub ? '<div style="font-size:9px;color:var(--txl);margin-top:1px">' + vrdSub + '</div>' : '') +
+        '</div>' +
+        '<div style="background:linear-gradient(135deg,var(--gl),var(--gd));border-radius:12px;border:1.5px solid var(--gd);padding:12px;text-align:center">' +
+          '<div style="font-size:26px;margin-bottom:2px">📅</div>' +
+          '<div style="font-family:\'Fredoka One\',cursive;font-size:22px;color:var(--or)">' + gdTekst + '</div>' +
+          '<div style="font-size:9px;color:var(--txl);font-weight:700;margin-top:2px">VERWACHT MORGEN</div>' +
+          '<div style="font-size:9px;color:var(--txl);margin-top:1px">' + gdSub + '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="res-card">' +
+      '<h2 style="font-family:\'Fredoka One\',cursive;font-size:18px;color:var(--bd);margin-bottom:14px">🥚 Eieren reserveren</h2>' +
+      '<div class="login-error' + (errorMsg ? ' show' : '') + '" id="res-error">' + (errorMsg||'') + '</div>' +
+      '<div class="fg"><label class="fl">Jouw naam</label>' +
+        '<input type="text" id="res-naam" placeholder="Bijv. Jan de Vries..." autocomplete="name">' +
+      '</div>' +
+      '<div class="frow">' +
+        '<div class="fg"><label class="fl">Gewenste datum</label>' +
+          '<input type="date" id="res-datum" value="' + today2 + '" min="' + today2 + '">' +
+        '</div>' +
+        '<div class="fg"><label class="fl">Aantal eieren</label>' +
+          '<input type="number" id="res-aantal" value="6" min="1" inputmode="numeric">' +
+        '</div>' +
+      '</div>' +
+      '<div class="fg"><label class="fl">Telefoonnummer (optioneel)</label>' +
+        '<input type="tel" id="res-tel" placeholder="06-12345678" inputmode="tel" autocomplete="tel">' +
+      '</div>' +
+      '<button class="btn btn-s" onclick="window.saveReservering()" style="margin-top:4px">🥚 Reservering plaatsen</button>' +
+    '</div>' +
+    '<div class="res-card">' +
+      '<h2 style="font-family:\'Fredoka One\',cursive;font-size:16px;color:var(--bd);margin-bottom:4px">🔐 Ben\'s Boerderij login</h2>' +
+      '<div style="font-size:11px;color:var(--txl);margin-bottom:12px">Alleen voor beheerders</div>' +
+      '<div class="login-error' + (errorMsg ? ' show' : '') + '" id="login-err">' + (errorMsg||'') + '</div>' +
+      '<div class="fg"><label class="fl">E-mailadres</label>' +
+        '<input type="email" id="login-email" placeholder="jouw@email.nl" inputmode="email" autocomplete="email">' +
+      '</div>' +
+      '<div class="fg"><label class="fl">Wachtwoord</label>' +
+        '<input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password"' +
+        ' onkeydown="if(event.key===\'Enter\')window.doLogin()">' +
+      '</div>' +
+      '<button class="btn btn-p" id="login-btn" onclick="window.doLogin()" style="margin-top:4px">🔑 Inloggen</button>' +
+    '</div>' +
+    '<div style="font-size:10px;color:var(--txl);text-align:center;margin-top:8px">🥚 Eicode: 0 Biologisch · 🇳🇱 NL</div>' +
+    '</div>';
 }
+
 
 async function doLogin() {
   const email = val("login-email").trim();
@@ -1673,6 +1674,7 @@ document.addEventListener("DOMContentLoaded", () => {
       render();
       startListeners();
       updateOfflineBanner();
+      setTimeout(syncPubliekeData, 2000); // populate /publiek after data loads
     } else {
       // Not logged in: fetch minimal public data then show login
       $("loading") && ($("loading").style.display="none");
