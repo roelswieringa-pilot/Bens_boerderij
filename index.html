@@ -108,7 +108,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--or);background:#fff}
 .chart-view-tabs .tab.active{background:var(--or);border-color:var(--or);color:#fff}
 .chart-wrap{overflow-x:auto;padding-bottom:4px}
 .chart-svg{display:block}
-.chart-stats{display:flex;gap:8px;margin-top:10px}
+.chart-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
 .chart-stat{flex:1;background:var(--gl);border-radius:10px;border:1.5px solid var(--gd);padding:8px;text-align:center}
 .chart-stat .csv{font-family:'Fredoka One',cursive;font-size:20px;color:var(--or)}
 .chart-stat .csl{font-size:9px;color:var(--txl);font-weight:700;margin-top:1px}
@@ -789,7 +789,7 @@ function render() {
       <div class="card">
         <div class="card-title">💾 Back-up (CSV)</div>
         <div class="data-box"><h4>📥 Downloaden</h4>
-          <div class="brow">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
             <button class="btn btn-g" onclick="exportCSV('legdagen')">🥚 Legdagen</button>
             <button class="btn btn-g" onclick="exportCSV('verkopen')">💰 Verkopen</button>
             <button class="btn btn-g" onclick="exportCSV('investeringen')">📈 Investering</button>
