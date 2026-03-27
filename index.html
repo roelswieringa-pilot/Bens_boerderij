@@ -149,16 +149,18 @@ const db = getDatabase(firebaseApp);
 const auth = getAuth(firebaseApp);
 
 // ── Constants ──────────────────────────────────────────────────────────────
-const CATS  = ["Voer","Kippen","Verzorging","Materiaal","Dierenarts","Overig"];
-const ICONS = {Voer:"🌾",Kippen:"🐔",Verzorging:"💊",Materiaal:"🔧",Dierenarts:"🏥",Overig:"📦"};
+const CATS     = ["Voer","Kippen","Verzorging","Materiaal","Dierenarts","Overig"];
+const INV_CATS = ["Hokken","Uitrusting","Dieren","Grond","Overig"];
+const ICONS    = {Voer:"🌾",Kippen:"🐔",Verzorging:"💊",Materiaal:"🔧",Dierenarts:"🏥",Overig:"📦",Hokken:"🏠",Uitrusting:"⚙️",Dieren:"🐣",Grond:"🌱"};
 const MNAMEN= ["Jan","Feb","Mrt","Apr","Mei","Jun","Jul","Aug","Sep","Okt","Nov","Dec"];
 const BB    = {Cash:"bg",Tikkie:"bb",Overboeking:"bo"};
 
 // ── State ──────────────────────────────────────────────────────────────────
-let leg=[], vk=[], kst=[], klanten=[], activePage="dashboard", activeM=null, activeKlant=null, modalState=null;
+let leg=[], vk=[], kst=[], inv=[], klanten=[], activePage="dashboard", activeM=null, activeKlant=null, modalState=null;
 let instellingen = { prijsPerEi: 0.40 };
 let zoekKlant = "";
 let currentUser = null;
+let kstTab = "kosten";
 
 // ── Utils ──────────────────────────────────────────────────────────────────
 const fmt   = n => "€ " + Number(n).toFixed(2).replace(".",",");
@@ -215,6 +217,11 @@ function startListeners() {
   onValue(ref(db,"kosten"), snap => {
     const val = snap.val() || {};
     kst = Object.entries(val).map(([k,v])=>({...v,_key:k})).sort((a,b)=>b.datum.localeCompare(a.datum));
+    render(); setSyncBadge("ok");
+  });
+  onValue(ref(db,"investeringen"), snap => {
+    const val = snap.val() || {};
+    inv = Object.entries(val).map(([k,v])=>({...v,_key:k})).sort((a,b)=>b.datum.localeCompare(a.datum));
     render(); setSyncBadge("ok");
   });
   onValue(ref(db,"klanten"), snap => {
@@ -433,6 +440,21 @@ function renderModal() {
         <div class="fg"><label class="fl">Leverancier</label><input type="text" id="edit-kst-lev" value="${esc(data.leverancier||'')}"></div>
       </div>
       <div class="brow"><button class="btn btn-g" onclick="closeModal()">Annuleren</button><button class="btn btn-d" onclick="updateKst()">✅ Opslaan</button></div>`;
+  } else if(type==="inv") {
+    const opts = INV_CATS.map(c=>`<option${data.cat===c?" selected":""}>${c}</option>`).join("");
+    el.innerHTML = `
+      <div class="modal-title">✏️ Investering aanpassen <button onclick="closeModal()">✕</button></div>
+      <input type="hidden" id="edit-inv-key" value="${esc(data._key)}">
+      <div class="frow">
+        <div class="fg"><label class="fl">Datum</label><input type="date" id="edit-inv-datum" value="${esc(data.datum)}"></div>
+        <div class="fg"><label class="fl">Bedrag (€)</label><input type="number" id="edit-inv-bedrag" value="${data.bedrag}" step="0.01" inputmode="decimal"></div>
+      </div>
+      <div class="fg"><label class="fl">Omschrijving</label><input type="text" id="edit-inv-omschr" value="${esc(data.omschr||'')}"></div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Categorie</label><select id="edit-inv-cat">${opts}</select></div>
+        <div class="fg"><label class="fl">Leverancier</label><input type="text" id="edit-inv-lev" value="${esc(data.leverancier||'')}"></div>
+      </div>
+      <div class="brow"><button class="btn btn-g" onclick="closeModal()">Annuleren</button><button class="btn btn-p" onclick="updateInv()">✅ Opslaan</button></div>`;
   } else if(type==="klant") {
     el.innerHTML = `
       <div class="modal-title">✏️ Klant aanpassen <button onclick="closeModal()">✕</button></div>
@@ -454,6 +476,10 @@ function exportCSV(type) {
     header="datum,aantal,koper,betaalwijze,totaal,notitie";
     rows=vk.map(r=>[r.datum,r.aantal,`"${(r.koper||"").replace(/"/g,'""')}"`,r.betaal,Number(r.totaal).toFixed(2),`"${(r.notitie||"").replace(/"/g,'""')}"`].join(","));
     filename="bens_verkopen.csv";
+  } else if(type==="investeringen") {
+    header="datum,bedrag,omschrijving,categorie,leverancier";
+    rows=inv.map(r=>[r.datum,Number(r.bedrag).toFixed(2),`"${(r.omschr||"").replace(/"/g,'""')}"`,r.cat,`"${(r.leverancier||"").replace(/"/g,'""')}"`].join(","));
+    filename="bens_investeringen.csv";
   } else {
     header="datum,bedrag,omschrijving,categorie,leverancier";
     rows=kst.map(r=>[r.datum,Number(r.bedrag).toFixed(2),`"${(r.omschr||"").replace(/"/g,'""')}"`,r.cat,`"${(r.leverancier||"").replace(/"/g,'""')}"`].join(","));
@@ -511,6 +537,7 @@ function render() {
   const catTotals = {};
   CATS.forEach(c=>catTotals[c]=kst.filter(r=>r.cat===c).reduce((s,r)=>s+(r.bedrag||0),0));
   const maxCat = Math.max(...Object.values(catTotals),1);
+  const totInv = inv.reduce((s,r)=>s+(r.bedrag||0),0);
 
   // Build HTML
   app.innerHTML = `
@@ -708,6 +735,11 @@ function render() {
 
     <!-- KOSTEN -->
     <div class="page${activePage==="kosten"?" active":""}" id="page-kosten">
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <button class="btn${kstTab==='kosten'?' btn-d':' btn-g'}" style="font-size:13px;padding:10px" onclick="setKstTab('kosten')">💸 Kosten</button>
+        <button class="btn${kstTab==='investeringen'?' btn-p':' btn-g'}" style="font-size:13px;padding:10px" onclick="setKstTab('investeringen')">📈 Investeringen</button>
+      </div>
+      ${kstTab==="kosten"?`
       <div class="card">
         <div class="sec-hdr">📋 Kosten registreren</div>
         <div class="frow">
@@ -745,6 +777,53 @@ function render() {
               <button class="dbtn" onclick="deleteKst('${r._key}')">🗑</button></div>
           </div>`).join("")}
       </div>
+    </div>`:(
+      <div>
+      <div class="card">
+        <div class="sec-hdr">📈 Investering registreren</div>
+        <div class="frow">
+          <div class="fg"><label class="fl">Datum</label><input type="date" id="inv-datum" value="${t}"></div>
+          <div class="fg"><label class="fl">Bedrag (€)</label><input type="number" id="inv-bedrag" placeholder="0.00" step="0.01" inputmode="decimal"></div>
+        </div>
+        <div class="fg"><label class="fl">Omschrijving</label><input type="text" id="inv-omschrijving" placeholder="bijv. nieuw kippenhok..."></div>
+        <div class="frow">
+          <div class="fg"><label class="fl">Categorie</label>
+            <select id="inv-categorie">${INV_CATS.map(c=>`<option>${c}</option>`).join("")}</select>
+          </div>
+          <div class="fg"><label class="fl">Leverancier</label><input type="text" id="inv-leverancier" placeholder="optioneel..."></div>
+        </div>
+        <button class="btn btn-p" onclick="saveInv()">📈 Investering opslaan</button>
+      </div>
+      <div class="card">
+        <div class="card-title">📊 Investeringen per categorie</div>
+        <div class="bar-wrap">${(()=>{
+          const maxInv=Math.max(...INV_CATS.map(c=>inv.filter(r=>r.cat===c).reduce((s,r)=>s+(r.bedrag||0),0)),1);
+          return INV_CATS.map(c=>{
+            const t2=inv.filter(r=>r.cat===c).reduce((s,r)=>s+(r.bedrag||0),0);
+            return`<div class="bar-row"><span class="bar-lbl">${ICONS[c]||"📈"}</span>
+              <div class="bar-tr"><div class="bar-fill" style="width:${t2/maxInv*100}%;background:linear-gradient(90deg,#1a5276,#4a6fa5)">
+              <span class="bar-v">${t2>0?fmt(t2):""}</span></div></div></div>`;
+          }).join("");
+        })()}</div>
+      </div>
+      <div class="card">
+        <div class="card-title">🧾 Investeringen</div>
+        ${inv.length===0?'<div class="empty"><div class="em">📈</div><p>Nog geen investeringen</p></div>':
+          `<div class="li" style="border-bottom:2px solid #d6eaf8">
+            <span style="font-size:12px;font-weight:800;color:var(--bu)">Totaal geïnvesteerd</span>
+            <span class="fw" style="color:var(--bu)">${fmt(totInv)}</span>
+          </div>`+
+          inv.map(r=>`<div class="li">
+            <div class="li-l">
+              <div class="li-t">${ICONS[r.cat]||"📈"} ${esc(r.omschr||r.cat)}</div>
+              <div class="li-s">${fmtD(r.datum)}${r.leverancier?" · "+esc(r.leverancier):""} · ${r.cat}</div>
+            </div>
+            <div class="li-r"><span class="fw" style="color:var(--bu)">${fmt(r.bedrag)}</span>
+              <button class="ebtn" onclick='openModal("inv",${JSON.stringify(r)})'>✏️</button>
+              <button class="dbtn" onclick="deleteInv('${r._key}')">🗑</button></div>
+          </div>`).join("")}
+      </div>
+      </div>)}
     </div>
 
     <!-- P&L -->
@@ -766,6 +845,20 @@ function render() {
           <span>${result>=0?"✅":"❌"} NETTORESULTAAT</span><span>${fmt(result)}</span>
         </div>
       </div>
+      ${totInv>0?`<div class="card" style="border-color:var(--bu);border-width:2px">
+        <div class="card-title" style="color:#1a5276">📈 Investeringen (buiten P&L)</div>
+        <div style="font-size:11px;color:var(--txl);margin-bottom:10px">Investeringen tellen niet mee in het nettoresultaat</div>
+        ${(()=>{
+          return INV_CATS.map(c=>{
+            const t2=inv.filter(r=>r.cat===c).reduce((s,r)=>s+(r.bedrag||0),0);
+            return t2>0?`<div class="pl-row pl-sub"><span>${ICONS[c]||"📈"} ${c}</span><span class="fw" style="color:var(--bu)">${fmt(t2)}</span></div>`:"";
+          }).join("")+
+          `<div class="pl-row" style="background:linear-gradient(90deg,#1a5276,var(--bu))">
+            <span style="font-family:'Fredoka One',cursive;font-size:14px;color:#fff">TOTAAL INVESTERINGEN</span>
+            <span style="font-family:'Fredoka One',cursive;font-size:14px;color:#fff">${fmt(totInv)}</span>
+          </div>`;
+        })()}
+      </div>`:""}
       <div class="card">
         <div class="card-title">🐓 Onze kippen</div>
         <div class="kip-grid">
@@ -783,6 +876,7 @@ function render() {
           <div class="brow">
             <button class="btn btn-g" onclick="exportCSV('legdagen')">🥚 Legdagen</button>
             <button class="btn btn-g" onclick="exportCSV('verkopen')">💰 Verkopen</button>
+            <button class="btn btn-g" onclick="exportCSV('investeringen')">📈 Investering</button>
             <button class="btn btn-g" onclick="exportCSV('kosten')">📋 Kosten</button>
           </div>
         </div>
@@ -1051,6 +1145,37 @@ function renderYearChart(container) {
     </div>`;
 }
 
+// ── CRUD — Investeringen ───────────────────────────────────────
+async function saveInv() {
+  const datum      = val("inv-datum");
+  const bedrag     = parseFloat(val("inv-bedrag"))||0;
+  const omschr     = val("inv-omschrijving");
+  const cat        = val("inv-categorie");
+  const leverancier= val("inv-leverancier");
+  if(!datum||bedrag<=0) return toast("⚠️ Vul datum en bedrag in");
+  const key = uid();
+  await dbSave("investeringen/"+key, {datum,bedrag,omschr,cat,leverancier});
+  ["inv-bedrag","inv-omschrijving","inv-leverancier"].forEach(id=>set_val(id,""));
+  set_val("inv-datum",today());
+  toast("✅ Investering opgeslagen!");
+}
+async function deleteInv(key) {
+  if(!confirm("Investering verwijderen?")) return;
+  await dbRemove("investeringen/"+key);
+  toast("🗑 Verwijderd");
+}
+async function updateInv() {
+  const key        = val("edit-inv-key");
+  const datum      = val("edit-inv-datum");
+  const bedrag     = parseFloat(val("edit-inv-bedrag"))||0;
+  const omschr     = val("edit-inv-omschr");
+  const cat        = val("edit-inv-cat");
+  const leverancier= val("edit-inv-lev");
+  await dbSave("investeringen/"+key, {datum,bedrag,omschr,cat,leverancier});
+  closeModal(); toast("✅ Bijgewerkt!");
+}
+function setKstTab(tab) { kstTab=tab; render(); }
+
 // ── Instellingen ──────────────────────────────────────────────────────────
 async function saveInstellingen() {
   const p = parseFloat(val("inst-prijs").replace(",",".")) || 0.40;
@@ -1086,7 +1211,8 @@ Object.assign(window, {
   saveInstellingen, setZoekKlant,
   openModal, closeModal, exportCSV, setSyncBadge,
   openChart, closeChart, switchChartView, setChartM,
-  doLogin, doLogout
+  doLogin, doLogout,
+  saveInv, deleteInv, updateInv, setKstTab
 });
 
 // ── Auth functions ─────────────────────────────────────────────────────────
