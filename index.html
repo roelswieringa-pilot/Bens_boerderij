@@ -1257,6 +1257,7 @@ async function saveReservering() {
   const aantal= aantalRaw ? (parseInt(aantalRaw)||6) : 6;
   const tel   = val("res-tel").trim();
   if(!naam) return showResError("⚠️ Vul je naam in");
+  if(datum < today()) return showResError("⚠️ Kies een datum vanaf vandaag");
   const key = uid();
   try {
     await dbSave("reserveringen/"+key, {naam, datum, aantal, tel, status:"nieuw", aangemeld: today()});
@@ -1680,10 +1681,17 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       // Not logged in: fetch minimal public data then show login
       $("loading") && ($("loading").style.display="none");
-      get(ref(db,"publiek")).then(snap => {
-        const p = snap.val() || {};
-        // Store publieke data in temp vars for renderLogin
-        window._pubVoorraad = p.voorraad ?? null;
+      Promise.all([
+        get(ref(db,"publiek")),
+        get(ref(db,"reserveringen"))
+      ]).then(([pubSnap, resSnap]) => {
+        const p = pubSnap.val() || {};
+        const resVal = resSnap.val() || {};
+        const openRes = Object.values(resVal)
+          .filter(r=>r.status==="nieuw")
+          .reduce((s,r)=>s+(r.aantal||0),0);
+        const basisVoorraad = p.voorraad ?? null;
+        window._pubVoorraad = basisVoorraad !== null ? basisVoorraad - openRes : null;
         window._pubGemDag   = p.gemDag   ?? null;
         window._pubDoosje   = p.doosjeGrootte ?? 6;
         renderLogin();
