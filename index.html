@@ -213,8 +213,8 @@ function getMaandSamenvatting(ym) {
   return { totLeg, totVk, totKst, bestedag, besteKlant, aantalVk: vkM.length };
 }
 
-function getKlantFrequentie(klantNaam) {
-  const kvk = vk.filter(r=>r.koper===klantNaam||r.klantId);
+function getKlantFrequentie(klantNaam, klantKey) {
+  const kvk = vk.filter(r=>(klantKey && r.klantId===klantKey) || r.koper===klantNaam);
   if(!kvk.length) return null;
   kvk.sort((a,b)=>a.datum.localeCompare(b.datum));
   const eerste = kvk[0].datum;
@@ -931,7 +931,7 @@ function render() {
                 <div class="li-l">
                   <div class="li-t">👤 ${esc(k.naam)}</div>
                   <div class="li-s">${kvk.length} aankopen · 🥚 ${totEieren} eieren · ${fmt(totBedrag)}</div>
-                  ${(()=>{ const freq=getKlantFrequentie(k.naam); if(!freq||freq.aantalBezoeken===0) return '<div class="li-s" style="color:var(--txl);font-weight:700">⚫ Nog nooit gekocht</div>'; const d=freq.dagenGeleden; const tGroen=instellingen.klantGroen??7; const tOranje=instellingen.klantOranje??14; const kleur=d>tOranje?"color:var(--rd)":d>tGroen?"color:var(--or)":"color:var(--gn)"; const dot=d>tOranje?"🔴":d>tGroen?"🟡":"🟢"; const lbl=d===0?"Vandaag gekocht":d===1?"Gisteren gekocht":d<=tOranje?"Laatste aankoop "+d+" dagen geleden":"Niet gekocht in "+d+" dagen"; return `<div class="li-s" style="${kleur};font-weight:700">${dot} ${lbl}</div>`; })()}
+                  ${(()=>{ const freq=getKlantFrequentie(k.naam,k._key); if(!freq||freq.aantalBezoeken===0) return '<div class="li-s" style="color:var(--txl);font-weight:700">⚫ Nog nooit gekocht</div>'; const d=freq.dagenGeleden; const tGroen=instellingen.klantGroen??7; const tOranje=instellingen.klantOranje??14; const kleur=d>tOranje?"color:var(--rd)":d>tGroen?"color:var(--or)":"color:var(--gn)"; const dot=d>tOranje?"🔴":d>tGroen?"🟡":"🟢"; const lbl=d===0?"Vandaag gekocht":d===1?"Gisteren gekocht":d<=tOranje?"Laatste aankoop "+d+" dagen geleden":"Niet gekocht in "+d+" dagen"; return `<div class="li-s" style="${kleur};font-weight:700">${dot} ${lbl}</div>`; })()}
                   ${k.notitie?`<div class="li-s" style="font-style:italic">${esc(k.notitie)}</div>`:""}
                 </div>
                 <div class="li-r">
