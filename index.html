@@ -931,7 +931,7 @@ function render() {
                 <div class="li-l">
                   <div class="li-t">👤 ${esc(k.naam)}</div>
                   <div class="li-s">${kvk.length} aankopen · 🥚 ${totEieren} eieren · ${fmt(totBedrag)}</div>
-                  ${(()=>{ const freq=getKlantFrequentie(k.naam); if(!freq||freq.aantalBezoeken===0) return ""; const kleur=freq.dagenGeleden>60?"color:var(--rd)":freq.dagenGeleden>30?"color:var(--or)":"color:var(--gn)"; return `<div class="li-s" style="${kleur};font-weight:700">${freq.dagenGeleden===0?"🟢 Vandaag gekocht":freq.dagenGeleden===1?"🟢 Gisteren gekocht":"🔴 Laatste aankoop "+freq.dagenGeleden+" dagen geleden"}</div>`; })()}
+                  ${(()=>{ const freq=getKlantFrequentie(k.naam); if(!freq||freq.aantalBezoeken===0) return '<div class="li-s" style="color:var(--txl);font-weight:700">⚫ Nog nooit gekocht</div>'; const d=freq.dagenGeleden; const kleur=d>30?"color:var(--rd)":d>7?"color:var(--or)":"color:var(--gn)"; const dot=d===0?"🟢":d===1?"🟢":d<=7?"🟢":d<=30?"🟡":"🔴"; const lbl=d===0?"Vandaag gekocht":d===1?"Gisteren gekocht":d<=30?"Laatste aankoop "+d+" dagen geleden":"Niet gekocht in "+d+" dagen"; return `<div class="li-s" style="${kleur};font-weight:700">${dot} ${lbl}</div>`; })()}
                   ${k.notitie?`<div class="li-s" style="font-style:italic">${esc(k.notitie)}</div>`:""}
                 </div>
                 <div class="li-r">
