@@ -1686,22 +1686,39 @@ let vkType = "los"; // "los" | "doos6" | "doos10"
 function setVkType(type) {
   vkType = type;
   render();
+  // Na render: zet doosjes op 1 en bereken totaal
+  if(type !== "los") {
+    setTimeout(() => {
+      set_val("vk-doosjes", "1");
+      calcVkTot();
+    }, 0);
+  }
 }
 
 function calcVkTot() {
-  const prijsEl = document.getElementById("vk-prijs-per-ei");
+  const prijsEl  = document.getElementById("vk-prijs-per-ei");
+  const aantalEl = document.getElementById("vk-aantal");
+  const doosjesEl= document.getElementById("vk-doosjes");
+
+  // Auto-switch naar doosje als 6 of 10 losse eieren ingevoerd
+  if(vkType === "los" && aantalEl) {
+    const n = parseInt(aantalEl.value) || 0;
+    if(n === 6 || n === 10) {
+      vkType = n === 6 ? "doos6" : "doos10";
+      render();
+      setTimeout(() => { set_val("vk-doosjes", "1"); calcVkTot(); }, 0);
+      return;
+    }
+  }
+
   const p = parseFloat((prijsEl||{}).value) || 0;
   let totaal = 0;
-  // Bepaal actief type direct uit DOM (betrouwbaarder dan vkType na render)
-  const btnDoos6  = document.getElementById("vk-type-doos6");
-  const btnDoos10 = document.getElementById("vk-type-doos10");
-  const activeDoos6  = btnDoos6  && btnDoos6.className.includes("btn-p");
-  const activeDoos10 = btnDoos10 && btnDoos10.className.includes("btn-p");
-  if(activeDoos6 || activeDoos10) {
-    const nd = parseInt((document.getElementById("vk-doosjes")||{value:""}).value)||0;
-    totaal = nd * (p || (activeDoos10 ? (instellingen.prijsDoosje10||4.00) : (instellingen.prijsDoosje6||2.50)));
+
+  if(vkType === "doos6" || vkType === "doos10") {
+    const nd = parseInt((doosjesEl||{value:""}).value) || 0;
+    totaal = nd * (p || (vkType==="doos10" ? (instellingen.prijsDoosje10||4.00) : (instellingen.prijsDoosje6||2.50)));
   } else {
-    const n = parseInt((document.getElementById("vk-aantal")||{value:""}).value)||0;
+    const n = parseInt((aantalEl||{value:""}).value) || 0;
     totaal = n * (p || prijs());
   }
   set_val("vk-totaal", totaal > 0 ? fmt(totaal) : "");
