@@ -1690,15 +1690,19 @@ function setVkType(type) {
 
 function calcVkTot() {
   const prijsEl = document.getElementById("vk-prijs-per-ei");
+  const p = parseFloat((prijsEl||{}).value) || 0;
   let totaal = 0;
-  if(vkType === "los") {
-    const n = parseInt(val("vk-aantal"))||0;
-    const p = parseFloat((prijsEl||{}).value) || prijs();
-    totaal = n * p;
+  // Bepaal actief type direct uit DOM (betrouwbaarder dan vkType na render)
+  const btnDoos6  = document.getElementById("vk-type-doos6");
+  const btnDoos10 = document.getElementById("vk-type-doos10");
+  const activeDoos6  = btnDoos6  && btnDoos6.className.includes("btn-p");
+  const activeDoos10 = btnDoos10 && btnDoos10.className.includes("btn-p");
+  if(activeDoos6 || activeDoos10) {
+    const nd = parseInt((document.getElementById("vk-doosjes")||{value:""}).value)||0;
+    totaal = nd * (p || (activeDoos10 ? (instellingen.prijsDoosje10||4.00) : (instellingen.prijsDoosje6||2.50)));
   } else {
-    const nd = parseInt(val("vk-doosjes"))||0;
-    const p = parseFloat((prijsEl||{}).value) || (vkType==="doos10" ? (instellingen.prijsDoosje10||4.00) : (instellingen.prijsDoosje6||2.50));
-    totaal = nd * p;
+    const n = parseInt((document.getElementById("vk-aantal")||{value:""}).value)||0;
+    totaal = n * (p || prijs());
   }
   set_val("vk-totaal", totaal > 0 ? fmt(totaal) : "");
 }
