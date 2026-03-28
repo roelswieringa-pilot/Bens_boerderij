@@ -168,7 +168,7 @@ const BB    = {Cash:"bg",Tikkie:"bb",Overboeking:"bo"};
 
 // ── State ──────────────────────────────────────────────────────────────────
 let leg=[], vk=[], kst=[], inv=[], klanten=[], kippen=[], reserveringen=[], activePage="dashboard", activeM=null, activeKlant=null, modalState=null;
-let instellingen = { prijsPerEi: 0.40, doosjeGrootte: 6 };
+let instellingen = { prijsPerEi: 0.40, doosjeGrootte: 6, prijsDoosje6: 2.50, prijsDoosje10: 4.00 };
 let zoekKlant = "";
 let currentUser = null;
 let kstTab = "kosten";
@@ -176,8 +176,10 @@ let kstTab = "kosten";
 window._pubVoorraad    = null;
 window._pubGemDag      = null;
 window._pubDoosje      = 6;
-window._pubGereserveerd= 0;
-window._pubPrijs       = 0.40;
+window._pubGereserveerd  = 0;
+window._pubPrijs         = 0.40;
+window._pubPrijsDoosje6  = 2.50;
+window._pubPrijsDoosje10 = 4.00;
 
 // ── Utils ──────────────────────────────────────────────────────────────────
 const fmt   = n => "€ " + Number(n).toFixed(2).replace(".",",");
@@ -290,7 +292,7 @@ function startListeners() {
   });
   onValue(ref(db,"instellingen"), snap => {
     const val = snap.val() || {};
-    instellingen = { prijsPerEi: val.prijsPerEi ?? 0.40, doosjeGrootte: val.doosjeGrootte ?? 6 };
+    instellingen = { prijsPerEi: val.prijsPerEi ?? 0.40, doosjeGrootte: val.doosjeGrootte ?? 6, prijsDoosje6: val.prijsDoosje6 ?? 2.50, prijsDoosje10: val.prijsDoosje10 ?? 4.00 };
     render(); setSyncBadge("ok");
   });
 }
@@ -730,23 +732,7 @@ function render() {
           ).join("")+
           `</div>`;
       })()}
-      ${(()=>{
-        const oudeRes = reserveringen.filter(r=>r.status!=="nieuw");
-        if(!oudeRes.length) return "";
-        return `<div class="card">`+
-          `<div class="card-title">📋 Reserveringshistorie</div>`+
-          oudeRes.map(r=>`<div class="li">`+
-            `<div class="li-l">`+
-            `<div class="li-t">${esc(r.naam)} · 🥚 ${r.aantal} · ${fmtD(r.datum)}</div>`+
-            `<div class="li-s">Aangemeld: ${fmtD(r.aangemeld||r.datum)}</div>`+
-            `</div>`+
-            `<div class="li-r">`+
-            `<span class="res-badge ${r.status==="geaccepteerd"?"acc":"den"}">${r.status==="geaccepteerd"?"✅ Geaccepteerd":"❌ Geweigerd"}</span>`+
-            `<button class="dbtn" onclick="deleteRes('${r._key}')">🗑</button>`+
-            `</div></div>`
-          ).join("")+
-          `</div>`;
-      })()}
+
       <div class="card">
         <div class="sec-hdr">💰 Verkoop registreren</div>
         <div class="frow">
@@ -800,6 +786,23 @@ function render() {
               <button class="dbtn" onclick="deleteVk('${r._key}')">🗑</button></div>
           </div>`).join("")}
       </div>
+      ${(()=>{
+        const oudeRes = reserveringen.filter(r=>r.status!=="nieuw").sort((a,b)=>b.datum.localeCompare(a.datum));
+        if(!oudeRes.length) return "";
+        return `<div class="card">`+
+          `<div class="card-title">📋 Reserveringshistorie</div>`+
+          oudeRes.map(r=>`<div class="li">`+
+            `<div class="li-l">`+
+            `<div class="li-t">${esc(r.naam)} · 🥚 ${r.aantal} · ${fmtD(r.datum)}</div>`+
+            `<div class="li-s">Aangemeld: ${fmtD(r.aangemeld||r.datum)}</div>`+
+            `</div>`+
+            `<div class="li-r">`+
+            `<span class="res-badge ${r.status==="geaccepteerd"?"acc":"den"}">${r.status==="geaccepteerd"?"✅ Geaccepteerd":"❌ Geweigerd"}</span>`+
+            `<button class="dbtn" onclick="deleteRes('${r._key}')">🗑</button>`+
+            `</div></div>`
+          ).join("")+
+          `</div>`;
+      })()}
     </div>
 
     <!-- KLANTEN -->
@@ -948,6 +951,18 @@ function render() {
             <option value="12"${instellingen.doosjeGrootte===12?" selected":""}>12 eieren per doosje</option>
           </select>
           <div style="font-size:11px;color:var(--txl);margin-top:4px">Huidig: <strong>${instellingen.doosjeGrootte} stuks</strong> per doosje</div>
+        </div>
+        <div class="frow">
+          <div class="fg">
+            <label class="fl">Prijs doosje 6 eieren (€)</label>
+            <input type="number" id="inst-prijs6" value="${instellingen.prijsDoosje6.toFixed(2)}" step="0.01" min="0.01" inputmode="decimal">
+            <div style="font-size:11px;color:var(--txl);margin-top:4px">Huidig: <strong>${fmt(instellingen.prijsDoosje6)}</strong></div>
+          </div>
+          <div class="fg">
+            <label class="fl">Prijs doosje 10 eieren (€)</label>
+            <input type="number" id="inst-prijs10" value="${instellingen.prijsDoosje10.toFixed(2)}" step="0.01" min="0.01" inputmode="decimal">
+            <div style="font-size:11px;color:var(--txl);margin-top:4px">Huidig: <strong>${fmt(instellingen.prijsDoosje10)}</strong></div>
+          </div>
         </div>
         <button class="btn btn-p" onclick="saveInstellingen()">💾 Opslaan</button>
       </div>
@@ -1259,20 +1274,21 @@ function renderYearChart(container) {
 async function saveReservering() {
   const naam  = val("res-naam").trim();
   const datum = val("res-datum") || today();
-  const aantalRaw = val("res-aantal");
-  const aantal= aantalRaw ? (parseInt(aantalRaw)||6) : 6;
+  const doosjeKeuze = parseInt(val("res-doosje")) || 6;
+  const aantal = doosjeKeuze;
+  const doosPrijs = doosjeKeuze === 10 ? (instellingen.prijsDoosje10 || window._pubPrijsDoosje10 || 4.00) : (instellingen.prijsDoosje6 || window._pubPrijsDoosje6 || 2.50);
   const tel   = val("res-tel").trim();
   if(!naam) return showResError("⚠️ Vul je naam in");
   if(datum < today()) return showResError("⚠️ Kies een datum vanaf vandaag");
   const key = uid();
   try {
-    await dbSave("reserveringen/"+key, {naam, datum, aantal, tel, status:"nieuw", aangemeld: today()});
+    await dbSave("reserveringen/"+key, {naam, datum, aantal, tel, doosPrijs, status:"nieuw", aangemeld: today()});
     // Update local counters immediately (Firebase /publiek updated by Ben on next login)
     window._pubGereserveerd = (window._pubGereserveerd || 0) + aantal;
     window._pubVoorraad = (window._pubVoorraad !== null) ? window._pubVoorraad - aantal : null;
     // Write updated gereserveerd to /publiek so refresh shows correct value
     set(ref(db,"publiek/gereserveerd"), window._pubGereserveerd).catch(()=>{});
-    showResBevestiging(naam, datum, aantal);
+    showResBevestiging(naam, datum, aantal, doosPrijs);
   } catch(e) {
     showResError("❌ Kon niet opslaan. Controleer je internetverbinding.");
   }
@@ -1281,11 +1297,10 @@ function showResError(msg) {
   const el = document.getElementById("res-error");
   if(el){ el.textContent=msg; el.classList.add("show"); }
 }
-function showResBevestiging(naam, datum, aantal) {
+function showResBevestiging(naam, datum, aantal, doosPrijs) {
   const app = $("app");
   if(!app) return;
-  const prijsPerEi = window._pubPrijs || 0.40;
-  const totaal = (aantal * prijsPerEi).toFixed(2).replace(".", ",");
+  const totaal = (doosPrijs || (aantal===10 ? (window._pubPrijsDoosje10||4.00) : (window._pubPrijsDoosje6||2.50))).toFixed(2).replace(".", ",");
   app.innerHTML = `
   <div class="login-screen">
     <div class="login-logo">🥚</div>
@@ -1517,7 +1532,9 @@ async function saveInstellingen() {
   const p = parseFloat(val("inst-prijs").replace(",",".")) || 0.40;
   if(p <= 0) return toast("⚠️ Voer een geldige prijs in");
   const dg = parseInt(val("inst-doosje")) || 6;
-  await dbSave("instellingen", { prijsPerEi: p, doosjeGrootte: dg });
+  const p6 = parseFloat(val("inst-prijs6")) || 2.50;
+  const p10 = parseFloat(val("inst-prijs10")) || 4.00;
+  await dbSave("instellingen", { prijsPerEi: p, doosjeGrootte: dg, prijsDoosje6: p6, prijsDoosje10: p10 });
   toast("✅ Instellingen opgeslagen!");
 }
 function setZoekKlant() {
@@ -1573,7 +1590,7 @@ async function syncPubliekeData() {
   const gereserveerd = reserveringen.filter(r=>r.status==="nieuw").reduce((s,r)=>s+(r.aantal||0),0);
   try {
     const prijsPerEi2 = instellingen.prijsPerEi || 0.40;
-    await set(ref(db,"publiek"), { voorraad, gemDag, doosjeGrootte, gereserveerd, prijsPerEi: prijsPerEi2, bijgewerkt: today() });
+    await set(ref(db,"publiek"), { voorraad, gemDag, doosjeGrootte, gereserveerd, prijsPerEi: prijsPerEi2, prijsDoosje6: instellingen.prijsDoosje6 ?? 2.50, prijsDoosje10: instellingen.prijsDoosje10 ?? 4.00, bijgewerkt: today() });
   } catch(e) { /* silently fail */ }
 }
 
@@ -1642,17 +1659,17 @@ function renderLogin(errorMsg) {
       '<div class="fg"><label class="fl">Jouw naam</label>' +
         '<input type="text" id="res-naam" placeholder="Bijv. Jan de Vries..." autocomplete="name">' +
       '</div>' +
-      '<div class="frow">' +
-        '<div class="fg"><label class="fl">Gewenste datum</label>' +
-          '<input type="date" id="res-datum" value="' + today2 + '" min="' + today2 + '">' +
-        '</div>' +
-        '<div class="fg"><label class="fl">Aantal eieren</label>' +
-          '<input type="number" id="res-aantal" value="6" min="1" inputmode="numeric"' +
-        ' oninput="var n=parseInt(this.value)||0;var p=(window._pubPrijs||0.40);var el=document.getElementById(\'res-bedrag\');if(el)el.textContent=\'💰 € \'+(n*p).toFixed(2).replace(\'.\',\',\');">' +
-        '</div>' +
+      '<div class="fg"><label class="fl">Gewenste datum</label>' +
+        '<input type="date" id="res-datum" value="' + today2 + '" min="' + today2 + '">' +
       '</div>' +
-      '<div style="text-align:center;margin:-4px 0 10px;font-family:\'Fredoka One\',cursive;font-size:18px;color:var(--gn)" id="res-bedrag">' +
-        '💰 € ' + ((6*(window._pubPrijs||0.40)).toFixed(2).replace('.',',')) +
+      '<div class="fg"><label class="fl">Kies je doosje</label>' +
+        '<select id="res-doosje" onchange="var s=this;var p6=window._pubPrijsDoosje6||2.50;var p10=window._pubPrijsDoosje10||4.00;var p=s.value==\'10\'?p10:p6;var el=document.getElementById(\'res-bedrag\');if(el)el.textContent=\'💰 € \'+(p).toFixed(2).replace(\'.\',\',\');">' +
+          '<option value="6">Doosje 6 eieren — € ' + ((window._pubPrijsDoosje6||2.50).toFixed(2).replace('.',',')) + '</option>' +
+          '<option value="10">Doosje 10 eieren — € ' + ((window._pubPrijsDoosje10||4.00).toFixed(2).replace('.',',')) + '</option>' +
+        '</select>' +
+      '</div>' +
+      '<div style="text-align:center;margin:0 0 10px;font-family:\'Fredoka One\',cursive;font-size:18px;color:var(--gn)" id="res-bedrag">' +
+        '💰 € ' + ((window._pubPrijsDoosje6||2.50).toFixed(2).replace('.',',')) +
       '</div>' +
       '<div class="fg"><label class="fl">Telefoonnummer (optioneel)</label>' +
         '<input type="tel" id="res-tel" placeholder="06-12345678" inputmode="tel" autocomplete="tel">' +
@@ -1746,6 +1763,8 @@ document.addEventListener("DOMContentLoaded", () => {
         window._pubVoorraad      = totGelegd - totVerkocht - totGereserveerd;
         window._pubGemDag        = gemDag;
         window._pubDoosje        = inst.doosjeGrootte || 6;
+        window._pubPrijsDoosje6  = inst.prijsDoosje6 || 2.50;
+        window._pubPrijsDoosje10 = inst.prijsDoosje10 || 4.00;
         window._pubGereserveerd  = totGereserveerd;
         window._pubPrijs         = inst.prijsPerEi || 0.40;
         renderLogin();
@@ -1758,6 +1777,8 @@ document.addEventListener("DOMContentLoaded", () => {
             window._pubVoorraad = typeof p.voorraad==="number" ? p.voorraad : null;
             window._pubGemDag   = typeof p.gemDag==="number"   ? p.gemDag   : null;
             window._pubDoosje        = p.doosjeGrootte || 6;
+            window._pubPrijsDoosje6  = p.prijsDoosje6 || 2.50;
+            window._pubPrijsDoosje10 = p.prijsDoosje10 || 4.00;
             window._pubGereserveerd  = typeof p.gereserveerd==="number" ? p.gereserveerd : 0;
             window._pubPrijs         = p.prijsPerEi || 0.40;
           }
