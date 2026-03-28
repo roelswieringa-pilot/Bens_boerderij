@@ -761,18 +761,26 @@ function render() {
 
       <div class="card">
         <div class="sec-hdr">💰 Verkoop registreren</div>
+        ${(()=>{
+          const isLos   = vkType==="los";
+          const isDoos6 = vkType==="doos6";
+          const isDoos10= vkType==="doos10";
+          const vkPrijs = isDoos6  ? (instellingen.prijsDoosje6||2.50).toFixed(2)
+                        : isDoos10 ? (instellingen.prijsDoosje10||4.00).toFixed(2)
+                        :            (instellingen.prijsPerEi||0.40).toFixed(2);
+          return `
         <div class="fg">
           <label class="fl">Verkooptype</label>
           <div style="display:flex;gap:8px;margin-bottom:4px">
-            <button id="vk-type-los" class="btn btn-p" style="flex:1;padding:9px;font-size:13px" onclick="setVkType('los')">🥚 Losse eieren</button>
-            <button id="vk-type-doos6" class="btn btn-g" style="flex:1;padding:9px;font-size:13px" onclick="setVkType('doos6')">📦 Doosje 6</button>
-            <button id="vk-type-doos10" class="btn btn-g" style="flex:1;padding:9px;font-size:13px" onclick="setVkType('doos10')">📦 Doosje 10</button>
+            <button id="vk-type-los"   class="btn ${isLos  ?"btn-p":"btn-g"}" style="flex:1;padding:9px;font-size:13px" onclick="setVkType('los')">🥚 Losse eieren</button>
+            <button id="vk-type-doos6" class="btn ${isDoos6?"btn-p":"btn-g"}" style="flex:1;padding:9px;font-size:13px" onclick="setVkType('doos6')">📦 Doosje 6</button>
+            <button id="vk-type-doos10"class="btn ${isDoos10?"btn-p":"btn-g"}" style="flex:1;padding:9px;font-size:13px" onclick="setVkType('doos10')">📦 Doosje 10</button>
           </div>
         </div>
         <div class="frow">
           <div class="fg"><label class="fl">Datum</label><input type="date" id="vk-datum" value="${t}"></div>
-          <div class="fg" id="vk-aantal-div"><label class="fl">Aantal eieren</label><input type="number" id="vk-aantal" placeholder="0" min="1" inputmode="numeric" oninput="calcVkTot()"></div>
-          <div class="fg" id="vk-doosjes-div" style="display:none"><label class="fl">Aantal doosjes</label><input type="number" id="vk-doosjes" placeholder="1" min="1" inputmode="numeric" oninput="calcVkTot()"></div>
+          <div class="fg" id="vk-aantal-div" style="display:${isLos?"block":"none"}"><label class="fl">Aantal eieren</label><input type="number" id="vk-aantal" placeholder="0" min="1" inputmode="numeric" oninput="calcVkTot()"></div>
+          <div class="fg" id="vk-doosjes-div" style="display:${!isLos?"block":"none"}"><label class="fl">Aantal doosjes</label><input type="number" id="vk-doosjes" placeholder="1" min="1" inputmode="numeric" oninput="calcVkTot()"></div>
         </div>
         <div class="fg"><label class="fl">Klant</label>
           <select id="vk-klant-select" onchange="calcNieuweKlantVeld()">
@@ -791,9 +799,10 @@ function render() {
           </div>
           <div class="fg">
             <label class="fl">Prijs <span style="font-size:10px;color:var(--txl);font-weight:400">(aanpasbaar)</span></label>
-            <input type="number" id="vk-prijs-per-ei" step="0.01" inputmode="decimal" placeholder="0.00" oninput="calcVkTot()" style="color:var(--bl);font-weight:800">
+            <input type="number" id="vk-prijs-per-ei" step="0.01" inputmode="decimal" value="${vkPrijs}" oninput="calcVkTot()" style="color:var(--bl);font-weight:800">
           </div>
-        </div>
+        </div>`;
+        })()}
         <div class="fg">
           <label class="fl">Totaal</label>
           <input type="text" id="vk-totaal" readonly placeholder="€ 0,00" style="background:#f5f5f5;color:var(--bl);font-weight:800">
@@ -1158,11 +1167,6 @@ function render() {
   </div>`;
   // Render tab content after main render
   setTimeout(renderKostenTabContent, 0);
-  // Init verkoop prijs veld
-  setTimeout(()=>{
-    const el=document.getElementById("vk-prijs-per-ei");
-    if(el&&!el.value) el.value=(instellingen.prijsPerEi||0.40).toFixed(2);
-  }, 0);
 }
 
 // ── CHART ──────────────────────────────────────────────────────────────────
@@ -1681,24 +1685,7 @@ let vkType = "los"; // "los" | "doos6" | "doos10"
 
 function setVkType(type) {
   vkType = type;
-  const btnLos   = document.getElementById("vk-type-los");
-  const btnDoos6 = document.getElementById("vk-type-doos6");
-  const btnDoos10= document.getElementById("vk-type-doos10");
-  const aantalDiv  = document.getElementById("vk-aantal-div");
-  const doosjesDiv = document.getElementById("vk-doosjes-div");
-  if(btnLos)    btnLos.className    = "btn " + (type==="los"    ? "btn-p" : "btn-g");
-  if(btnDoos6)  btnDoos6.className  = "btn " + (type==="doos6"  ? "btn-p" : "btn-g");
-  if(btnDoos10) btnDoos10.className = "btn " + (type==="doos10" ? "btn-p" : "btn-g");
-  if(aantalDiv)  aantalDiv.style.display  = type==="los" ? "block" : "none";
-  if(doosjesDiv) doosjesDiv.style.display = type!=="los" ? "block" : "none";
-  // Set default price for type
-  const prijsEl = document.getElementById("vk-prijs-per-ei");
-  if(prijsEl) {
-    if(type==="doos6")  prijsEl.value = (instellingen.prijsDoosje6 || 2.50).toFixed(2);
-    else if(type==="doos10") prijsEl.value = (instellingen.prijsDoosje10 || 4.00).toFixed(2);
-    else prijsEl.value = (instellingen.prijsPerEi || 0.40).toFixed(2);
-  }
-  calcVkTot();
+  render();
 }
 
 function calcVkTot() {
