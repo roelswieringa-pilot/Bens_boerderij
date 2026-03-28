@@ -741,7 +741,7 @@ function render() {
         </div>
         <div class="fg"><label class="fl">Klant</label>
           <select id="vk-klant-select" onchange="calcNieuweKlantVeld()">
-            <option value="">— geen / onbekend —</option>
+            <option value="">— Selecteer de klant —</option>
             ${klanten.map(k=>`<option value="${esc(k._key)}">${esc(k.naam)}</option>`).join("")}
             <option value="nieuw">➕ Nieuwe klant toevoegen...</option>
           </select>
@@ -1647,7 +1647,7 @@ function renderLogin(errorMsg) {
       '<h2 style="font-family:\'Fredoka One\',cursive;font-size:18px;color:var(--bd);margin-bottom:14px">🥚 Eieren reserveren</h2>' +
       '<div class="login-error' + (errorMsg ? ' show' : '') + '" id="res-error">' + (errorMsg||'') + '</div>' +
       '<div class="fg"><label class="fl">Jouw naam</label>' +
-        '<input type="text" id="res-naam" placeholder="Bijv. Jan de Vries..." autocomplete="name">' +
+        '<input type="text" id="res-naam" placeholder="Bijv. Ben..." autocomplete="name">' +
       '</div>' +
       '<div class="fg"><label class="fl">Gewenste datum</label>' +
         '<input type="date" id="res-datum" value="' + today2 + '" min="' + today2 + '">' +
