@@ -722,7 +722,7 @@ function render() {
           nieuweRes.map(r=>`<div class="li">`+
             `<div class="li-l">`+
             `<div class="li-t">👤 ${esc(r.naam)}</div>`+
-            `<div class="li-s">🥚 ${r.aantal} eieren · 📅 ${fmtD(r.datum)}${r.tel?" · 📱 "+esc(r.tel):""}</div>`+
+            `<div class="li-s">🥚 ${r.aantal} eieren · 📅 ${fmtD(r.datum)}${r.tel?" · 📱 "+esc(r.tel):""} · ${fmt(r.doosPrijs||(r.aantal===10?(instellingen.prijsDoosje10||4.00):(instellingen.prijsDoosje6||2.50)))}</div>`+
             `</div>`+
             `<div class="li-r" style="gap:4px">`+
             `<button class="btn btn-s" style="padding:5px 8px;font-size:11px;width:auto;box-shadow:none" onclick='accepteerRes("${r._key}",${JSON.stringify(r)})'>✅ OK</button>`+
