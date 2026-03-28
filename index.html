@@ -163,7 +163,7 @@ const auth = getAuth(firebaseApp);
 const CATS     = ["Voer","Kippen","Verzorging","Materiaal","Dierenarts","Overig"];
 const INV_CATS = ["Hokken","Uitrusting","Dieren","Grond","Overig"];
 const ICONS    = {Voer:"🌾",Kippen:"🐔",Verzorging:"💊",Materiaal:"🔧",Dierenarts:"🏥",Overig:"📦",Hokken:"🏠",Uitrusting:"⚙️",Dieren:"🐣",Grond:"🌱"};
-const MNAMEN= ["Jan","Feb","Mrt","Apr","Mei","Jun","Jul","Aug","Sep","Okt","Nov","Dec"];
+const MNAMEN= ["Januari","Februari","Maart","April","Mei","Juni","Juli","Augustus","September","Oktober","November","December"];
 const BB    = {Cash:"bg",Tikkie:"bb",Overboeking:"bo"};
 
 // ── State ──────────────────────────────────────────────────────────────────
@@ -172,6 +172,8 @@ let instellingen = { prijsPerEi: 0.40, doosjeGrootte: 6, prijsDoosje6: 2.50, pri
 let zoekKlant = "";
 let currentUser = null;
 let kstTab = "kosten";
+let plMaand = null; // null = totaal, anders "YYYY-MM"
+let vkChartM = null; // maand voor omzetgrafiek in verkopen
 // Public data cache for login page
 window._pubVoorraad    = null;
 window._pubGemDag      = null;
@@ -346,17 +348,37 @@ async function updateLeg() {
 // ── CRUD — Verkopen ───────────────────────────────────────────────────────
 async function saveVk() {
   const datum      = val("vk-datum");
-  const aantal     = parseInt(val("vk-aantal"))||0;
   const klantKey   = val("vk-klant-select");
   const nieuweNaam = val("vk-nieuwe-klant").trim();
   const betaal     = val("vk-betaal");
   const notitie    = val("vk-notitie");
+  const prijsEl    = document.getElementById("vk-prijs-per-ei");
+
+  // Bereken aantal en totaal op basis van verkooptype
+  let aantal = 0, totaal = 0, notitieExtra = "";
+  if(vkType === "los") {
+    aantal = parseInt(val("vk-aantal"))||0;
+    const p = parseFloat((prijsEl||{}).value) || prijs();
+    totaal = aantal * p;
+  } else if(vkType === "doos6") {
+    const nd = parseInt(val("vk-doosjes"))||0;
+    const p = parseFloat((prijsEl||{}).value) || (instellingen.prijsDoosje6||2.50);
+    aantal = nd * 6;
+    totaal = nd * p;
+    notitieExtra = nd + "x doosje 6";
+  } else if(vkType === "doos10") {
+    const nd = parseInt(val("vk-doosjes"))||0;
+    const p = parseFloat((prijsEl||{}).value) || (instellingen.prijsDoosje10||4.00);
+    aantal = nd * 10;
+    totaal = nd * p;
+    notitieExtra = nd + "x doosje 10";
+  }
+
   if(!datum||aantal<1) return toast("⚠️ Vul datum en aantal in");
 
   // Resolve klant
   let koper="", klantId="";
   if(klantKey==="nieuw" && nieuweNaam) {
-    // Maak nieuwe klant aan
     const nk = uid();
     await dbSave("klanten/"+nk, {naam:nieuweNaam, notitie:""});
     klantId=nk; koper=nieuweNaam;
@@ -365,10 +387,13 @@ async function saveVk() {
     klantId=klantKey; koper=k?k.naam:"";
   }
 
+  const finalNotitie = [notitieExtra, notitie].filter(Boolean).join(" · ");
   const key = uid();
-  await dbSave("verkopen/"+key, {datum,aantal,koper,klantId,betaal,totaal:aantal*prijs(),notitie});
-  ["vk-aantal","vk-notitie","vk-nieuwe-klant"].forEach(id=>set_val(id,""));
+  await dbSave("verkopen/"+key, {datum,aantal,koper,klantId,betaal,totaal,notitie:finalNotitie});
+  ["vk-aantal","vk-doosjes","vk-notitie","vk-nieuwe-klant"].forEach(id=>set_val(id,""));
   set_val("vk-datum",today()); set_val("vk-totaal",""); set_val("vk-klant-select","");
+  // Reset prijs naar standaard
+  if(prijsEl) prijsEl.value = (instellingen.prijsPerEi||0.40).toFixed(2);
   toast("✅ Verkoop opgeslagen!");
 }
 
@@ -515,6 +540,7 @@ function renderModal() {
         <div class="fg"><label class="fl">Categorie</label><select id="edit-inv-cat">${opts}</select></div>
         <div class="fg"><label class="fl">Leverancier</label><input type="text" id="edit-inv-lev" value="${esc(data.leverancier||'')}"></div>
       </div>
+      <div class="fg"><label class="fl">Geïnvesteerd door</label><input type="text" id="edit-inv-door" value="${esc(data.door||'')}"></div>
       <div class="brow"><button class="btn btn-g" onclick="closeModal()">Annuleren</button><button class="btn btn-p" onclick="updateInv()">✅ Opslaan</button></div>`;
   } else if(type==="kip") {
     const rasOpts = RASSEN.map(r=>`<option${data.ras===r?" selected":""}>${r}</option>`).join("");
@@ -735,9 +761,18 @@ function render() {
 
       <div class="card">
         <div class="sec-hdr">💰 Verkoop registreren</div>
+        <div class="fg">
+          <label class="fl">Verkooptype</label>
+          <div style="display:flex;gap:8px;margin-bottom:4px">
+            <button id="vk-type-los" class="btn btn-p" style="flex:1;padding:9px;font-size:13px" onclick="setVkType('los')">🥚 Losse eieren</button>
+            <button id="vk-type-doos6" class="btn btn-g" style="flex:1;padding:9px;font-size:13px" onclick="setVkType('doos6')">📦 Doosje 6</button>
+            <button id="vk-type-doos10" class="btn btn-g" style="flex:1;padding:9px;font-size:13px" onclick="setVkType('doos10')">📦 Doosje 10</button>
+          </div>
+        </div>
         <div class="frow">
           <div class="fg"><label class="fl">Datum</label><input type="date" id="vk-datum" value="${t}"></div>
-          <div class="fg"><label class="fl">Aantal eieren</label><input type="number" id="vk-aantal" placeholder="0" min="1" inputmode="numeric" oninput="calcVkTot()"></div>
+          <div class="fg" id="vk-aantal-div"><label class="fl">Aantal eieren</label><input type="number" id="vk-aantal" placeholder="0" min="1" inputmode="numeric" oninput="calcVkTot()"></div>
+          <div class="fg" id="vk-doosjes-div" style="display:none"><label class="fl">Aantal doosjes</label><input type="number" id="vk-doosjes" placeholder="1" min="1" inputmode="numeric" oninput="calcVkTot()"></div>
         </div>
         <div class="fg"><label class="fl">Klant</label>
           <select id="vk-klant-select" onchange="calcNieuweKlantVeld()">
@@ -754,11 +789,16 @@ function render() {
           <div class="fg"><label class="fl">Betaalwijze</label>
             <select id="vk-betaal"><option>Cash</option><option>Tikkie</option><option>Overboeking</option></select>
           </div>
-          <div class="fg"><label class="fl">Totaal</label>
-            <input type="text" id="vk-totaal" readonly placeholder="€ 0,00" style="background:#f5f5f5;color:var(--bl);font-weight:800">
+          <div class="fg">
+            <label class="fl">Prijs <span style="font-size:10px;color:var(--txl);font-weight:400">(aanpasbaar)</span></label>
+            <input type="number" id="vk-prijs-per-ei" step="0.01" inputmode="decimal" placeholder="0.00" oninput="calcVkTot()" style="color:var(--bl);font-weight:800">
           </div>
         </div>
-        <div class="fg"><label class="fl">Notities</label><input type="text" id="vk-notitie" placeholder="optioneel..."></div>
+        <div class="fg">
+          <label class="fl">Totaal</label>
+          <input type="text" id="vk-totaal" readonly placeholder="€ 0,00" style="background:#f5f5f5;color:var(--bl);font-weight:800">
+        </div>
+        <div class="fg"><label class="fl">Notities (optioneel)</label><input type="text" id="vk-notitie" placeholder="Bijv. kleinere eieren..."></div>
         <button class="btn btn-s" onclick="saveVk()">💰 Verkoop opslaan</button>
       </div>
       <div class="card">
@@ -802,6 +842,56 @@ function render() {
             `</div></div>`
           ).join("")+
           `</div>`;
+      })()}
+      ${(()=>{
+        // Omzetgrafiek per dag
+        const vkMaanden = [...new Set(vk.map(r=>r.datum.slice(0,7)))].sort().reverse();
+        if(!vkMaanden.length) return "";
+        const curVM = (vkChartM && vkMaanden.includes(vkChartM)) ? vkChartM : vkMaanden[0];
+        const [vy,vmo] = curVM.split("-");
+        const daysInMonth = new Date(parseInt(vy), parseInt(vmo), 0).getDate();
+        const dagData = [];
+        for(let d=1;d<=daysInMonth;d++){
+          const datum=`${vy}-${vmo}-${String(d).padStart(2,"0")}`;
+          const tot=vk.filter(r=>r.datum===datum).reduce((s,r)=>s+(r.totaal||0),0);
+          dagData.push({d,datum,tot});
+        }
+        const maxTot=Math.max(...dagData.map(x=>x.tot),0.01);
+        const totMaand=dagData.reduce((s,x)=>s+x.tot,0);
+        const W=420,H=140,padL=36,padB=24,padT=10,padR=8;
+        const chartW=W-padL-padR,chartH=H-padB-padT;
+        const barW=Math.max(2,Math.floor(chartW/daysInMonth)-1);
+        const gap=(chartW-barW*daysInMonth)/(daysInMonth+1);
+        const bars=dagData.map((x,i)=>{
+          const bh=x.tot===0?0:Math.max(2,Math.round((x.tot/maxTot)*chartH));
+          const bx=padL+gap+i*(barW+gap);
+          const by=padT+chartH-bh;
+          const lbl=x.d%5===0||x.d===1?String(x.d):"";
+          return `<rect x="${bx}" y="${by}" width="${barW}" height="${bh}" fill="${x.tot>0?"#27ae60":"#b0e0c0"}" rx="2"/>
+            ${lbl?`<text x="${bx+barW/2}" y="${H-8}" text-anchor="middle" font-size="9" fill="#1e8449">${lbl}</text>`:""}
+            ${x.tot>0&&bh>14?`<text x="${bx+barW/2}" y="${by-2}" text-anchor="middle" font-size="7" fill="#1e5e34">€${x.tot.toFixed(0)}</text>`:""}`;
+        }).join("");
+        const yTicks=[0,Math.round(maxTot/2),maxTot];
+        const yLines=yTicks.map(tick=>{
+          const y2=padT+chartH-(tick/maxTot)*chartH;
+          return `<line x1="${padL}" y1="${y2}" x2="${W-padR}" y2="${y2}" stroke="#d5f5e3" stroke-dasharray="3,3"/>
+            <text x="${padL-4}" y="${y2+4}" text-anchor="end" font-size="8" fill="#1e8449">€${tick.toFixed(0)}</text>`;
+        }).join("");
+        const svg=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px;display:block">
+          ${yLines}${bars}
+          <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT+chartH}" stroke="#27ae60" stroke-width="1"/>
+          <line x1="${padL}" y1="${padT+chartH}" x2="${W-padR}" y2="${padT+chartH}" stroke="#27ae60" stroke-width="1"/>
+        </svg>`;
+        const maandTabs=vkMaanden.map(m=>{const[y2,mo2]=m.split("-");return`<div class="tab${m===curVM?" active":""}" onclick="setVkChartM('${m}')" style="flex-shrink:0;padding:5px 12px;font-size:11px">${MNAMEN[parseInt(mo2)-1].slice(0,3)} ${y2}</div>`;}).join("");
+        return `<div class="card">
+          <div class="card-title">💰 Omzet per dag — ${MNAMEN[parseInt(vmo)-1]} ${vy}</div>
+          <div class="tabs" style="margin-bottom:8px">${maandTabs}</div>
+          <div style="overflow-x:auto">${svg}</div>
+          <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12px;background:var(--gl);border-radius:8px;padding:8px 12px">
+            <span style="color:var(--txl)">Totale omzet</span>
+            <span style="font-weight:800;color:var(--gn)">${fmt(totMaand)}</span>
+          </div>
+        </div>`;
       })()}
     </div>
 
@@ -873,37 +963,59 @@ function render() {
 
         <!-- P&L -->
     <div class="page${activePage==="pl"?" active":""}" id="page-pl">
-      <div class="card">
-        <div class="sec-hdr">📊 Winst & Verlies</div>
-        <div style="margin-bottom:10px">
-          <div class="pl-row pl-sub"><span>🥚 Eieren verkocht</span><span class="fw text-or">${vk.reduce((s,r)=>s+r.aantal,0)} stuks</span></div>
-          <div class="pl-row pl-sub"><span>💰 Totale omzet</span><span class="fw text-gn">${fmt(omzet)}</span></div>
-          <div class="pl-row pl-tot"><span>TOTAAL BATEN</span><span>${fmt(omzet)}</span></div>
+      ${(()=>{
+        // Bepaal beschikbare maanden
+        const allYMs = [...new Set([
+          ...vk.map(r=>r.datum.slice(0,7)),
+          ...kst.map(r=>r.datum.slice(0,7))
+        ])].sort().reverse();
+        const curPLM = (plMaand && allYMs.includes(plMaand)) ? plMaand : null;
+        // Filter data op geselecteerde maand (of alles)
+        const vkF  = curPLM ? vk.filter(r=>r.datum.startsWith(curPLM))  : vk;
+        const kstF = curPLM ? kst.filter(r=>r.datum.startsWith(curPLM)) : kst;
+        const plOmzet  = vkF.reduce((s,r)=>s+(r.totaal||0),0);
+        const plLasten = kstF.reduce((s,r)=>s+(r.bedrag||0),0);
+        const plResult = plOmzet - plLasten;
+        const plCatTotals = {};
+        CATS.forEach(c=>plCatTotals[c]=kstF.filter(r=>r.cat===c).reduce((s,r)=>s+(r.bedrag||0),0));
+        const [py,pmo] = curPLM ? curPLM.split("-") : [];
+        const periodeLabel = curPLM ? `${MNAMEN[parseInt(pmo)-1]} ${py}` : "Alle periodes";
+        return `
+        <div class="card">
+          <div class="sec-hdr">📊 Winst & Verlies</div>
+          <div style="margin-bottom:10px">
+            <label class="fl">Periode</label>
+            <div class="tabs" style="margin-bottom:8px">
+              <div class="tab${!curPLM?" active":""}" onclick="setPLMaand(null)" style="flex-shrink:0;padding:5px 12px;font-size:11px">📊 Totaal</div>
+              ${allYMs.map(m=>{const[y2,mo2]=m.split("-");return`<div class="tab${m===curPLM?" active":""}" onclick="setPLMaand('${m}')" style="flex-shrink:0;padding:5px 12px;font-size:11px">${MNAMEN[parseInt(mo2)-1].slice(0,3)} ${y2}</div>`;}).join("")}
+            </div>
+          </div>
+          <div style="font-size:11px;font-weight:700;color:var(--txl);margin-bottom:8px;text-align:center">📅 ${periodeLabel}</div>
+          <div style="margin-bottom:10px">
+            <div class="pl-row pl-sub"><span>🥚 Eieren verkocht</span><span class="fw text-or">${vkF.reduce((s,r)=>s+r.aantal,0)} stuks</span></div>
+            <div class="pl-row pl-sub"><span>💰 Totale omzet</span><span class="fw text-gn">${fmt(plOmzet)}</span></div>
+            <div class="pl-row pl-tot"><span>TOTAAL BATEN</span><span>${fmt(plOmzet)}</span></div>
+          </div>
+          <div class="divider"></div>
+          <div style="margin-bottom:10px">
+            ${CATS.map(c=>`<div class="pl-row pl-sub"><span>${ICONS[c]} ${c}</span><span class="fw text-ro">${fmt(plCatTotals[c])}</span></div>`).join("")}
+            <div class="pl-row pl-tot"><span>TOTAAL LASTEN</span><span>${fmt(plLasten)}</span></div>
+          </div>
+          <div class="divider"></div>
+          <div class="pl-row ${plResult>=0?"pl-pos":"pl-neg"}">
+            <span>${plResult>=0?"✅":"❌"} NETTORESULTAAT</span><span>${fmt(plResult)}</span>
+          </div>
         </div>
-        <div class="divider"></div>
-        <div style="margin-bottom:10px">
-          ${CATS.map(c=>`<div class="pl-row pl-sub"><span>${ICONS[c]} ${c}</span><span class="fw text-ro">${fmt(catTotals[c])}</span></div>`).join("")}
-          <div class="pl-row pl-tot"><span>TOTAAL LASTEN</span><span>${fmt(lasten)}</span></div>
-        </div>
-        <div class="divider"></div>
-        <div class="pl-row ${result>=0?"pl-pos":"pl-neg"}">
-          <span>${result>=0?"✅":"❌"} NETTORESULTAAT</span><span>${fmt(result)}</span>
-        </div>
-      </div>
-      ${totInv>0?`<div class="card" style="border-color:var(--bu);border-width:2px">
-        <div class="card-title" style="color:#1a5276">📈 Investeringen (buiten P&L)</div>
-        <div style="font-size:11px;color:var(--txl);margin-bottom:10px">Investeringen tellen niet mee in het nettoresultaat</div>
-        ${(()=>{
-          return INV_CATS.map(c=>{
-            const t2=inv.filter(r=>r.cat===c).reduce((s,r)=>s+(r.bedrag||0),0);
-            return t2>0?`<div class="pl-row pl-sub"><span>${ICONS[c]||"📈"} ${c}</span><span class="fw" style="color:var(--bu)">${fmt(t2)}</span></div>`:"";
-          }).join("")+
-          `<div class="pl-row" style="background:linear-gradient(90deg,#1a5276,var(--bu))">
+        ${totInv>0?`<div class="card" style="border-color:var(--bu);border-width:2px">
+          <div class="card-title" style="color:#1a5276">📈 Investeringen (buiten P&L)</div>
+          <div style="font-size:11px;color:var(--txl);margin-bottom:10px">Investeringen tellen niet mee in het nettoresultaat</div>
+          ${INV_CATS.map(c=>{const t2=inv.filter(r=>r.cat===c).reduce((s,r)=>s+(r.bedrag||0),0);return t2>0?`<div class="pl-row pl-sub"><span>${ICONS[c]||"📈"} ${c}</span><span class="fw" style="color:var(--bu)">${fmt(t2)}</span></div>`:"";}).join("")}
+          <div class="pl-row" style="background:linear-gradient(90deg,#1a5276,var(--bu))">
             <span style="font-family:'Fredoka One',cursive;font-size:14px;color:#fff">TOTAAL INVESTERINGEN</span>
             <span style="font-family:'Fredoka One',cursive;font-size:14px;color:#fff">${fmt(totInv)}</span>
-          </div>`;
-        })()}
-      </div>`:""}
+          </div>
+        </div>`:""}`;
+      })()}
       <div class="card">
         <div class="card-title">🐓 Onze kippen</div>
         ${(()=>{
@@ -1046,6 +1158,11 @@ function render() {
   </div>`;
   // Render tab content after main render
   setTimeout(renderKostenTabContent, 0);
+  // Init verkoop prijs veld
+  setTimeout(()=>{
+    const el=document.getElementById("vk-prijs-per-ei");
+    if(el&&!el.value) el.value=(instellingen.prijsPerEi||0.40).toFixed(2);
+  }, 0);
 }
 
 // ── CHART ──────────────────────────────────────────────────────────────────
@@ -1319,9 +1436,28 @@ async function accepteerRes(key, r) {
   if(bestaand) {
     klantId = bestaand._key;
   } else {
-    // Maak nieuwe klant aan
-    klantId = uid();
-    await dbSave("klanten/"+klantId, { naam: r.naam, notitie: r.tel ? "📱 "+r.tel : "" });
+    // Naam komt niet voor als klant — geef optie
+    const kiesOpties = klanten.length > 0
+      ? klanten.map((k,i)=>`${i+1}. ${k.naam}`).join("\n")
+      : "";
+    let keuze = null;
+    if(klanten.length > 0) {
+      const antwoord = prompt(
+        `"${r.naam}" is geen bekende klant.\n\nKies een optie:\n0. Registreren als nieuwe klant\n${kiesOpties}\n\nVoer 0 in voor nieuwe klant, of het nummer van een bestaande klant:`
+      );
+      if(antwoord === null) return; // Geannuleerd
+      const nr = parseInt(antwoord);
+      if(nr > 0 && nr <= klanten.length) {
+        keuze = klanten[nr-1];
+      }
+    }
+    if(keuze) {
+      klantId = keuze._key;
+    } else {
+      // Nieuwe klant aanmaken
+      klantId = uid();
+      await dbSave("klanten/"+klantId, { naam: r.naam, notitie: r.tel ? "📱 "+r.tel : "" });
+    }
   }
 
   // Sla op als verkoop
@@ -1358,10 +1494,11 @@ async function saveInv() {
   const omschr     = val("inv-omschrijving");
   const cat        = val("inv-categorie");
   const leverancier= val("inv-leverancier");
+  const door       = val("inv-door").trim();
   if(!datum||bedrag<=0) return toast("⚠️ Vul datum en bedrag in");
   const key = uid();
-  await dbSave("investeringen/"+key, {datum,bedrag,omschr,cat,leverancier});
-  ["inv-bedrag","inv-omschrijving","inv-leverancier"].forEach(id=>set_val(id,""));
+  await dbSave("investeringen/"+key, {datum,bedrag,omschr,cat,leverancier,door});
+  ["inv-bedrag","inv-omschrijving","inv-leverancier","inv-door"].forEach(id=>set_val(id,""));
   set_val("inv-datum",today());
   toast("✅ Investering opgeslagen!");
 }
@@ -1377,7 +1514,8 @@ async function updateInv() {
   const omschr     = val("edit-inv-omschr");
   const cat        = val("edit-inv-cat");
   const leverancier= val("edit-inv-lev");
-  await dbSave("investeringen/"+key, {datum,bedrag,omschr,cat,leverancier});
+  const door       = val("edit-inv-door").trim();
+  await dbSave("investeringen/"+key, {datum,bedrag,omschr,cat,leverancier,door});
   closeModal(); toast("✅ Bijgewerkt!");
 }
 
@@ -1459,7 +1597,7 @@ function renderKostenTabContent() {
           '<div class="li">' +
           '<div class="li-l">' +
           '<div class="li-t">' + (ICONS[r.cat]||"📈") + " " + esc(r.omschr||r.cat) + '</div>' +
-          '<div class="li-s">' + fmtD(r.datum) + (r.leverancier?" · "+esc(r.leverancier):"") + " · " + r.cat + '</div>' +
+          '<div class="li-s">' + fmtD(r.datum) + (r.leverancier?" · "+esc(r.leverancier):"") + (r.door?" · 👤 "+esc(r.door):"") + " · " + r.cat + '</div>' +
           '</div>' +
           '<div class="li-r"><span class="fw" style="color:var(--bu)">' + fmt(r.bedrag) + '</span>' +
           '<button class="ebtn" onclick=\'openModal("inv",' + JSON.stringify(r) + ')\'>✏️</button>' +
@@ -1481,6 +1619,7 @@ function renderKostenTabContent() {
       '</div>' +
       '<div class="fg"><label class="fl">Leverancier</label><input type="text" id="inv-leverancier" placeholder="optioneel..."></div>' +
       '</div>' +
+      '<div class="fg"><label class="fl">Geïnvesteerd door</label><input type="text" id="inv-door" placeholder="bijv. Ben, familie..."></div>' +
       '<button class="btn btn-p" onclick="saveInv()">📈 Investering opslaan</button>' +
       '</div>' +
       '<div class="card"><div class="card-title">📊 Investeringen per categorie</div>' +
@@ -1490,6 +1629,8 @@ function renderKostenTabContent() {
 }
 
 function setKstTab(tab) { kstTab=tab; render(); }
+function setPLMaand(m) { plMaand=m; render(); }
+function setVkChartM(m) { vkChartM=m; render(); }
 
 // ── CRUD — Kippen ───────────────────────────────────────────────
 const RAS_ICONS = {"ISA Brown":"🟠","Koekoek":"⚫","Sussex":"🟡","Blue des Landes":"🔵","Haan":"🐓","Anders":"🐔"};
@@ -1536,9 +1677,43 @@ function setZoekKlant() {
 function goPage(id) { activePage=id; render(); }
 function setM(m) { activeM=m; render(); }
 function setActiveKlant(key) { activeKlant = activeKlant===key?null:key; render(); }
+let vkType = "los"; // "los" | "doos6" | "doos10"
+
+function setVkType(type) {
+  vkType = type;
+  const btnLos   = document.getElementById("vk-type-los");
+  const btnDoos6 = document.getElementById("vk-type-doos6");
+  const btnDoos10= document.getElementById("vk-type-doos10");
+  const aantalDiv  = document.getElementById("vk-aantal-div");
+  const doosjesDiv = document.getElementById("vk-doosjes-div");
+  if(btnLos)    btnLos.className    = "btn " + (type==="los"    ? "btn-p" : "btn-g");
+  if(btnDoos6)  btnDoos6.className  = "btn " + (type==="doos6"  ? "btn-p" : "btn-g");
+  if(btnDoos10) btnDoos10.className = "btn " + (type==="doos10" ? "btn-p" : "btn-g");
+  if(aantalDiv)  aantalDiv.style.display  = type==="los" ? "block" : "none";
+  if(doosjesDiv) doosjesDiv.style.display = type!=="los" ? "block" : "none";
+  // Set default price for type
+  const prijsEl = document.getElementById("vk-prijs-per-ei");
+  if(prijsEl) {
+    if(type==="doos6")  prijsEl.value = (instellingen.prijsDoosje6 || 2.50).toFixed(2);
+    else if(type==="doos10") prijsEl.value = (instellingen.prijsDoosje10 || 4.00).toFixed(2);
+    else prijsEl.value = (instellingen.prijsPerEi || 0.40).toFixed(2);
+  }
+  calcVkTot();
+}
+
 function calcVkTot() {
-  const n=parseInt(val("vk-aantal"))||0;
-  set_val("vk-totaal", n>0?fmt(n*prijs()):"");
+  const prijsEl = document.getElementById("vk-prijs-per-ei");
+  let totaal = 0;
+  if(vkType === "los") {
+    const n = parseInt(val("vk-aantal"))||0;
+    const p = parseFloat((prijsEl||{}).value) || prijs();
+    totaal = n * p;
+  } else {
+    const nd = parseInt(val("vk-doosjes"))||0;
+    const p = parseFloat((prijsEl||{}).value) || (vkType==="doos10" ? (instellingen.prijsDoosje10||4.00) : (instellingen.prijsDoosje6||2.50));
+    totaal = nd * p;
+  }
+  set_val("vk-totaal", totaal > 0 ? fmt(totaal) : "");
 }
 function calcNieuweKlantVeld() {
   const v = val("vk-klant-select");
@@ -1549,14 +1724,14 @@ function calcNieuweKlantVeld() {
 // ── Expose to global scope (needed for onclick handlers) ───────────────────
 Object.assign(window, {
   goPage, setM, setActiveKlant, saveLeg, saveLegQuick, deleteLeg, updateLeg,
-  saveVk, deleteVk, updateVk, calcVkTot, calcNieuweKlantVeld,
+  saveVk, deleteVk, updateVk, calcVkTot, calcNieuweKlantVeld, setVkType,
   saveKst, deleteKst, updateKst,
   saveKlant, deleteKlant, updateKlant,
   saveInstellingen, setZoekKlant,
   openModal, closeModal, exportCSV, setSyncBadge,
   openChart, closeChart, switchChartView, setChartM,
   doLogin, doLogout, renderLogin, showResBevestiging, syncPubliekeData,
-  saveInv, deleteInv, updateInv, setKstTab,
+  saveInv, deleteInv, updateInv, setKstTab, setPLMaand, setVkChartM,
   renderKostenTabContent,
   saveKip, deleteKip, updateKip,
   updateOfflineBanner,
