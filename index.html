@@ -168,7 +168,7 @@ const BB    = {Cash:"bg",Tikkie:"bb",Overboeking:"bo"};
 
 // ── State ──────────────────────────────────────────────────────────────────
 let leg=[], vk=[], kst=[], inv=[], klanten=[], kippen=[], reserveringen=[], activePage="dashboard", activeM=null, activeKlant=null, modalState=null;
-let instellingen = { prijsPerEi: 0.40, doosjeGrootte: 6, prijsDoosje6: 2.50, prijsDoosje10: 4.00 };
+let instellingen = { prijsPerEi: 0.40, doosjeGrootte: 6, prijsDoosje6: 2.50, prijsDoosje10: 4.00, klantGroen: 7, klantOranje: 14 };
 let zoekKlant = "";
 let currentUser = null;
 let kstTab = "kosten";
@@ -294,7 +294,7 @@ function startListeners() {
   });
   onValue(ref(db,"instellingen"), snap => {
     const val = snap.val() || {};
-    instellingen = { prijsPerEi: val.prijsPerEi ?? 0.40, doosjeGrootte: val.doosjeGrootte ?? 6, prijsDoosje6: val.prijsDoosje6 ?? 2.50, prijsDoosje10: val.prijsDoosje10 ?? 4.00 };
+    instellingen = { prijsPerEi: val.prijsPerEi ?? 0.40, doosjeGrootte: val.doosjeGrootte ?? 6, prijsDoosje6: val.prijsDoosje6 ?? 2.50, prijsDoosje10: val.prijsDoosje10 ?? 4.00, klantGroen: val.klantGroen ?? 7, klantOranje: val.klantOranje ?? 14 };
     render(); setSyncBadge("ok");
   });
 }
@@ -931,7 +931,7 @@ function render() {
                 <div class="li-l">
                   <div class="li-t">👤 ${esc(k.naam)}</div>
                   <div class="li-s">${kvk.length} aankopen · 🥚 ${totEieren} eieren · ${fmt(totBedrag)}</div>
-                  ${(()=>{ const freq=getKlantFrequentie(k.naam); if(!freq||freq.aantalBezoeken===0) return '<div class="li-s" style="color:var(--txl);font-weight:700">⚫ Nog nooit gekocht</div>'; const d=freq.dagenGeleden; const kleur=d>30?"color:var(--rd)":d>7?"color:var(--or)":"color:var(--gn)"; const dot=d===0?"🟢":d===1?"🟢":d<=7?"🟢":d<=30?"🟡":"🔴"; const lbl=d===0?"Vandaag gekocht":d===1?"Gisteren gekocht":d<=30?"Laatste aankoop "+d+" dagen geleden":"Niet gekocht in "+d+" dagen"; return `<div class="li-s" style="${kleur};font-weight:700">${dot} ${lbl}</div>`; })()}
+                  ${(()=>{ const freq=getKlantFrequentie(k.naam); if(!freq||freq.aantalBezoeken===0) return '<div class="li-s" style="color:var(--txl);font-weight:700">⚫ Nog nooit gekocht</div>'; const d=freq.dagenGeleden; const tGroen=instellingen.klantGroen??7; const tOranje=instellingen.klantOranje??14; const kleur=d>tOranje?"color:var(--rd)":d>tGroen?"color:var(--or)":"color:var(--gn)"; const dot=d>tOranje?"🔴":d>tGroen?"🟡":"🟢"; const lbl=d===0?"Vandaag gekocht":d===1?"Gisteren gekocht":d<=tOranje?"Laatste aankoop "+d+" dagen geleden":"Niet gekocht in "+d+" dagen"; return `<div class="li-s" style="${kleur};font-weight:700">${dot} ${lbl}</div>`; })()}
                   ${k.notitie?`<div class="li-s" style="font-style:italic">${esc(k.notitie)}</div>`:""}
                 </div>
                 <div class="li-r">
@@ -1077,6 +1077,48 @@ function render() {
           </div>
         </div>
         <button class="btn btn-p" onclick="saveInstellingen()">💾 Opslaan</button>
+      </div>
+      <div class="card">
+        <div class="sec-hdr">&#x1F7E2; Klant status drempelwaarden</div>
+        <div style="font-size:11px;color:var(--txl);margin-bottom:14px">Stel in na hoeveel dagen een klant van status wisselt op de klantenpagina.</div>
+        <div style="background:var(--gl);border-radius:12px;border:1.5px solid var(--gd);overflow:hidden;margin-bottom:14px">
+          <div style="display:grid;grid-template-columns:2fr 3fr 3fr;background:var(--gd);padding:7px 12px;font-size:10px;font-weight:800;color:var(--bd)">
+            <span>Status</span><span>Betekenis</span><span>Drempel</span>
+          </div>
+          <div style="display:grid;grid-template-columns:2fr 3fr 3fr;padding:9px 12px;align-items:center;border-bottom:1px solid var(--gd)">
+            <span style="font-size:13px;font-weight:800;color:var(--gn)">&#x1F7E2; Groen</span>
+            <span style="font-size:11px;color:var(--txl)">Recent gekocht</span>
+            <span style="font-size:11px;color:var(--txl)">&le; <strong>${instellingen.klantGroen??7}</strong> dagen</span>
+          </div>
+          <div style="display:grid;grid-template-columns:2fr 3fr 3fr;padding:9px 12px;align-items:center;border-bottom:1px solid var(--gd)">
+            <span style="font-size:13px;font-weight:800;color:var(--or)">&#x1F7E1; Oranje</span>
+            <span style="font-size:11px;color:var(--txl)">Tijdje geleden</span>
+            <span style="font-size:11px;color:var(--txl)">> ${instellingen.klantGroen??7} en &le; <strong>${instellingen.klantOranje??14}</strong> dagen</span>
+          </div>
+          <div style="display:grid;grid-template-columns:2fr 3fr 3fr;padding:9px 12px;align-items:center;border-bottom:1px solid var(--gd)">
+            <span style="font-size:13px;font-weight:800;color:var(--rd)">&#x1F534; Rood</span>
+            <span style="font-size:11px;color:var(--txl)">Lang niet gezien</span>
+            <span style="font-size:11px;color:var(--txl)">> <strong>${instellingen.klantOranje??14}</strong> dagen</span>
+          </div>
+          <div style="display:grid;grid-template-columns:2fr 3fr 3fr;padding:9px 12px;align-items:center">
+            <span style="font-size:13px;font-weight:800;color:var(--txl)">&#x26AB; Grijs</span>
+            <span style="font-size:11px;color:var(--txl)">Nog nooit gekocht</span>
+            <span style="font-size:11px;color:var(--txl)">&#x2014;</span>
+          </div>
+        </div>
+        <div class="frow">
+          <div class="fg">
+            <label class="fl">&#x1F7E2; Groen t/m (dagen)</label>
+            <input type="number" id="inst-klant-groen" value="${instellingen.klantGroen??7}" min="1" max="365" inputmode="numeric">
+            <div style="font-size:11px;color:var(--txl);margin-top:4px">Huidig: <strong>${instellingen.klantGroen??7} dagen</strong></div>
+          </div>
+          <div class="fg">
+            <label class="fl">&#x1F7E1; Oranje t/m (dagen)</label>
+            <input type="number" id="inst-klant-oranje" value="${instellingen.klantOranje??14}" min="1" max="365" inputmode="numeric">
+            <div style="font-size:11px;color:var(--txl);margin-top:4px">Huidig: <strong>${instellingen.klantOranje??14} dagen</strong></div>
+          </div>
+        </div>
+        <button class="btn btn-p" onclick="saveInstellingen()">&#x1F4BE; Drempelwaarden opslaan</button>
       </div>
       <div class="card">
         <div class="sec-hdr">🐓 Kippen beheren</div>
@@ -1669,7 +1711,10 @@ async function saveInstellingen() {
   if(p <= 0) return toast("⚠️ Voer een geldige prijs in");
   const p6 = parseFloat(val("inst-prijs6")) || 2.50;
   const p10 = parseFloat(val("inst-prijs10")) || 4.00;
-  await dbSave("instellingen", { prijsPerEi: p, prijsDoosje6: p6, prijsDoosje10: p10 });
+  const klantGroen = parseInt(val("inst-klant-groen")) || 7;
+  const klantOranje = parseInt(val("inst-klant-oranje")) || 14;
+  if(klantOranje <= klantGroen) return toast("⚠️ Oranje drempel moet groter zijn dan groen");
+  await dbSave("instellingen", { prijsPerEi: p, prijsDoosje6: p6, prijsDoosje10: p10, klantGroen, klantOranje });
   toast("✅ Instellingen opgeslagen!");
 }
 function setZoekKlant() {
