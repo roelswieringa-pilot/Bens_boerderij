@@ -167,8 +167,8 @@ const MNAMEN= ["Januari","Februari","Maart","April","Mei","Juni","Juli","Augustu
 const BB    = {Cash:"bg",Tikkie:"bb",Overboeking:"bo"};
 
 // ── State ──────────────────────────────────────────────────────────────────
-let leg=[], vk=[], kst=[], inv=[], klanten=[], kippen=[], reserveringen=[], activePage="dashboard", activeM=null, activeKlant=null, modalState=null;
-let instellingen = { prijsPerEi: 0.40, doosjeGrootte: 6, prijsDoosje6: 2.50, prijsDoosje10: 4.00, klantGroen: 7, klantOranje: 14 };
+let leg=[], vk=[], kst=[], inv=[], klanten=[], kippen=[], reserveringen=[], schoonmaak=[], activePage="dashboard", activeM=null, activeKlant=null, modalState=null;
+let instellingen = { prijsPerEi: 0.40, doosjeGrootte: 6, prijsDoosje6: 2.50, prijsDoosje10: 4.00, klantGroen: 7, klantOranje: 14, hokFrequentie: 14 };
 let zoekKlant = "";
 let currentUser = null;
 let kstTab = "kosten";
@@ -287,6 +287,16 @@ function startListeners() {
     kippen = Object.entries(val).map(([k,v])=>({...v,_key:k}));
     render(); setSyncBadge("ok");
   });
+  onValue(ref(db,"schoonmaak"), snap => {
+    const val = snap.val() || {};
+    schoonmaak = Object.entries(val).map(([k,v])=>({...v,_key:k})).sort((a,b)=>b.datum.localeCompare(a.datum));
+    render(); setSyncBadge("ok");
+  });
+  onValue(ref(db,"schoonmaak"), snap => {
+    const v2 = snap.val() || {};
+    schoonmaak = Object.entries(v2).map(([k,v])=>({...v,_key:k})).sort((a,b)=>b.datum.localeCompare(a.datum));
+    render(); setSyncBadge("ok");
+  });
   onValue(ref(db,"klanten"), snap => {
     const val = snap.val() || {};
     klanten = Object.entries(val).map(([k,v])=>({...v,_key:k})).sort((a,b)=>a.naam.localeCompare(b.naam));
@@ -294,7 +304,7 @@ function startListeners() {
   });
   onValue(ref(db,"instellingen"), snap => {
     const val = snap.val() || {};
-    instellingen = { prijsPerEi: val.prijsPerEi ?? 0.40, doosjeGrootte: val.doosjeGrootte ?? 6, prijsDoosje6: val.prijsDoosje6 ?? 2.50, prijsDoosje10: val.prijsDoosje10 ?? 4.00, klantGroen: val.klantGroen ?? 7, klantOranje: val.klantOranje ?? 14 };
+    instellingen = { prijsPerEi: val.prijsPerEi ?? 0.40, doosjeGrootte: val.doosjeGrootte ?? 6, prijsDoosje6: val.prijsDoosje6 ?? 2.50, prijsDoosje10: val.prijsDoosje10 ?? 4.00, klantGroen: val.klantGroen ?? 7, klantOranje: val.klantOranje ?? 14, hokFrequentie: val.hokFrequentie ?? 14 };
     render(); setSyncBadge("ok");
   });
 }
@@ -655,6 +665,32 @@ function render() {
         <div><div style="font-family:'Fredoka One',cursive;font-size:13px;color:#fff">Nog niet ingevuld vandaag!</div>
         <div style="font-size:11px;color:rgba(255,255,255,.85)">Vergeet de eieren niet te registreren</div></div>
       </div>`:""}
+      ${(()=>{
+        const dagen = getDagenTotSchoonmaak();
+        const volgende = getVolgendeSchoonmaak();
+        const isVervallen = dagen <= 0;
+        const isMorgen = dagen === 1;
+        const isVandaag = dagen === 0;
+        if (dagen > 3) return "";
+        const tekst = isVervallen
+          ? "Het kippenhok moet schoongemaakt worden!"
+          : isVandaag ? "Vandaag het kippenhok schoonmaken"
+          : isMorgen ? "Morgen het kippenhok schoonmaken"
+          : "Kippenhok schoonmaken over " + dagen + " dagen (" + fmtD(volgende) + ")";
+        return `<div style="background:linear-gradient(90deg,#1e8449,#27ae60);border-radius:12px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
+            <span style="font-size:22px">🧹</span>
+            <div>
+              <div style="font-family:'Fredoka One',cursive;font-size:13px;color:#fff">${tekst}</div>
+              <div style="font-size:11px;color:rgba(255,255,255,.85)">Frequentie: elke ${instellingen.hokFrequentie||14} dagen</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0">
+            <button onclick="bevestigSchoonmaak()" style="background:rgba(255,255,255,.25);border:1.5px solid rgba(255,255,255,.5);border-radius:8px;color:#fff;font-size:11px;font-weight:800;padding:5px 9px;cursor:pointer;font-family:'Nunito',sans-serif">✅ Klaar</button>
+            <button onclick="uitstellenSchoonmaak()" style="background:rgba(0,0,0,.15);border:1.5px solid rgba(255,255,255,.3);border-radius:8px;color:rgba(255,255,255,.9);font-size:11px;font-weight:700;padding:5px 9px;cursor:pointer;font-family:'Nunito',sans-serif">⏰ +3d</button>
+          </div>
+        </div>`;
+      })()}
       <div class="stats">
         <div class="stat"><div class="em">🥚</div><div class="vl">${vandaag}</div><div class="lb">VANDAAG</div></div>
         <div class="stat"><div class="em">📅</div><div class="vl">${week}</div><div class="lb">DEZE WEEK</div></div>
@@ -702,6 +738,22 @@ function render() {
       })()}
     </div>
 
+      ${(()=>{
+        if(schoonmaak.filter(r=>!r.type||r.type!=="uitstel").length===0) return "";
+        const echt = schoonmaak.filter(r=>!r.type||r.type!=="uitstel");
+        return `<div class="card">
+          <div class="card-title">&#x1F9F9; Schoonmaak historie</div>
+          ${echt.slice(0,8).map((r,i)=>`
+          <div class="li" ${i===echt.slice(0,8).length-1?' style="border:none"':""}>
+            <div class="li-l"><div class="li-t">${fmtD(r.datum)}</div>${r.notitie&&r.notitie!=="uitgesteld"?`<div class="li-s">${esc(r.notitie)}</div>`:""}</div>
+            <div class="li-r">
+              <span class="badge bg">&#x2705; Schoon</span>
+              <button class="dbtn" onclick="deleteSchoonmaak('${r._key}')">&#x1F5D1;</button>
+            </div>
+          </div>`).join("")}
+          ${echt.length>8?`<div style="font-size:11px;color:var(--txl);text-align:center;padding:6px 0">${echt.length-8} oudere records</div>`:""}
+        </div>`;
+      })()}
     <!-- LEGDAGEN -->
     <div class="page${activePage==="legdagen"?" active":""}" id="page-legdagen">
       <div class="card">
@@ -1077,6 +1129,30 @@ function render() {
           </div>
         </div>
         <button class="btn btn-p" onclick="saveInstellingen()">💾 Opslaan</button>
+      </div>
+      <div class="card">
+        <div class="sec-hdr">&#x1F9F9; Kippenhok schoonmaken</div>
+        <div style="font-size:11px;color:var(--txl);margin-bottom:14px">Stel in hoe vaak het kippenhok schoongemaakt moet worden. Op het dashboard verschijnt een melding 3 dagen van tevoren.</div>
+        <div class="fg">
+          <label class="fl">&#x1F9F9; Schoonmaak frequentie (dagen)</label>
+          <input type="number" id="inst-hok-frequentie" value="${instellingen.hokFrequentie??14}" min="1" max="365" inputmode="numeric">
+          <div style="font-size:11px;color:var(--txl);margin-top:4px">Huidig: <strong>${instellingen.hokFrequentie??14} dagen</strong> &middot; Aanbeveling: 7&ndash;14 dagen voor vrije uitloop</div>
+        </div>
+        ${(()=>{
+          const volgende = getVolgendeSchoonmaak();
+          const laatste = schoonmaak.filter(r=>!r.type||r.type!=="uitstel")[0];
+          return `<div style="background:var(--gl);border-radius:10px;border:1.5px solid var(--gd);padding:10px 14px;margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+              <span style="color:var(--txl);font-weight:700">Laatste schoonmaak</span>
+              <span style="font-weight:800;color:var(--bd)">${laatste?fmtD(laatste.datum):"Nog niet geregistreerd"}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:12px">
+              <span style="color:var(--txl);font-weight:700">Volgende gepland</span>
+              <span style="font-weight:800;color:var(--gn)">${fmtD(volgende)}</span>
+            </div>
+          </div>`;
+        })()}
+        <button class="btn btn-p" onclick="saveInstellingen()">&#x1F4BE; Frequentie opslaan</button>
       </div>
       <div class="card">
         <div class="sec-hdr">&#x1F7E2; Klant status drempelwaarden</div>
@@ -1714,9 +1790,57 @@ async function saveInstellingen() {
   const klantGroen = parseInt(val("inst-klant-groen")) || 7;
   const klantOranje = parseInt(val("inst-klant-oranje")) || 14;
   if(klantOranje <= klantGroen) return toast("⚠️ Oranje drempel moet groter zijn dan groen");
-  await dbSave("instellingen", { prijsPerEi: p, prijsDoosje6: p6, prijsDoosje10: p10, klantGroen, klantOranje });
+  const hokFrequentie = parseInt(val("inst-hok-frequentie")) || 14;
+  await dbSave("instellingen", { prijsPerEi: p, prijsDoosje6: p6, prijsDoosje10: p10, klantGroen, klantOranje, hokFrequentie });
   toast("✅ Instellingen opgeslagen!");
 }
+
+// ── Schoonmaak helpers ────────────────────────────────────────────────────
+function getVolgendeSchoonmaak() {
+  const freq = instellingen.hokFrequentie || 14;
+  if (schoonmaak.length === 0) {
+    // Geen historie: plan eerste aanstaande woensdag
+    const d = new Date();
+    const dag = d.getDay(); // 0=zo,1=ma,...,3=wo
+    const diffNaarWo = (3 - dag + 7) % 7 || 7;
+    d.setDate(d.getDate() + diffNaarWo);
+    return d.toISOString().slice(0, 10);
+  }
+  const laatste = schoonmaak[0].datum;
+  const volgende = new Date(laatste + "T12:00:00");
+  volgende.setDate(volgende.getDate() + freq);
+  return volgende.toISOString().slice(0, 10);
+}
+
+function getDagenTotSchoonmaak() {
+  const volgende = getVolgendeSchoonmaak();
+  return Math.ceil((new Date(volgende + "T12:00:00") - new Date()) / 86400000);
+}
+
+async function bevestigSchoonmaak() {
+  const datum = today();
+  const key = uid();
+  await dbSave("schoonmaak/" + key, { datum, notitie: "" });
+  toast("✅ Kippenhok schoongemaakt geregistreerd!");
+}
+
+async function uitstellenSchoonmaak() {
+  // Stel 3 dagen uit door een tijdelijk record te schrijven met datum = volgende + 3
+  const volgende = getVolgendeSchoonmaak();
+  const uitgesteld = new Date(volgende + "T12:00:00");
+  uitgesteld.setDate(uitgesteld.getDate() + 3);
+  // We slaan de uitstel op als een record met type="uitstel" zodat het telt als "laatste actie"
+  const key = uid();
+  await dbSave("schoonmaak/" + key, { datum: uitgesteld.toISOString().slice(0,10), notitie: "uitgesteld", type: "uitstel" });
+  toast("⏰ Schoonmaak 3 dagen uitgesteld");
+}
+
+async function deleteSchoonmaak(key) {
+  if (!confirm("Schoonmaak record verwijderen?")) return;
+  await dbRemove("schoonmaak/" + key);
+  toast("🗑 Verwijderd");
+}
+
 function setZoekKlant() {
   zoekKlant = (document.getElementById("klant-zoek")||{value:""}).value.toLowerCase();
   render();
@@ -1788,7 +1912,8 @@ Object.assign(window, {
   renderKostenTabContent,
   saveKip, deleteKip, updateKip,
   updateOfflineBanner,
-  saveReservering, accepteerRes, weigerRes, deleteRes, showResBevestiging
+  saveReservering, accepteerRes, weigerRes, deleteRes, showResBevestiging,
+  bevestigSchoonmaak, uitstellenSchoonmaak, deleteSchoonmaak
 });
 
 
