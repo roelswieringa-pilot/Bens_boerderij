@@ -168,7 +168,7 @@ const BB    = {Cash:"bg",Tikkie:"bb",Overboeking:"bo"};
 
 // ── State ──────────────────────────────────────────────────────────────────
 let leg=[], vk=[], kst=[], inv=[], klanten=[], kippen=[], reserveringen=[], schoonmaak=[], activePage="dashboard", activeM=null, activeKlant=null, modalState=null;
-let instellingen = { prijsPerEi: 0.40, doosjeGrootte: 6, prijsDoosje6: 2.50, prijsDoosje10: 4.00, klantGroen: 7, klantOranje: 14, hokFrequentie: 14 };
+let instellingen = { prijsPerEi: 0.40, doosjeGrootte: 6, prijsDoosje6: 2.50, prijsDoosje10: 4.00, klantGroen: 7, klantOranje: 14, hokFrequentie: 14, weerLat: 50.9057, weerLon: 5.7815, weerNaam: "Ulestraten" };
 let zoekKlant = "";
 let currentUser = null;
 let kstTab = "kosten";
@@ -304,7 +304,7 @@ function startListeners() {
   });
   onValue(ref(db,"instellingen"), snap => {
     const val = snap.val() || {};
-    instellingen = { prijsPerEi: val.prijsPerEi ?? 0.40, doosjeGrootte: val.doosjeGrootte ?? 6, prijsDoosje6: val.prijsDoosje6 ?? 2.50, prijsDoosje10: val.prijsDoosje10 ?? 4.00, klantGroen: val.klantGroen ?? 7, klantOranje: val.klantOranje ?? 14, hokFrequentie: val.hokFrequentie ?? 14 };
+    instellingen = { prijsPerEi: val.prijsPerEi ?? 0.40, doosjeGrootte: val.doosjeGrootte ?? 6, prijsDoosje6: val.prijsDoosje6 ?? 2.50, prijsDoosje10: val.prijsDoosje10 ?? 4.00, klantGroen: val.klantGroen ?? 7, klantOranje: val.klantOranje ?? 14, hokFrequentie: val.hokFrequentie ?? 14, weerLat: val.weerLat ?? 50.9057, weerLon: val.weerLon ?? 5.7815, weerNaam: val.weerNaam ?? "Ulestraten" };
     render(); setSyncBadge("ok");
   });
 }
@@ -1222,6 +1222,28 @@ function render() {
         })()}
       </div>
       <div class="card">
+        <div class="sec-hdr">&#x1F4CD; Weerlocatie</div>
+        <div style="font-size:11px;color:var(--txl);margin-bottom:14px">De locatie die gebruikt wordt voor het weerbericht op het dashboard.</div>
+        <div class="fg">
+          <label class="fl">Plaatsnaam (weergave)</label>
+          <input type="text" id="inst-weer-naam" value="${instellingen.weerNaam??'Ulestraten'}" placeholder="bijv. Ulestraten">
+        </div>
+        <div class="frow">
+          <div class="fg">
+            <label class="fl">Breedtegraad (lat)</label>
+            <input type="number" id="inst-weer-lat" value="${instellingen.weerLat??50.9057}" step="0.0001" inputmode="decimal">
+          </div>
+          <div class="fg">
+            <label class="fl">Lengtegraad (lon)</label>
+            <input type="number" id="inst-weer-lon" value="${instellingen.weerLon??5.7815}" step="0.0001" inputmode="decimal">
+          </div>
+        </div>
+        <div style="background:var(--gl);border-radius:10px;border:1.5px solid var(--gd);padding:10px 14px;margin-bottom:12px;font-size:11px;color:var(--txl)">
+          &#x1F4A1; Coördinaten vind je via <strong>maps.google.com</strong> — zoek je adres op en klik rechts op de locatie voor de coördinaten.
+        </div>
+        <button class="btn btn-p" onclick="saveInstellingen()">&#x1F4BE; Locatie opslaan</button>
+      </div>
+      <div class="card">
         <div class="card-title">📊 Statistieken</div>
         <div class="li"><div class="li-l"><div class="li-t">Totaal gelegde eieren</div></div><div class="li-r"><span class="fw text-or">${totGelegd}</span></div></div>
         <div class="li"><div class="li-l"><div class="li-t">Totaal verkochte eieren</div></div><div class="li-r"><span class="fw text-gn">${totVerkocht}</span></div></div>
@@ -1785,7 +1807,10 @@ async function saveInstellingen() {
   const klantOranje = parseInt(val("inst-klant-oranje")) || 14;
   if(klantOranje <= klantGroen) return toast("⚠️ Oranje drempel moet groter zijn dan groen");
   const hokFrequentie = parseInt(val("inst-hok-frequentie")) || 14;
-  await dbSave("instellingen", { prijsPerEi: p, prijsDoosje6: p6, prijsDoosje10: p10, klantGroen, klantOranje, hokFrequentie });
+  const weerLat = parseFloat(val("inst-weer-lat")) || 50.9057;
+  const weerLon = parseFloat(val("inst-weer-lon")) || 5.7815;
+  const weerNaam = val("inst-weer-naam").trim() || "Ulestraten";
+  await dbSave("instellingen", { prijsPerEi: p, prijsDoosje6: p6, prijsDoosje10: p10, klantGroen, klantOranje, hokFrequentie, weerLat, weerLon, weerNaam });
   toast("✅ Instellingen opgeslagen!");
 }
 
@@ -1868,7 +1893,10 @@ async function laadWeer() {
   const el = document.getElementById("weer-blok");
   if (!el) return;
   try {
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${WEER_LAT}&longitude=${WEER_LON}&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Europe%2FAmsterdam&forecast_days=3`;
+    const lat  = instellingen.weerLat  ?? WEER_LAT;
+    const lon  = instellingen.weerLon  ?? WEER_LON;
+    const naam = instellingen.weerNaam ?? WEER_NAAM;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Europe%2FAmsterdam&forecast_days=3`;
     const res = await fetch(url);
     if (!res.ok) throw new Error("HTTP " + res.status);
     const data = await res.json();
@@ -1892,7 +1920,7 @@ async function laadWeer() {
     }).join("");
     el.innerHTML = `<div class="card" style="padding:12px 16px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <span style="font-family:'Fredoka One',cursive;font-size:14px;color:var(--bd)">🌤️ Weer · ${WEER_NAAM}</span>
+        <span style="font-family:'Fredoka One',cursive;font-size:14px;color:var(--bd)">🌤️ Weer · ${naam}</span>
         <span style="font-size:10px;color:var(--txl)">Open-Meteo</span>
       </div>
       <div style="display:flex;gap:0">${cols}</div>
