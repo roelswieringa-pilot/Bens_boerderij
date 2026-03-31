@@ -705,15 +705,6 @@ function render() {
         <div class="fg"><label class="fl">Aantal eieren geraapt</label><input type="number" id="quick-eieren" placeholder="0" min="0" inputmode="numeric"></div>
         <button class="btn btn-p" onclick="saveLegQuick()">🥚 Opslaan</button>
       </div>
-      <div class="card">
-        <div class="card-title">📋 Laatste dagen</div>
-        ${leg.length===0?'<div class="empty"><div class="em">🐣</div><p>Nog geen gegevens</p></div>':
-          [...leg].reverse().slice(0,7).map(r=>`
-          <div class="li">
-            <div class="li-l"><div class="li-t">${fmtD(r.datum)}</div>${r.notitie?`<div class="li-s">${esc(r.notitie)}</div>`:""}</div>
-            <div class="li-r"><span class="badge bo">🥚 ${r.aantal}</span></div>
-          </div>`).join("")}
-      </div>
       ${(()=>{
         const ym = t.slice(0,7);
         const sm = getMaandSamenvatting(ym);
