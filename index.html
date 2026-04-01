@@ -445,8 +445,16 @@ async function updateVk() {
   const koper  = val("edit-vk-koper");
   const betaal = val("edit-vk-betaal");
   const notitie= val("edit-vk-notitie");
-  await dbSave("verkopen/"+key, {datum,aantal,koper,betaal,totaal:aantal*prijs(),notitie});
+  const totaal = parseFloat(val("edit-vk-totaal"))||0;
+  await dbSave("verkopen/"+key, {datum,aantal,koper,betaal,totaal,notitie});
   closeModal(); toast("✅ Bijgewerkt!");
+}
+
+function calcEditVkTot() {
+  const aantal = parseInt(val("edit-vk-aantal"))||0;
+  const origPrijs = parseFloat(val("edit-vk-origprijs"))||0;
+  const totEl = document.getElementById("edit-vk-totaal");
+  if(totEl && origPrijs) totEl.value = (aantal * origPrijs).toFixed(2);
 }
 
 // ── CRUD — Kosten ─────────────────────────────────────────────────────────
@@ -505,12 +513,16 @@ function renderModal() {
       <div class="fg"><label class="fl">Notities</label><input type="text" id="edit-leg-notitie" value="${esc(data.notitie||'')}"></div>
       <div class="brow"><button class="btn btn-g" onclick="closeModal()">Annuleren</button><button class="btn btn-p" onclick="updateLeg()">✅ Opslaan</button></div>`;
   } else if(type==="vk") {
+    const prijsPerStuk = data.totaal && data.aantal ? (data.totaal / data.aantal) : prijs();
     el.innerHTML = `
       <div class="modal-title">✏️ Verkoop aanpassen <button onclick="closeModal()">✕</button></div>
       <input type="hidden" id="edit-vk-key" value="${esc(data._key)}">
+      <input type="hidden" id="edit-vk-origprijs" value="${prijsPerStuk.toFixed(4)}">
+      <input type="hidden" id="edit-vk-origtotaal" value="${data.totaal||0}">
+      <input type="hidden" id="edit-vk-origaantal" value="${data.aantal||0}">
       <div class="frow">
         <div class="fg"><label class="fl">Datum</label><input type="date" id="edit-vk-datum" value="${esc(data.datum)}"></div>
-        <div class="fg"><label class="fl">Aantal</label><input type="number" id="edit-vk-aantal" value="${data.aantal}" min="1" inputmode="numeric"></div>
+        <div class="fg"><label class="fl">Aantal</label><input type="number" id="edit-vk-aantal" value="${data.aantal}" min="1" inputmode="numeric" oninput="calcEditVkTot()"></div>
       </div>
       <div class="fg"><label class="fl">Koper</label><input type="text" id="edit-vk-koper" value="${esc(data.koper||'')}"></div>
       <div class="fg"><label class="fl">Betaalwijze</label>
@@ -519,6 +531,10 @@ function renderModal() {
           <option${data.betaal==="Tikkie"?" selected":""}>Tikkie</option>
           <option${data.betaal==="Overboeking"?" selected":""}>Overboeking</option>
         </select></div>
+      <div class="fg"><label class="fl">Totaal (€)</label>
+        <input type="number" id="edit-vk-totaal" value="${(data.totaal||0).toFixed(2)}" step="0.01" inputmode="decimal" style="color:var(--bl);font-weight:800">
+        <div style="font-size:10px;color:var(--txl);margin-top:3px">Originele prijs: € ${prijsPerStuk.toFixed(2)} per stuk — past automatisch mee bij aantal wijziging</div>
+      </div>
       <div class="fg"><label class="fl">Notities</label><input type="text" id="edit-vk-notitie" value="${esc(data.notitie||'')}"></div>
       <div class="brow"><button class="btn btn-g" onclick="closeModal()">Annuleren</button><button class="btn btn-s" onclick="updateVk()">✅ Opslaan</button></div>`;
   } else if(type==="kst") {
@@ -762,7 +778,10 @@ function render() {
         ${(()=>{
           const rows=leg.filter(r=>r.datum.startsWith(curM)).reverse();
           const tot=rows.reduce((s,r)=>s+(r.aantal||0),0);
-          const gem=rows.length>0?(tot/rows.length).toFixed(1):0;
+          const [gemJaar,gemMo]=curM.split("-");
+          const dagenInMaand=new Date(parseInt(gemJaar),parseInt(gemMo),0).getDate();
+          const vandaagInMaand=curM===t.slice(0,7)?parseInt(t.slice(8,10)):dagenInMaand;
+          const gem=(tot/vandaagInMaand).toFixed(1);
           return `<div class="li" style="border-bottom:2px solid var(--gd)">
             <span style="font-size:12px;font-weight:800;color:var(--bl)">Totaal maand</span>
             <div style="display:flex;gap:6px;align-items:center">
@@ -855,29 +874,54 @@ function render() {
         <button class="btn btn-s" onclick="saveVk()">💰 Verkoop opslaan</button>
       </div>
       <div class="card">
-        <div class="card-title">📊 Per betaalwijze</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-          ${["Cash","Tikkie","Overboeking"].map(bw=>`
-          <div style="background:var(--gl);border-radius:10px;border:1.5px solid var(--gd);padding:10px;text-align:center">
-            <div style="font-size:18px">${bw==="Cash"?"💵":bw==="Tikkie"?"📱":"🏦"}</div>
-            <div style="font-family:'Fredoka One',cursive;font-size:15px;color:var(--or)">${fmt(bwTotals[bw].e)}</div>
-            <div style="font-size:9px;color:var(--txl);font-weight:700">${bwTotals[bw].n} eieren</div>
-            <div style="font-size:9px;color:var(--txl);margin-top:1px">${bw}</div>
-          </div>`).join("")}
-        </div>
+        ${(()=>{
+          const vkMaandenBW = [...new Set(vk.map(r=>r.datum.slice(0,7)))].sort().reverse();
+          const curBW = (vkChartM && vkMaandenBW.includes(vkChartM)) ? vkChartM : vkMaandenBW[0];
+          const [bwy,bwmo] = curBW ? curBW.split("-") : [null,null];
+          const bwLabel = curBW ? MNAMEN[parseInt(bwmo)-1]+" "+bwy : "—";
+          const vkBW = vk.filter(r=>r.datum.startsWith(curBW));
+          const bwData = {};
+          ["Cash","Tikkie","Overboeking"].forEach(bw=>{
+            bwData[bw]={n:vkBW.filter(r=>r.betaal===bw).reduce((s,r)=>s+(r.aantal||0),0),
+                        e:vkBW.filter(r=>r.betaal===bw).reduce((s,r)=>s+(r.totaal||0),0)};
+          });
+          return `<div class="card-title">📊 Per betaalwijze <span style="font-size:11px;color:var(--txl);font-weight:400">${bwLabel}</span></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+            ${["Cash","Tikkie","Overboeking"].map(bw=>`
+            <div style="background:var(--gl);border-radius:10px;border:1.5px solid var(--gd);padding:10px;text-align:center">
+              <div style="font-size:18px">${bw==="Cash"?"💵":bw==="Tikkie"?"📱":"🏦"}</div>
+              <div style="font-family:'Fredoka One',cursive;font-size:15px;color:var(--or)">${fmt(bwData[bw].e)}</div>
+              <div style="font-size:9px;color:var(--txl);font-weight:700">${bwData[bw].n} eieren</div>
+              <div style="font-size:9px;color:var(--txl);margin-top:1px">${bw}</div>
+            </div>`).join("")}
+          </div>`;
+        })()}
       </div>
       <div class="card">
         <div class="card-title">🧾 Verkoophistorie</div>
-        ${vk.length===0?'<div class="empty"><div class="em">🛒</div><p>Nog geen verkopen</p></div>':
-          vk.map(r=>`<div class="li">
-            <div class="li-l">
-              <div class="li-t">${fmtD(r.datum)}${r.koper?" · "+esc(r.koper):""}</div>
-              <div class="li-s">🥚 ${r.aantal} · <span class="badge ${BB[r.betaal]||"bo"}">${r.betaal}</span>${r.notitie?" · "+esc(r.notitie):""}</div>
-            </div>
-            <div class="li-r"><span class="fw text-gn">${fmt(r.totaal)}</span>
-              <button class="ebtn" onclick='openModal("vk",${JSON.stringify(r)})'>✏️</button>
-              <button class="dbtn" onclick="deleteVk('${r._key}')">🗑</button></div>
-          </div>`).join("")}
+        ${(()=>{
+          if(vk.length===0) return '<div class="empty"><div class="em">🛒</div><p>Nog geen verkopen</p></div>';
+          const vkMaandenHist = [...new Set(vk.map(r=>r.datum.slice(0,7)))].sort().reverse();
+          const curVKH = (vkChartM && vkMaandenHist.includes(vkChartM)) ? vkChartM : vkMaandenHist[0];
+          const vkGefilterd = vk.filter(r=>r.datum.startsWith(curVKH));
+          const [hy,hmo] = curVKH.split("-");
+          const maandTotaal = vkGefilterd.reduce((s,r)=>s+(r.totaal||0),0);
+          return `<div class="tabs">${vkMaandenHist.map(m=>{const[y2,mo2]=m.split("-");return`<div class="tab${m===curVKH?" active":""}" onclick="setVkChartM('${m}')">${MNAMEN[parseInt(mo2)-1]} ${y2}</div>`;}).join("")}</div>
+          <div class="li" style="border-bottom:2px solid var(--gd)">
+            <span style="font-size:12px;font-weight:800;color:var(--bl)">${MNAMEN[parseInt(hmo)-1]} ${hy}</span>
+            <span class="fw text-gn">${fmt(maandTotaal)} · ${vkGefilterd.length} verkopen</span>
+          </div>
+          ${vkGefilterd.length===0?'<div class="empty" style="padding:16px 0"><div class="em">🛒</div><p>Geen verkopen deze maand</p></div>':
+            vkGefilterd.map(r=>`<div class="li">
+              <div class="li-l">
+                <div class="li-t">${fmtD(r.datum)}${r.koper?" · "+esc(r.koper):""}</div>
+                <div class="li-s">🥚 ${r.aantal} · <span class="badge ${BB[r.betaal]||"bo"}">${r.betaal}</span>${r.notitie?" · "+esc(r.notitie):""}</div>
+              </div>
+              <div class="li-r"><span class="fw text-gn">${fmt(r.totaal)}</span>
+                <button class="ebtn" onclick='openModal("vk",${JSON.stringify(r)})'>✏️</button>
+                <button class="dbtn" onclick="deleteVk('${r._key}')">🗑</button></div>
+            </div>`).join("")}`;
+        })()}
       </div>
       ${(()=>{
         const oudeRes = reserveringen.filter(r=>r.status!=="nieuw").sort((a,b)=>b.datum.localeCompare(a.datum));
@@ -1663,10 +1707,23 @@ function renderKostenTabContent() {
   if(!el) return;
   const t = today();
 
+
   if(kstTab === "kosten") {
+    // Maandfilter voor kosten
+    const kstMaanden = [...new Set(kst.map(r=>r.datum.slice(0,7)))].sort().reverse();
+    const curKstM = (window._kstMaand && kstMaanden.includes(window._kstMaand)) ? window._kstMaand : (kstMaanden[0]||t.slice(0,7));
+    const kstGefilterd = kst.filter(r=>r.datum.startsWith(curKstM));
+    const [kmy,kmmo] = curKstM.split("-");
+    const kstMaandLabel = kstMaanden.length>0 ? MNAMEN[parseInt(kmmo)-1]+" "+kmy : "";
+    const kstMaandTotaal = kstGefilterd.reduce((s,r)=>s+(r.bedrag||0),0);
+
     const catTotals2 = {};
-    CATS.forEach(c => catTotals2[c] = kst.filter(r=>r.cat===c).reduce((s,r)=>s+(r.bedrag||0),0));
+    CATS.forEach(c => catTotals2[c] = kstGefilterd.filter(r=>r.cat===c).reduce((s,r)=>s+(r.bedrag||0),0));
     const maxCat2 = Math.max(...Object.values(catTotals2), 1);
+
+    const maandTabsHtml = kstMaanden.length > 1
+      ? '<div class="tabs">' + kstMaanden.map(m=>{const[y2,mo2]=m.split("-");return'<div class="tab'+(m===curKstM?" active":"")+'" onclick="setKstMaand(\\"'+m+'\\")">'+MNAMEN[parseInt(mo2)-1]+' '+y2+'</div>';}).join("") + '</div>'
+      : '';
 
     const barsHtml = CATS.map(c =>
       '<div class="bar-row"><span class="bar-lbl">' + ICONS[c] + '</span>' +
@@ -1675,26 +1732,29 @@ function renderKostenTabContent() {
       '</div></div></div>'
     ).join("");
 
-    const histHtml = kst.length===0
-      ? '<div class="empty"><div class="em">🧾</div><p>Nog geen kosten</p></div>'
-      : kst.map(r =>
+    const histHtml = kstGefilterd.length===0
+      ? '<div class="empty"><div class="em">&#x1F9FE;</div><p>Geen kosten in ' + kstMaandLabel + '</p></div>'
+      : '<div class="li" style="border-bottom:2px solid var(--gd)">' +
+        '<span style="font-size:12px;font-weight:800;color:var(--rd)">' + kstMaandLabel + '</span>' +
+        '<span class="fw text-ro">' + fmt(kstMaandTotaal) + '</span></div>' +
+        kstGefilterd.map(r =>
           '<div class="li">' +
           '<div class="li-l">' +
-          '<div class="li-t">' + (ICONS[r.cat]||"📦") + " " + esc(r.omschr||r.cat) + '</div>' +
-          '<div class="li-s">' + fmtD(r.datum) + (r.leverancier?" · "+esc(r.leverancier):"") + " · " + r.cat + '</div>' +
+          '<div class="li-t">' + (ICONS[r.cat]||"&#x1F4E6;") + " " + esc(r.omschr||r.cat) + '</div>' +
+          '<div class="li-s">' + fmtD(r.datum) + (r.leverancier?" &middot; "+esc(r.leverancier):"") + " &middot; " + r.cat + '</div>' +
           '</div>' +
           '<div class="li-r"><span class="fw text-ro">' + fmt(r.bedrag) + '</span>' +
-          '<button class="ebtn" onclick=\'openModal("kst",' + JSON.stringify(r) + ')\'>✏️</button>' +
-          '<button class="dbtn" onclick="deleteKst(\'' + r._key + '\')">🗑</button></div>' +
+          '<button class="ebtn" onclick=\'openModal("kst",' + JSON.stringify(r) + ')\'>&#x270F;&#xFE0F;</button>' +
+          '<button class="dbtn" onclick="deleteKst(\"' + r._key + '\")">&#x1F5D1;</button></div>' +
           '</div>'
         ).join("");
 
     el.innerHTML =
       '<div class="card">' +
-      '<div class="sec-hdr">📋 Kosten registreren</div>' +
+      '<div class="sec-hdr">&#x1F4CB; Kosten registreren</div>' +
       '<div class="frow">' +
       '<div class="fg"><label class="fl">Datum</label><input type="date" id="kst-datum" value="' + t + '"></div>' +
-      '<div class="fg"><label class="fl">Bedrag (€)</label><input type="number" id="kst-bedrag" placeholder="0.00" step="0.01" inputmode="decimal"></div>' +
+      '<div class="fg"><label class="fl">Bedrag (&euro;)</label><input type="number" id="kst-bedrag" placeholder="0.00" step="0.01" inputmode="decimal"></div>' +
       '</div>' +
       '<div class="fg"><label class="fl">Omschrijving</label><input type="text" id="kst-omschrijving" placeholder="bijv. zakje kippenvoer..."></div>' +
       '<div class="frow">' +
@@ -1703,11 +1763,11 @@ function renderKostenTabContent() {
       '</div>' +
       '<div class="fg"><label class="fl">Leverancier</label><input type="text" id="kst-leverancier" placeholder="optioneel..."></div>' +
       '</div>' +
-      '<button class="btn btn-d" onclick="saveKst()">💸 Kosten opslaan</button>' +
+      '<button class="btn btn-d" onclick="saveKst()">&#x1F4B8; Kosten opslaan</button>' +
       '</div>' +
-      '<div class="card"><div class="card-title">📊 Kosten per categorie</div>' +
-      '<div class="bar-wrap">' + barsHtml + '</div></div>' +
-      '<div class="card"><div class="card-title">🧾 Kostenhistorie</div>' + histHtml + '</div>';
+      '<div class="card"><div class="card-title">&#x1F4CA; Kosten per categorie <span style="font-size:11px;color:var(--txl);font-weight:400">' + kstMaandLabel + '</span></div>' +
+      maandTabsHtml + '<div class="bar-wrap">' + barsHtml + '</div></div>' +
+      '<div class="card"><div class="card-title">&#x1F9FE; Kostenhistorie</div>' + maandTabsHtml + histHtml + '</div>';
 
   } else {
     // INVESTERINGEN tab
@@ -1930,6 +1990,10 @@ async function laadWeer() {
     if (el) el.innerHTML = "";
   }
 }
+function setKstMaand(m) {
+  window._kstMaand = m;
+  renderKostenTabContent();
+}
 
 function setZoekKlant() {
   zoekKlant = (document.getElementById("klant-zoek")||{value:""}).value.toLowerCase();
@@ -1991,6 +2055,8 @@ function calcNieuweKlantVeld() {
 // ── Expose to global scope (needed for onclick handlers) ───────────────────
 Object.assign(window, {
   goPage, setM, setActiveKlant, saveLeg, saveLegQuick, deleteLeg, updateLeg,
+  calcEditVkTot,
+  calcEditVkTot,
   saveVk, deleteVk, updateVk, calcVkTot, calcNieuweKlantVeld, setVkType,
   saveKst, deleteKst, updateKst,
   saveKlant, deleteKlant, updateKlant,
@@ -2003,6 +2069,7 @@ Object.assign(window, {
   saveKip, deleteKip, updateKip,
   updateOfflineBanner,
   saveReservering, accepteerRes, weigerRes, deleteRes, showResBevestiging,
+  setKstMaand,
   bevestigSchoonmaak, uitstellenSchoonmaak, deleteSchoonmaak,
   laadWeer
 });
