@@ -325,13 +325,14 @@ async function dbRemove(path) {
 async function saveLeg() {
   const datum   = val("leg-datum");
   const aantal  = parseInt(val("leg-aantal"))||0;
+  const kapot   = parseInt(val("leg-kapot"))||0;
   const notitie = val("leg-notitie");
   if(!datum) return toast("⚠️ Kies een datum");
-  // Per datum: zelfde datum overschrijven
+  if(kapot > aantal) return toast("⚠️ Kapotte eieren kunnen niet meer zijn dan het totaal");
   const existing = leg.find(r=>r.datum===datum);
   const key = existing?existing._key:uid();
-  await dbSave("legdagen/"+key, {datum,aantal,notitie});
-  set_val("leg-datum", today()); set_val("leg-aantal",""); set_val("leg-notitie","");
+  await dbSave("legdagen/"+key, {datum,aantal,kapot,notitie});
+  set_val("leg-datum", today()); set_val("leg-aantal",""); set_val("leg-kapot",""); set_val("leg-notitie","");
   set_val("quick-datum", today()); set_val("quick-eieren","");
   toast("✅ Legdag opgeslagen!");
 }
@@ -350,8 +351,10 @@ async function updateLeg() {
   const key     = val("edit-leg-key");
   const datum   = val("edit-leg-datum");
   const aantal  = parseInt(val("edit-leg-aantal"))||0;
+  const kapot   = parseInt(val("edit-leg-kapot"))||0;
   const notitie = val("edit-leg-notitie");
-  await dbSave("legdagen/"+key, {datum,aantal,notitie});
+  if(kapot > aantal) return toast("⚠️ Kapotte eieren kunnen niet meer zijn dan het totaal");
+  await dbSave("legdagen/"+key, {datum,aantal,kapot,notitie});
   closeModal(); toast("✅ Bijgewerkt!");
 }
 
@@ -509,7 +512,10 @@ function renderModal() {
       <div class="modal-title">✏️ Legdag aanpassen <button onclick="closeModal()">✕</button></div>
       <input type="hidden" id="edit-leg-key" value="${esc(data._key)}">
       <div class="fg"><label class="fl">Datum</label><input type="date" id="edit-leg-datum" value="${esc(data.datum)}"></div>
-      <div class="fg"><label class="fl">Aantal eieren</label><input type="number" id="edit-leg-aantal" value="${data.aantal}" min="0" inputmode="numeric"></div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Aantal eieren</label><input type="number" id="edit-leg-aantal" value="${data.aantal}" min="0" inputmode="numeric"></div>
+        <div class="fg"><label class="fl">Waarvan kapot 💔</label><input type="number" id="edit-leg-kapot" value="${data.kapot||0}" min="0" inputmode="numeric"></div>
+      </div>
       <div class="fg"><label class="fl">Notities</label><input type="text" id="edit-leg-notitie" value="${esc(data.notitie||'')}"></div>
       <div class="brow"><button class="btn btn-g" onclick="closeModal()">Annuleren</button><button class="btn btn-p" onclick="updateLeg()">✅ Opslaan</button></div>`;
   } else if(type==="vk") {
@@ -636,10 +642,11 @@ function render() {
   const lasten  = kst.reduce((s,r)=>s+(r.bedrag||0),0);
   const result  = omzet-lasten;
 
-  // Voorraad: gelegd - verkocht
+  // Voorraad: gelegd - kapot - verkocht
   const totGelegd   = leg.reduce((s,r)=>s+(r.aantal||0),0);
+  const totKapot    = leg.reduce((s,r)=>s+(r.kapot||0),0);
   const totVerkocht = vk.reduce((s,r)=>s+(r.aantal||0),0);
-  const voorraad    = totGelegd - totVerkocht;
+  const voorraad    = totGelegd - totKapot - totVerkocht;
 
   // Streak
   const streak = calcStreak();
@@ -767,7 +774,10 @@ function render() {
       <div class="card">
         <div class="sec-hdr">🥚 Legdagen bijhouden</div>
         <div class="fg"><label class="fl">Datum</label><input type="date" id="leg-datum" value="${t}"></div>
-        <div class="fg"><label class="fl">Aantal eieren geraapt</label><input type="number" id="leg-aantal" placeholder="0" min="0" inputmode="numeric"></div>
+        <div class="frow">
+          <div class="fg"><label class="fl">Aantal eieren geraapt</label><input type="number" id="leg-aantal" placeholder="0" min="0" inputmode="numeric"></div>
+          <div class="fg"><label class="fl">Waarvan kapot 🥚💔</label><input type="number" id="leg-kapot" placeholder="0" min="0" inputmode="numeric"></div>
+        </div>
         <div class="fg"><label class="fl">Notities (optioneel)</label><input type="text" id="leg-notitie" placeholder="bijv. 2 gebroken..."></div>
         <button class="btn btn-p" onclick="saveLeg()">✅ Opslaan</button>
       </div>
@@ -789,7 +799,9 @@ function render() {
               <span class="badge bo fw">🥚 ${tot}</span>
             </div></div>`+
           rows.map(r=>`<div class="li">
-            <div class="li-l"><div class="li-t">${fmtD(r.datum)}</div>${r.notitie?`<div class="li-s">${esc(r.notitie)}</div>`:""}</div>
+            <div class="li-l"><div class="li-t">${fmtD(r.datum)}</div>
+            ${r.kapot?`<div class="li-s" style="color:var(--rd)">💔 ${r.kapot} kapot · verkoopbaar: ${r.aantal-(r.kapot||0)}</div>`:""}
+            ${r.notitie?`<div class="li-s">${esc(r.notitie)}</div>`:""}</div>
             <div class="li-r"><span class="badge bo">🥚 ${r.aantal}</span>
               <button class="ebtn" onclick='openModal("leg",${JSON.stringify(r)})'>✏️</button>
               <button class="dbtn" onclick="deleteLeg('${r._key}')">🗑</button></div>
@@ -1290,6 +1302,8 @@ function render() {
       <div class="card">
         <div class="card-title">📊 Statistieken</div>
         <div class="li"><div class="li-l"><div class="li-t">Totaal gelegde eieren</div></div><div class="li-r"><span class="fw text-or">${totGelegd}</span></div></div>
+        <div class="li"><div class="li-l"><div class="li-t">💔 Waarvan kapot</div></div><div class="li-r"><span class="fw text-ro">${totKapot}</span></div></div>
+        <div class="li"><div class="li-l"><div class="li-t">Waarvan kapot</div></div><div class="li-r"><span class="fw text-ro">${totKapot}</span></div></div>
         <div class="li"><div class="li-l"><div class="li-t">Totaal verkochte eieren</div></div><div class="li-r"><span class="fw text-gn">${totVerkocht}</span></div></div>
         <div class="li"><div class="li-l"><div class="li-t">Huidige voorraad</div></div><div class="li-r"><span class="fw" style="${voorraad<0?"color:var(--rd)":"color:var(--or)"}">${voorraad}</span></div></div>
         <div class="li"><div class="li-l"><div class="li-t">Invul-streak</div></div><div class="li-r"><span class="fw text-or">${streak} dagen ${streak>=7?"🔥":streak>=3?"⭐":"📆"}</span></div></div>
@@ -2080,9 +2094,10 @@ Object.assign(window, {
 async function syncPubliekeData() {
   // Bereken voorraad en gemiddelde
   const totGelegd      = leg.reduce((s,r)=>s+(r.aantal||0),0);
+  const totKapotSync   = leg.reduce((s,r)=>s+(r.kapot||0),0);
   const totVerkocht    = vk.reduce((s,r)=>s+(r.aantal||0),0);
   const totGereserveerd= reserveringen.filter(r=>r.status==="nieuw").reduce((s,r)=>s+(r.aantal||0),0);
-  const voorraad       = totGelegd - totVerkocht - totGereserveerd;
+  const voorraad       = totGelegd - totKapotSync - totVerkocht - totGereserveerd;
   const recent7     = [...leg].reverse().slice(0,7).filter(r=>r.aantal>0);
   const gemDag      = recent7.length
     ? Math.round(recent7.reduce((s,r)=>s+(r.aantal||0),0)/recent7.length)
