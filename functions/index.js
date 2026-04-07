@@ -3,7 +3,6 @@
 // Deploy met: firebase deploy --only functions
 
 const { onSchedule } = require("firebase-functions/v2/scheduler");
-const { onValueCreated } = require("firebase-functions/v2/database");
 const { initializeApp } = require("firebase-admin/app");
 const { getDatabase } = require("firebase-admin/database");
 const { getMessaging } = require("firebase-admin/messaging");
@@ -106,34 +105,43 @@ exports.schoonmaakHerinnering = onSchedule(
   }
 );
 
-// ── Notificatie 3: Nieuwe reservering — direct bij aanmaken ──────────────
-// Vuurt direct als er een nieuwe reservering in de database verschijnt.
-exports.nieuweReservering = onValueCreated(
-  { ref: "/reserveringen/{resId}", region: "europe-west1" },
-  async (event) => {
-    const res = event.data.val();
-    if (!res || res.status !== "nieuw") return;
-
+// ── Notificatie 3: Nieuwe reservering — elke minuut checken ─────────────
+// Checkt elke minuut of er nieuwe reserveringen zijn waarvoor nog geen
+// melding is verstuurd. Robuuster dan onValueCreated (vuurt nooit dubbel).
+exports.nieuweReservering = onSchedule(
+  { schedule: "* * * * *", timeZone: "Europe/Amsterdam" },
+  async () => {
     const db = getDatabase();
-    const resId = event.params.resId;
 
-    // Voorkom dubbele meldingen: check of melding al verstuurd is
-    const checkRef = db.ref("fcmVerstuurd/" + resId);
-    const checkSnap = await checkRef.get();
-    if (checkSnap.exists()) return; // Al verstuurd
+    const [resSnap, verstuurdSnap] = await Promise.all([
+      db.ref("reserveringen").get(),
+      db.ref("fcmVerstuurd").get()
+    ]);
 
-    // Markeer als verstuurd (verlopen na 1 dag)
-    await checkRef.set({ verstuurd: Date.now() });
+    if (!resSnap.exists()) return;
 
-    const datum = new Date(res.datum + "T12:00:00").toLocaleDateString("nl-NL", {
-      weekday: "long", day: "numeric", month: "long"
-    });
-    const doosje = res.aantal === 10 ? "doosje 10" : "doosje 6";
+    const reserveringen = resSnap.val();
+    const verstuurd = verstuurdSnap.exists() ? verstuurdSnap.val() : {};
 
-    await stuurNotificatie({
-      title: "🔔 Nieuwe reservering!",
-      body: `${res.naam} wil een ${doosje} reserveren voor ${datum}.`
-    });
+    // Vind nieuwe reserveringen waarvoor nog geen melding is verstuurd
+    const nieuw = Object.entries(reserveringen).filter(([id, r]) =>
+      r.status === "nieuw" && !verstuurd[id]
+    );
+
+    for (const [id, res] of nieuw) {
+      // Markeer direct als verstuurd om race conditions te voorkomen
+      await db.ref("fcmVerstuurd/" + id).set({ verstuurd: Date.now() });
+
+      const datum = new Date(res.datum + "T12:00:00").toLocaleDateString("nl-NL", {
+        weekday: "long", day: "numeric", month: "long"
+      });
+      const doosje = res.aantal === 10 ? "doosje 10" : "doosje 6";
+
+      await stuurNotificatie({
+        title: "🔔 Nieuwe reservering!",
+        body: `${res.naam} wil een ${doosje} reserveren voor ${datum}.`
+      });
+    }
   }
 );
 
