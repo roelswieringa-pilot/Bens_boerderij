@@ -1,5 +1,5 @@
 // firebase-messaging-sw.js
-// Plaats dit bestand in dezelfde map als index.html (root van je webserver)
+// Plaats dit bestand in dezelfde map als index.html
 
 importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js");
@@ -16,13 +16,20 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Achtergrond notificaties afhandelen (app niet open)
-messaging.onBackgroundMessage(payload => {
-  const { title, body, icon } = payload.notification || {};
+// Achtergrond notificaties — alleen tonen als app NIET open/actief is
+messaging.onBackgroundMessage(async payload => {
+  // Check of app al open is als actieve client
+  const clientList = await clients.matchAll({ type: "window", includeUncontrolled: true });
+  const appOpen = clientList.some(c => c.visibilityState === "visible");
+
+  // Als app open en zichtbaar is: niet tonen (app toont hem zelf via onMessage)
+  if (appOpen) return;
+
+  const { title, body } = payload.notification || {};
   self.registration.showNotification(title || "Ben's Boerderij", {
     body: body || "",
-    icon: icon || "/icon-192.png",
-    badge: "/icon-192.png",
+    icon: "/Bens_boerderij/icon-192.png",
+    badge: "/Bens_boerderij/icon-192.png",
     vibrate: [200, 100, 200],
     data: payload.data || {}
   });
@@ -38,7 +45,7 @@ self.addEventListener("notificationclick", event => {
           return client.focus();
         }
       }
-      if (clients.openWindow) return clients.openWindow("/");
+      if (clients.openWindow) return clients.openWindow("/Bens_boerderij/");
     })
   );
 });
