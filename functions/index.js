@@ -26,12 +26,14 @@ async function stuurNotificatie({ title, body, icon = "🐔" }) {
   for (let i = 0; i < tokens.length; i += 500) {
     const batch = tokens.slice(i, i + 500);
     try {
+      // Data-only payload: FCM toont GEEN automatische melding
+      // De service worker bouwt de melding zelf op via onBackgroundMessage
       await messaging.sendEachForMulticast({
         tokens: batch,
-        notification: { title, body },
+        data: { title, body },
         webpush: {
-          notification: { title, body, icon: "/icon-192.png", badge: "/icon-192.png" },
-          fcmOptions: { link: "/" }
+          headers: { Urgency: "high" },
+          data: { title, body }
         }
       });
     } catch (e) {
