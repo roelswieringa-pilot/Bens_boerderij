@@ -1,6 +1,4 @@
 // firebase-messaging-sw.js
-// Plaats dit bestand in dezelfde map als index.html
-
 importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js");
 
@@ -16,22 +14,17 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Achtergrond notificaties — alleen tonen als app NIET open/actief is
-messaging.onBackgroundMessage(async payload => {
-  // Check of app al open is als actieve client
-  const clientList = await clients.matchAll({ type: "window", includeUncontrolled: true });
-  const appOpen = clientList.some(c => c.visibilityState === "visible");
+// Data-only payload: service worker bouwt de melding zelf op
+// FCM toont NOOIT automatisch een melding — wij bepalen wanneer en wat
+messaging.onBackgroundMessage(payload => {
+  const title = (payload.data && payload.data.title) || "Ben's Boerderij";
+  const body  = (payload.data && payload.data.body)  || "";
 
-  // Als app open en zichtbaar is: niet tonen (app toont hem zelf via onMessage)
-  if (appOpen) return;
-
-  const { title, body } = payload.notification || {};
-  self.registration.showNotification(title || "Ben's Boerderij", {
-    body: body || "",
+  return self.registration.showNotification(title, {
+    body,
     icon: "/Bens_boerderij/icon-192.png",
     badge: "/Bens_boerderij/icon-192.png",
-    vibrate: [200, 100, 200],
-    data: payload.data || {}
+    vibrate: [200, 100, 200]
   });
 });
 
