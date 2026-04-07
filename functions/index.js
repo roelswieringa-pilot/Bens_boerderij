@@ -44,7 +44,7 @@ async function stuurNotificatie({ title, body, icon = "🐔" }) {
 // Elke dag om 19:00 checkt of de legdag van vandaag al is ingevuld.
 // Als niet: stuur een vriendelijke herinnering.
 exports.legdagHerinnering = onSchedule(
-  { schedule: "0 19 * * *", timeZone: "Europe/Amsterdam" },
+  { schedule: "0 19 * * *", timeZone: "Europe/Amsterdam", region: "europe-west1" },
   async () => {
     const db = getDatabase();
     const vandaag = new Date().toISOString().slice(0, 10);
@@ -65,7 +65,7 @@ exports.legdagHerinnering = onSchedule(
 // ── Notificatie 2: Schoonmaak herinnering — dagelijks 08:00 ──────────────
 // Elke ochtend om 08:00 checkt of vandaag de geplande schoonmaakdatum is.
 exports.schoonmaakHerinnering = onSchedule(
-  { schedule: "0 8 * * *", timeZone: "Europe/Amsterdam" },
+  { schedule: "0 8 * * *", timeZone: "Europe/Amsterdam", region: "europe-west1" },
   async () => {
     const db = getDatabase();
     const vandaag = new Date().toISOString().slice(0, 10);
@@ -109,7 +109,7 @@ exports.schoonmaakHerinnering = onSchedule(
 // Checkt elke minuut of er nieuwe reserveringen zijn waarvoor nog geen
 // melding is verstuurd. Robuuster dan onValueCreated (vuurt nooit dubbel).
 exports.nieuweReservering = onSchedule(
-  { schedule: "* * * * *", timeZone: "Europe/Amsterdam" },
+  { schedule: "* * * * *", timeZone: "Europe/Amsterdam", region: "europe-west1" },
   async () => {
     const db = getDatabase();
 
@@ -150,7 +150,7 @@ exports.nieuweReservering = onSchedule(
 // Drempel 1: voorraad > 12
 // Drempel 2: voorraad + verwachte productie morgen > 16
 exports.voorraadWaarschuwing = onSchedule(
-  { schedule: "0 9 * * *", timeZone: "Europe/Amsterdam" },
+  { schedule: "0 9 * * *", timeZone: "Europe/Amsterdam", region: "europe-west1" },
   async () => {
     const db = getDatabase();
 
