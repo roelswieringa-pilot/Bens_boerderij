@@ -2041,6 +2041,52 @@ function setKstMaand(m) {
 }
 
 
+
+// ── Push Notificaties (FCM) ───────────────────────────────────────────────
+// Stap 1: Haal je VAPID key op via Firebase Console → Project Settings
+//         → Cloud Messaging → Web Push certificates → Generate key pair
+// Stap 2: Vervang de waarde hieronder door jouw eigen key
+const FCM_VAPID_KEY = "JOUW_VAPID_KEY_HIER";
+
+async function registreerPushNotificaties() {
+  try {
+    if (!("serviceWorker" in navigator)) {
+      return toast("⚠️ Service Workers worden niet ondersteund door deze browser");
+    }
+    const reg = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") {
+      toast("🔕 Geen toestemming voor notificaties");
+      return;
+    }
+    const token = await getToken(messaging, {
+      vapidKey: FCM_VAPID_KEY,
+      serviceWorkerRegistration: reg
+    });
+    if (token) {
+      await dbSave("fcmTokens/" + currentUser.uid, {
+        token,
+        bijgewerkt: today(),
+        apparaat: navigator.userAgent.slice(0, 100)
+      });
+      toast("🔔 Pushmeldingen ingeschakeld!");
+      render();
+    } else {
+      toast("⚠️ Kon geen FCM token ophalen");
+    }
+  } catch(e) {
+    console.warn("FCM registratie mislukt:", e.message);
+    toast("⚠️ Notificaties konden niet worden ingeschakeld");
+  }
+}
+
+async function uitschakelenPushNotificaties() {
+  if (!currentUser) return;
+  await dbRemove("fcmTokens/" + currentUser.uid);
+  toast("🔕 Pushmeldingen uitgeschakeld");
+  render();
+}
+
 function setZoekKlant() {
   zoekKlant = (document.getElementById("klant-zoek")||{value:""}).value.toLowerCase();
   render();
