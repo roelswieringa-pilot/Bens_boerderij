@@ -1317,7 +1317,12 @@ function render() {
         <div style="font-size:11px;color:var(--txl);margin-bottom:14px">Ontvang meldingen op dit apparaat voor legdagen, schoonmaak, reserveringen en voorraad.</div>
         ${(()=>{
           const supported = ("Notification" in window) && ("serviceWorker" in navigator);
-          if(!supported) return '<div style="font-size:12px;color:var(--txl);background:var(--gl);border-radius:10px;padding:10px 14px">⚠️ Pushmeldingen worden niet ondersteund door deze browser.</div>';
+          if(!supported) return '<div style="font-size:12px;color:var(--txl);background:var(--gl);border-radius:10px;padding:10px 14px">' +
+            '⚠️ Pushmeldingen worden niet ondersteund in deze browser.<br><br>' +
+            '<strong>Op iPhone:</strong> open de app in Safari, tik op het deel-icoon (□↑) en kies <em>Zet op beginscherm</em>. ' +
+            'Start de app daarna vanaf je beginscherm en probeer opnieuw.<br><br>' +
+            '<strong>Op desktop:</strong> gebruik Google Chrome voor de beste ondersteuning.' +
+            '</div>';
           const perm = Notification.permission;
           const permLabel = perm==="granted"?"✅ Toestemming verleend":perm==="denied"?"❌ Geblokkeerd door browser":"⏳ Nog niet gevraagd";
           const permKleur = perm==="granted"?"color:var(--gn)":perm==="denied"?"color:var(--rd)":"color:var(--or)";
@@ -2046,7 +2051,7 @@ function setKstMaand(m) {
 // Stap 1: Haal je VAPID key op via Firebase Console → Project Settings
 //         → Cloud Messaging → Web Push certificates → Generate key pair
 // Stap 2: Vervang de waarde hieronder door jouw eigen key
-const FCM_VAPID_KEY = "BF9iBYmS_wvSZc1Pvq-TIs-F9i1jD6Yslzkf-9fzLvPv2E6gr8aSpMSt1WdnzhMe_6VVwHadqqeOzw_o_iL_zSc";
+const FCM_VAPID_KEY = "JOUW_VAPID_KEY_HIER";
 
 async function registreerPushNotificaties() {
   try {
