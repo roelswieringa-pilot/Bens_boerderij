@@ -16,7 +16,9 @@ async function stuurNotificatie({ title, body, icon = "🐔" }) {
   const snap = await db.ref("fcmTokens").get();
   if (!snap.exists()) return;
 
-  const tokens = Object.values(snap.val()).map(t => t.token).filter(Boolean);
+  // Dedupliceer tokens — voorkom dubbele meldingen
+  const allTokens = Object.values(snap.val()).map(t => t.token).filter(Boolean);
+  const tokens = [...new Set(allTokens)];
   if (!tokens.length) return;
 
   const messaging = getMessaging();
