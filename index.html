@@ -2058,8 +2058,7 @@ async function registreerPushNotificaties() {
     if (!("serviceWorker" in navigator)) {
       return toast("⚠️ Service Workers worden niet ondersteund door deze browser");
     }
-    const swPath = location.pathname.substring(0, location.pathname.lastIndexOf("/") + 1) + "firebase-messaging-sw.js";
-    const reg = await navigator.serviceWorker.register(swPath);
+    const reg = await navigator.serviceWorker.register("/Bens_boerderij/firebase-messaging-sw.js", { scope: "/Bens_boerderij/" });
     const permission = await Notification.requestPermission();
     if (permission !== "granted") {
       toast("🔕 Geen toestemming voor notificaties");
