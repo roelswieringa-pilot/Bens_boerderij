@@ -114,6 +114,17 @@ exports.nieuweReservering = onValueCreated(
     const res = event.data.val();
     if (!res || res.status !== "nieuw") return;
 
+    const db = getDatabase();
+    const resId = event.params.resId;
+
+    // Voorkom dubbele meldingen: check of melding al verstuurd is
+    const checkRef = db.ref("fcmVerstuurd/" + resId);
+    const checkSnap = await checkRef.get();
+    if (checkSnap.exists()) return; // Al verstuurd
+
+    // Markeer als verstuurd (verlopen na 1 dag)
+    await checkRef.set({ verstuurd: Date.now() });
+
     const datum = new Date(res.datum + "T12:00:00").toLocaleDateString("nl-NL", {
       weekday: "long", day: "numeric", month: "long"
     });
