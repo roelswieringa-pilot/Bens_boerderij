@@ -583,8 +583,61 @@ function renderModal() {
       <div class="modal-title">✏️ Kip aanpassen <button onclick="closeModal()">✕</button></div>
       <input type="hidden" id="edit-kip-key" value="${esc(data._key)}">
       <div class="fg"><label class="fl">Naam</label><input type="text" id="edit-kip-naam" value="${esc(data.naam||'')}"></div>
-      <div class="fg"><label class="fl">Ras</label><select id="edit-kip-ras">${rasOpts}</select></div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Ras</label><select id="edit-kip-ras">${rasOpts}</select></div>
+        <div class="fg"><label class="fl">Geslacht</label>
+          <select id="edit-kip-geslacht">
+            <option value="Hen"${(data.geslacht||"Hen")==="Hen"?" selected":""}>🐔 Hen</option>
+            <option value="Haan"${data.geslacht==="Haan"?" selected":""}>🐓 Haan</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Geboortedatum</label><input type="date" id="edit-kip-geboortedatum" value="${esc(data.geboortedatum||'')}"></div>
+        <div class="fg"><label class="fl">Aanschafdatum</label><input type="date" id="edit-kip-aanschafdatum" value="${esc(data.aanschafdatum||'')}"></div>
+      </div>
       <div class="brow"><button class="btn btn-g" onclick="closeModal()">Annuleren</button><button class="btn btn-p" onclick="updateKip()">✅ Opslaan</button></div>`;
+  } else if(type==="kipUitval") {
+    el.innerHTML = `
+      <div class="modal-title">🪦 Uitval registreren <button onclick="closeModal()">✕</button></div>
+      <input type="hidden" id="uitval-kip-key" value="${esc(data._key)}">
+      <div style="font-size:13px;font-weight:800;color:var(--bd);margin-bottom:12px">🐔 ${esc(data.naam)} · ${esc(data.ras)}</div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Datum</label><input type="date" id="uitval-datum" value="${today()}"></div>
+        <div class="fg"><label class="fl">Reden</label>
+          <select id="uitval-reden">
+            <option>Gestorven</option><option>Ziek</option><option>Verkocht</option><option>Anders</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg"><label class="fl">Notitie (optioneel)</label><input type="text" id="uitval-notitie" placeholder="bijv. plotseling gestorven..."></div>
+      <div class="brow"><button class="btn btn-g" onclick="closeModal()">Annuleren</button><button class="btn btn-d" onclick="saveKipUitval()">🪦 Opslaan</button></div>`;
+  } else if(type==="kipGezondheid") {
+    const logs = data.gezondheid ? Object.entries(data.gezondheid).map(([k,v])=>({...v,_key:k})).sort((a,b)=>b.datum.localeCompare(a.datum)) : [];
+    const typeIcons = { Ziek:"🤒", Behandeling:"💊", Controle:"🔍", Ontworming:"🪱", Anders:"📝" };
+    el.innerHTML = `
+      <div class="modal-title">🏥 Gezondheidslog <button onclick="closeModal()">✕</button></div>
+      <div style="font-size:13px;font-weight:800;color:var(--bd);margin-bottom:12px">🐔 ${esc(data.naam)} · ${esc(data.ras)}</div>
+      <input type="hidden" id="gezond-kip-key" value="${esc(data._key)}">
+      <div class="frow">
+        <div class="fg"><label class="fl">Datum</label><input type="date" id="gezond-datum" value="${today()}"></div>
+        <div class="fg"><label class="fl">Type</label>
+          <select id="gezond-type">
+            <option>Ziek</option><option>Behandeling</option><option>Controle</option><option>Ontworming</option><option>Anders</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg"><label class="fl">Notitie</label><input type="text" id="gezond-notitie" placeholder="bijv. antibiotica kuur gestart..."></div>
+      <button class="btn btn-s" onclick="saveKipGezondheid()" style="margin-bottom:14px">➕ Toevoegen</button>
+      ${logs.length===0
+        ? '<div class="empty" style="padding:12px 0"><div class="em">🏥</div><p>Nog geen gezondheidslog</p></div>'
+        : logs.map(l=>`<div class="li">
+            <div class="li-l">
+              <div class="li-t">${typeIcons[l.type]||"📝"} ${l.type}</div>
+              <div class="li-s">${fmtD(l.datum)}${l.notitie?" · "+esc(l.notitie):""}</div>
+            </div>
+            <div class="li-r"><button class="dbtn" onclick="deleteKipGezondheid('${data._key}','${l._key}')">🗑</button></div>
+          </div>`).join("")}`;
   } else if(type==="klant") {
     el.innerHTML = `
       <div class="modal-title">✏️ Klant aanpassen <button onclick="closeModal()">✕</button></div>
@@ -1354,29 +1407,97 @@ function render() {
             <select id="kip-ras">${RASSEN.map(r=>`<option>${r}</option>`).join("")}</select>
           </div>
         </div>
+        <div class="frow">
+          <div class="fg"><label class="fl">Geslacht</label>
+            <select id="kip-geslacht"><option value="Hen">🐔 Hen</option><option value="Haan">🐓 Haan</option></select>
+          </div>
+          <div class="fg"><label class="fl">Geboortedatum</label>
+            <input type="date" id="kip-geboortedatum">
+          </div>
+        </div>
+        <div class="fg"><label class="fl">Aanschafdatum</label>
+          <input type="date" id="kip-aanschafdatum">
+        </div>
         <button class="btn btn-p" onclick="saveKip()">🐣 Kip toevoegen</button>
       </div>
       <div class="card">
-        <div class="card-title">🐓 Onze kippen (${kippen.length})</div>
         ${(()=>{
-          if(kippen.length===0) return '<div class="empty"><div class="em">🐣</div><p>Nog geen kippen toegevoegd</p></div>';
-          const byRas = {};
-          kippen.forEach(k=>{ if(!byRas[k.ras]) byRas[k.ras]=[]; byRas[k.ras].push(k); });
-          return Object.entries(byRas).map(([ras,kips])=>
-            `<div style="margin-bottom:10px">`+
-            `<div style="font-size:11px;font-weight:800;color:var(--bl);margin-bottom:6px">${RAS_ICONS[ras]||"🐔"} ${ras}</div>`+
-            `<div class="kip-grid">`+
-            kips.map(k=>
-              `<div class="kip" style="position:relative;padding-bottom:28px">`+
-              `<div class="ke">${RAS_ICONS[k.ras]||"🐔"}</div>`+
-              `<div class="kr">${esc(k.naam)}</div>`+
-              `<div style="position:absolute;bottom:6px;right:4px;display:flex;gap:2px">`+
-              `<button class="ebtn" onclick='openModal("kip",${JSON.stringify(k)})' style="font-size:13px">✏️</button>`+
-              `<button class="dbtn" onclick="deleteKip('${k._key}')" style="font-size:13px">🗑</button>`+
-              `</div></div>`
-            ).join("")+
-            `</div></div>`
-          ).join("");
+          const actief    = kippen.filter(k=>!k.status||k.status==="actief");
+          const uitgevallen = kippen.filter(k=>k.status==="uitgevallen");
+
+          function leeftijdTekst(geboortedatum) {
+            if(!geboortedatum) return null;
+            const ms = new Date() - new Date(geboortedatum+"T12:00:00");
+            const mnd = Math.floor(ms / (1000*60*60*24*30.5));
+            if(mnd < 24) return mnd + " mnd";
+            return (mnd/12).toFixed(1).replace(".0","") + " jr";
+          }
+          function leeftijdKleur(geboortedatum) {
+            if(!geboortedatum) return "var(--txl)";
+            const jr = (new Date() - new Date(geboortedatum+"T12:00:00")) / (1000*60*60*24*365);
+            return jr > 3 ? "var(--rd)" : jr > 2.5 ? "var(--or)" : "var(--gn)";
+          }
+
+          function kipKaartje(k, isUit=false) {
+            const leeftijd = leeftijdTekst(k.geboortedatum);
+            const lKleur   = leeftijdKleur(k.geboortedatum);
+            const geslachtIcon = k.geslacht==="Haan" ? "🐓" : "🐔";
+            const kipData  = JSON.stringify(k).replace(/'/g,"&#39;");
+            return `<div class="kip" style="position:relative;padding-bottom:32px;${isUit?"opacity:0.6;background:#f5f5f5;":""}">` +
+              `<div class="ke">${RAS_ICONS[k.ras]||"🐔"}</div>` +
+              `<div class="kr">${geslachtIcon} ${esc(k.naam)}</div>` +
+              (leeftijd ? `<div class="kn" style="color:${lKleur};font-weight:700">${leeftijd}</div>` : "") +
+              (isUit && k.uitval ? `<div class="kn" style="color:var(--rd)">${k.uitval.reden}</div>` : "") +
+              `<div style="position:absolute;bottom:4px;left:0;right:0;display:flex;gap:2px;justify-content:center;flex-wrap:wrap">` +
+              (isUit
+                ? `<button class="ebtn" onclick="heractiveerKip('${k._key}')" style="font-size:11px" title="Heractiveren">↩️</button>`
+                : `<button class="ebtn" onclick="openKipGezondheid('${k._key}')" style="font-size:11px" title="Gezondheidslog">🏥</button>` +
+                  `<button class="ebtn" onclick="uitvallenKip('${k._key}')" style="font-size:11px;color:var(--rd)" title="Uitval">🪦</button>`) +
+              `<button class="ebtn" onclick='openModal("kip",${kipData})' style="font-size:11px">✏️</button>` +
+              `<button class="dbtn" onclick="deleteKip('${k._key}')" style="font-size:11px">🗑</button>` +
+              `</div></div>`;
+          }
+
+          const actiefByRas = {};
+          actief.forEach(k=>{ if(!actiefByRas[k.ras]) actiefByRas[k.ras]=[]; actiefByRas[k.ras].push(k); });
+
+          const actiefHtml = actief.length===0
+            ? '<div class="empty"><div class="em">🐣</div><p>Nog geen kippen toegevoegd</p></div>'
+            : Object.entries(actiefByRas).map(([ras,kips])=>
+                `<div style="margin-bottom:10px">` +
+                `<div style="font-size:11px;font-weight:800;color:var(--bl);margin-bottom:6px">${RAS_ICONS[ras]||"🐔"} ${ras}</div>` +
+                `<div class="kip-grid">${kips.map(k=>kipKaartje(k,false)).join("")}</div></div>`
+              ).join("");
+
+          const uitHtml = uitgevallen.length===0 ? "" :
+            `<div style="margin-top:12px;border-top:1px solid var(--gd);padding-top:10px">` +
+            `<div style="font-size:11px;font-weight:800;color:var(--txl);margin-bottom:8px">🪦 Niet meer actief (${uitgevallen.length})</div>` +
+            `<div class="kip-grid">${uitgevallen.map(k=>kipKaartje(k,true)).join("")}</div></div>`;
+
+          // Statistieken
+          const metGeb = actief.filter(k=>k.geboortedatum);
+          const gemLeeftijdMnd = metGeb.length
+            ? Math.round(metGeb.reduce((s,k)=>{
+                return s + (new Date()-new Date(k.geboortedatum+"T12:00:00"))/(1000*60*60*24*30.5);
+              },0)/metGeb.length)
+            : null;
+
+          const statsHtml = `<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+            <div style="background:var(--gl);border-radius:8px;border:1px solid var(--gd);padding:6px 12px;font-size:11px;text-align:center;flex:1">
+              <div style="font-family:'Fredoka One',cursive;font-size:18px;color:var(--or)">${actief.length}</div>
+              <div style="color:var(--txl);font-weight:700">Actief</div>
+            </div>
+            <div style="background:var(--gl);border-radius:8px;border:1px solid var(--gd);padding:6px 12px;font-size:11px;text-align:center;flex:1">
+              <div style="font-family:'Fredoka One',cursive;font-size:18px;color:var(--txl)">${uitgevallen.length}</div>
+              <div style="color:var(--txl);font-weight:700">Uitgevallen</div>
+            </div>
+            ${gemLeeftijdMnd!==null?`<div style="background:var(--gl);border-radius:8px;border:1px solid var(--gd);padding:6px 12px;font-size:11px;text-align:center;flex:1">
+              <div style="font-family:'Fredoka One',cursive;font-size:18px;color:var(--or)">${gemLeeftijdMnd<24?gemLeeftijdMnd+"m":(gemLeeftijdMnd/12).toFixed(1)+"j"}</div>
+              <div style="color:var(--txl);font-weight:700">Gem. leeftijd</div>
+            </div>`:""}
+          </div>`;
+
+          return `<div class="card-title">🐓 Onze kippen</div>${statsHtml}${actiefHtml}${uitHtml}`;
         })()}
       </div>
       <div class="card">
@@ -1990,12 +2111,15 @@ const RAS_ICONS = {"ISA Brown":"🟠","Koekoek":"⚫","Sussex":"🟡","Blue des 
 const RASSEN = ["ISA Brown","Koekoek","Sussex","Blue des Landes","Haan","Anders"];
 
 async function saveKip() {
-  const naam = val("kip-naam").trim();
-  const ras  = val("kip-ras");
+  const naam        = val("kip-naam").trim();
+  const ras         = val("kip-ras");
+  const geslacht    = val("kip-geslacht") || "Hen";
+  const geboortedatum = val("kip-geboortedatum") || "";
+  const aanschafdatum = val("kip-aanschafdatum") || "";
   if(!naam) return toast("⚠️ Vul een naam in");
   const key = uid();
-  await dbSave("kippen/"+key, {naam, ras});
-  set_val("kip-naam","");
+  await dbSave("kippen/"+key, {naam, ras, geslacht, geboortedatum, aanschafdatum, status:"actief"});
+  set_val("kip-naam",""); set_val("kip-geboortedatum",""); set_val("kip-aanschafdatum","");
   toast("✅ Kip opgeslagen!");
 }
 async function deleteKip(key) {
@@ -2004,12 +2128,88 @@ async function deleteKip(key) {
   toast("🗑 Kip verwijderd");
 }
 async function updateKip() {
-  const key  = val("edit-kip-key");
-  const naam = val("edit-kip-naam").trim();
-  const ras  = val("edit-kip-ras");
+  const key           = val("edit-kip-key");
+  const naam          = val("edit-kip-naam").trim();
+  const ras           = val("edit-kip-ras");
+  const geslacht      = val("edit-kip-geslacht") || "Hen";
+  const geboortedatum = val("edit-kip-geboortedatum") || "";
+  const aanschafdatum = val("edit-kip-aanschafdatum") || "";
   if(!naam) return toast("⚠️ Vul een naam in");
-  await dbSave("kippen/"+key, {naam, ras});
+  // Bewaar bestaande status en gezondheidslog
+  const bestaand = kippen.find(k=>k._key===key) || {};
+  await dbSave("kippen/"+key, {
+    naam, ras, geslacht, geboortedatum, aanschafdatum,
+    status: bestaand.status || "actief",
+    uitval: bestaand.uitval || null,
+    gezondheid: bestaand.gezondheid || null
+  });
   closeModal(); toast("✅ Bijgewerkt!");
+}
+
+async function uitvallenKip(key) {
+  const kip = kippen.find(k=>k._key===key);
+  if(!kip) return;
+  modalState = { type: "kipUitval", data: kip };
+  const ov = document.getElementById("modal-overlay");
+  if(ov) ov.classList.add("open");
+  renderModal();
+}
+
+async function saveKipUitval() {
+  const key    = val("uitval-kip-key");
+  const datum  = val("uitval-datum") || today();
+  const reden  = val("uitval-reden");
+  const notitie= val("uitval-notitie").trim();
+  const kip = kippen.find(k=>k._key===key);
+  if(!kip) return;
+  await dbSave("kippen/"+key, {
+    ...kip, _key: undefined,
+    status: "uitgevallen",
+    uitval: { datum, reden, notitie }
+  });
+  closeModal();
+  toast("🪦 " + kip.naam + " geregistreerd als uitgevallen");
+}
+
+async function heractiveerKip(key) {
+  if(!confirm("Kip weer als actief markeren?")) return;
+  const kip = kippen.find(k=>k._key===key);
+  if(!kip) return;
+  await dbSave("kippen/"+key, { ...kip, _key: undefined, status: "actief", uitval: null });
+  toast("✅ Kip weer actief");
+}
+
+function openKipGezondheid(key) {
+  const kip = kippen.find(k=>k._key===key);
+  if(!kip) return;
+  modalState = { type: "kipGezondheid", data: kip };
+  const ov = document.getElementById("modal-overlay");
+  if(ov) ov.classList.add("open");
+  renderModal();
+}
+
+async function saveKipGezondheid() {
+  const key     = val("gezond-kip-key");
+  const datum   = val("gezond-datum") || today();
+  const type    = val("gezond-type");
+  const notitie = val("gezond-notitie").trim();
+  if(!notitie && type==="Anders") return toast("⚠️ Vul een notitie in");
+  const kip = kippen.find(k=>k._key===key);
+  if(!kip) return;
+  const bestaand = kip.gezondheid ? Object.values(kip.gezondheid) : [];
+  const newKey = uid();
+  await dbSave("kippen/"+key+"/gezondheid/"+newKey, { datum, type, notitie });
+  closeModal();
+  toast("✅ Gezondheidslog opgeslagen!");
+}
+
+async function deleteKipGezondheid(kipKey, logKey) {
+  if(!confirm("Log verwijderen?")) return;
+  await dbRemove("kippen/"+kipKey+"/gezondheid/"+logKey);
+  toast("🗑 Verwijderd");
+  // Heropen modal
+  const kip = kippen.find(k=>k._key===kipKey);
+  if(kip) { modalState = { type: "kipGezondheid", data: kip }; renderModal(); }
 }
 
 // ── Instellingen ──────────────────────────────────────────────────────────
@@ -2304,6 +2504,10 @@ Object.assign(window, {
   saveInv, deleteInv, updateInv, setKstTab, setPLMaand, setVkChartM,
   renderKostenTabContent,
   saveKip, deleteKip, updateKip,
+  uitvallenKip, saveKipUitval, heractiveerKip,
+  openKipGezondheid, saveKipGezondheid, deleteKipGezondheid,
+  uitvallenKip, saveKipUitval, heractiveerKip,
+  openKipGezondheid, saveKipGezondheid, deleteKipGezondheid,
   updateOfflineBanner,
   saveReservering, accepteerRes, weigerRes, deleteRes, showResBevestiging,
   setKstMaand,
