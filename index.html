@@ -892,22 +892,6 @@ function render() {
       })()}
     </div>
 
-      ${(()=>{
-        if(schoonmaak.filter(r=>!r.type||r.type!=="uitstel").length===0) return "";
-        const echt = schoonmaak.filter(r=>!r.type||r.type!=="uitstel");
-        return `<div class="card">
-          <div class="card-title">&#x1F9F9; Schoonmaak historie</div>
-          ${echt.slice(0,8).map((r,i)=>`
-          <div class="li" ${i===echt.slice(0,8).length-1?' style="border:none"':""}>
-            <div class="li-l"><div class="li-t">${fmtD(r.datum)}</div>${r.notitie&&r.notitie!=="uitgesteld"?`<div class="li-s">${esc(r.notitie)}</div>`:""}</div>
-            <div class="li-r">
-              <span class="badge bg">&#x2705; Schoon</span>
-              <button class="dbtn" onclick="deleteSchoonmaak('${r._key}')">&#x1F5D1;</button>
-            </div>
-          </div>`).join("")}
-          ${echt.length>8?`<div style="font-size:11px;color:var(--txl);text-align:center;padding:6px 0">${echt.length-8} oudere records</div>`:""}
-        </div>`;
-      })()}
     <!-- LEGDAGEN -->
     <div class="page${activePage==="legdagen"?" active":""}" id="page-legdagen">
       <div class="card">
