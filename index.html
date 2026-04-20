@@ -33,6 +33,9 @@ body{font-family:'Nunito',sans-serif;background:var(--gl);color:var(--tx);min-he
 .card{background:#fff;border-radius:16px;border:1.5px solid var(--gd);box-shadow:0 2px 12px rgba(200,134,10,.12);padding:16px;margin-bottom:14px;width:100%;box-sizing:border-box;overflow:hidden}
 .card-title{font-family:'Fredoka One',cursive;font-size:15px;color:var(--bd);margin-bottom:12px}
 .sec-hdr{background:linear-gradient(90deg,var(--or),var(--orl));color:#fff;padding:10px 16px;margin:-16px -16px 14px;border-radius:16px 16px 0 0;font-family:'Fredoka One',cursive;font-size:16px}
+.sec-hdr-acc{background:linear-gradient(90deg,var(--or),var(--orl));color:#fff;padding:10px 16px;margin:-16px -16px -16px;border-radius:16px;font-family:'Fredoka One',cursive;font-size:16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;-webkit-user-select:none;user-select:none}
+.sec-hdr-acc.open{border-radius:16px 16px 0 0;margin-bottom:14px}
+.acc-body{display:none}.acc-body.open{display:block}
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;width:100%}
 .stat{background:linear-gradient(135deg,var(--gl),var(--gd));border-radius:14px;border:1.5px solid var(--gd);padding:14px 12px;text-align:center}
 .stat .em{font-size:24px;margin-bottom:4px}.stat .vl{font-family:'Fredoka One',cursive;font-size:26px;color:var(--or);line-height:1}.stat .lb{font-size:9px;color:var(--txl);font-weight:700;margin-top:2px}
@@ -175,6 +178,8 @@ let instellingen = { prijsPerEi: 0.40, doosjeGrootte: 6, prijsDoosje6: 2.50, pri
 let zoekKlant = "";
 let currentUser = null;
 let kstTab = "kosten";
+// Beheer accordion — standaard alles ingeklapt behalve niets
+let beheerOpen = new Set();
 let kstFilterMaand = null;
 let plMaand = null; // null = totaal, anders "YYYY-MM"
 let vkChartM = null; // maand voor omzetgrafiek in verkopen
@@ -1282,7 +1287,8 @@ function render() {
     <!-- INSTELLINGEN -->
     <div class="page${activePage==="instellingen"?" active":""}" id="page-instellingen">
       <div class="card">
-        <div class="sec-hdr">⚙️ Instellingen</div>
+        <div class="sec-hdr-acc${beheerOpen.has('inst-prijzen')?" open":""}" onclick="toggleBeheer('inst-prijzen')">⚙️ Instellingen <span>${beheerOpen.has('inst-prijzen')?'▲':'▼'}</span></div>
+        <div class="acc-body${beheerOpen.has('inst-prijzen')?" open":""}">
         <div class="fg">
           <label class="fl">Prijs per ei (€)</label>
           <input type="number" id="inst-prijs" value="${instellingen.prijsPerEi.toFixed(2)}" step="0.01" min="0.01" inputmode="decimal">
@@ -1301,9 +1307,11 @@ function render() {
           </div>
         </div>
         <button class="btn btn-p" onclick="saveInstellingen()">💾 Opslaan</button>
+        </div>
       </div>
       <div class="card">
-        <div class="sec-hdr">&#x1F9F9; Kippenhok schoonmaken</div>
+        <div class="sec-hdr-acc${beheerOpen.has('inst-schoonmaak')?" open":""}" onclick="toggleBeheer('inst-schoonmaak')">🧹 Kippenhok schoonmaken <span>${beheerOpen.has('inst-schoonmaak')?'▲':'▼'}</span></div>
+        <div class="acc-body${beheerOpen.has('inst-schoonmaak')?" open":""}">
         <div style="font-size:11px;color:var(--txl);margin-bottom:14px">Stel in hoe vaak het kippenhok schoongemaakt moet worden. Op het dashboard verschijnt een melding 3 dagen van tevoren.</div>
         <div class="fg">
           <label class="fl">&#x1F9F9; Schoonmaak frequentie (dagen)</label>
@@ -1341,9 +1349,11 @@ function render() {
           <button class="btn btn-s" onclick="registreerSchoonmaak()">&#x2705; Opslaan</button>
           <button class="btn btn-g" onclick="openSchoonmaakHistorie()" style="flex:0.7">&#x1F4CB; Historie</button>
         </div>
+        </div>
       </div>
       <div class="card">
-        <div class="sec-hdr">&#x1F7E2; Klant status drempelwaarden</div>
+        <div class="sec-hdr-acc${beheerOpen.has('inst-klantstat')?" open":""}" onclick="toggleBeheer('inst-klantstat')">🟢 Klant status <span>${beheerOpen.has('inst-klantstat')?'▲':'▼'}</span></div>
+        <div class="acc-body${beheerOpen.has('inst-klantstat')?" open":""}">
         <div style="font-size:11px;color:var(--txl);margin-bottom:14px">Stel in na hoeveel dagen een klant van status wisselt op de klantenpagina.</div>
         <div style="background:var(--gl);border-radius:12px;border:1.5px solid var(--gd);overflow:hidden;margin-bottom:14px">
           <div style="display:grid;grid-template-columns:2fr 3fr 3fr;background:var(--gd);padding:7px 12px;font-size:10px;font-weight:800;color:var(--bd)">
@@ -1383,9 +1393,11 @@ function render() {
           </div>
         </div>
         <button class="btn btn-p" onclick="saveInstellingen()">&#x1F4BE; Drempelwaarden opslaan</button>
+        </div>
       </div>
       <div class="card">
-        <div class="sec-hdr">🐓 Kippen beheren</div>
+        <div class="sec-hdr-acc${beheerOpen.has('inst-kippen')?" open":""}" onclick="toggleBeheer('inst-kippen')">🐓 Kippen beheren <span>${beheerOpen.has('inst-kippen')?'▲':'▼'}</span></div>
+        <div class="acc-body${beheerOpen.has('inst-kippen')?" open":""}">
         <div class="frow">
           <div class="fg"><label class="fl">Naam</label><input type="text" id="kip-naam" placeholder="bijv. Max..."></div>
           <div class="fg"><label class="fl">Ras</label>
@@ -1404,6 +1416,7 @@ function render() {
           <input type="date" id="kip-aanschafdatum">
         </div>
         <button class="btn btn-p" onclick="saveKip()">🐣 Kip toevoegen</button>
+        </div>
       </div>
       <div class="card">
         ${(()=>{
@@ -1486,7 +1499,8 @@ function render() {
         })()}
       </div>
       <div class="card">
-        <div class="sec-hdr">&#x1F4CD; Weerlocatie</div>
+        <div class="sec-hdr-acc${beheerOpen.has('inst-locatie')?" open":""}" onclick="toggleBeheer('inst-locatie')">📍 Weerlocatie <span>${beheerOpen.has('inst-locatie')?'▲':'▼'}</span></div>
+        <div class="acc-body${beheerOpen.has('inst-locatie')?" open":""}">
         <div style="font-size:11px;color:var(--txl);margin-bottom:14px">De locatie die gebruikt wordt voor het weerbericht op het dashboard.</div>
         <div class="fg">
           <label class="fl">Plaatsnaam (weergave)</label>
@@ -1506,6 +1520,7 @@ function render() {
           &#x1F4A1; Coördinaten vind je via <strong>maps.google.com</strong> — zoek je adres op en klik rechts op de locatie voor de coördinaten.
         </div>
         <button class="btn btn-p" onclick="saveInstellingen()">&#x1F4BE; Locatie opslaan</button>
+        </div>
       </div>
       <div class="card">
         <div class="card-title">📊 Statistieken</div>
@@ -1518,7 +1533,8 @@ function render() {
         <div class="li" style="border:none"><div class="li-l"><div class="li-t">Totaal omzet</div></div><div class="li-r"><span class="fw text-gn">${fmt(omzet)}</span></div></div>
       </div>
       <div class="card">
-        <div class="sec-hdr">🔔 Pushmeldingen</div>
+        <div class="sec-hdr-acc${beheerOpen.has('inst-push')?" open":""}" onclick="toggleBeheer('inst-push')">🔔 Pushmeldingen <span>${beheerOpen.has('inst-push')?'▲':'▼'}</span></div>
+        <div class="acc-body${beheerOpen.has('inst-push')?" open":""}">
         <div style="font-size:11px;color:var(--txl);margin-bottom:14px">Ontvang meldingen op dit apparaat voor legdagen, schoonmaak, reserveringen en voorraad.</div>
         ${(()=>{
           const supported = ("Notification" in window) && ("serviceWorker" in navigator);
@@ -1550,6 +1566,7 @@ function render() {
             ? '<div style="font-size:11px;color:var(--rd);background:#fadbd8;border-radius:8px;padding:8px 12px">Notificaties zijn geblokkeerd in je browser. Ga naar browserinstellingen → Site-instellingen om dit te herstellen.</div>'
             : '<div class="brow"><button class="btn btn-s" onclick="registreerPushNotificaties()">🔔 Inschakelen op dit apparaat</button><button class="btn btn-g" onclick="uitschakelenPushNotificaties()" style="flex:0.5">🔕 Uit</button></div>'}`;
         })()}
+        </div>
       </div>
       <div class="card">
         <div class="card-title">💾 Back-up (CSV)</div>
@@ -2417,6 +2434,12 @@ function setSchoonHistorieJaar(j) {
   renderModal();
 }
 
+function toggleBeheer(id) {
+  if(beheerOpen.has(id)) beheerOpen.delete(id);
+  else beheerOpen.add(id);
+  render();
+}
+
 function setZoekKlant() {
   zoekKlant = (document.getElementById("klant-zoek")||{value:""}).value.toLowerCase();
   render();
@@ -2482,7 +2505,7 @@ Object.assign(window, {
   saveVk, deleteVk, updateVk, calcVkTot, calcNieuweKlantVeld, setVkType,
   saveKst, deleteKst, updateKst,
   saveKlant, deleteKlant, updateKlant,
-  saveInstellingen, setZoekKlant,
+  saveInstellingen, setZoekKlant, toggleBeheer, toggleBeheer,
   openModal, closeModal, exportCSV, setSyncBadge,
   openChart, closeChart, switchChartView, setChartM,
   doLogin, doLogout, renderLogin, showResBevestiging, syncPubliekeData,
