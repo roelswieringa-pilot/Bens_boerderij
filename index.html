@@ -179,7 +179,7 @@ let zoekKlant = "";
 let currentUser = null;
 let kstTab = "kosten";
 // Beheer accordion — standaard alles ingeklapt behalve niets
-let beheerOpen = new Set();
+let beheerOpen = new Set(['inst-schoonmaak']);
 let kstFilterMaand = null;
 let plMaand = null; // null = totaal, anders "YYYY-MM"
 let vkChartM = null; // maand voor omzetgrafiek in verkopen
@@ -2052,9 +2052,13 @@ function renderKostenTabContent() {
       '</div>' +
       '<button class="btn btn-d" onclick="saveKst()">&#x1F4B8; Kosten opslaan</button>' +
       '</div>' +
-      '<div class="card"><div class="card-title">&#x1F4CA; Kosten per categorie <span style="font-size:11px;color:var(--txl);font-weight:400">' + kstMaandLabel + '</span></div>' +
-      maandTabsHtml + '<div class="bar-wrap">' + barsHtml + '</div></div>' +
-      '<div class="card"><div class="card-title">&#x1F9FE; Kostenhistorie</div>' + maandTabsHtml + histHtml + '</div>';
+      '<div class="card">' +
+      '<div class="card-title">&#x1F4CA; Kosten overzicht <span style="font-size:11px;color:var(--txl);font-weight:400">' + kstMaandLabel + '</span></div>' +
+      maandTabsHtml +
+      '<div class="bar-wrap" style="margin-bottom:14px">' + barsHtml + '</div>' +
+      '<div style="height:1px;background:var(--gd);margin:0 0 12px"></div>' +
+      '<div style="font-size:12px;font-weight:800;color:var(--bd);margin-bottom:8px">&#x1F9FE; Historie</div>' +
+      histHtml + '</div>';
 
   } else {
     // INVESTERINGEN tab
