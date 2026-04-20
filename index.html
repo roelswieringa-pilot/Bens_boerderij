@@ -1419,6 +1419,8 @@ function render() {
         </div>
       </div>
       <div class="card">
+        <div class="sec-hdr-acc${beheerOpen.has('inst-onze-kippen')?" open":""}" onclick="toggleBeheer('inst-onze-kippen')">🐓 Onze kippen <span>${beheerOpen.has('inst-onze-kippen')?'▲':'▼'}</span></div>
+        <div class="acc-body${beheerOpen.has('inst-onze-kippen')?" open":""}">
         ${(()=>{
           const actief    = kippen.filter(k=>!k.status||k.status==="actief");
           const uitgevallen = kippen.filter(k=>k.status==="uitgevallen");
@@ -1497,6 +1499,7 @@ function render() {
 
           return `<div class="card-title">🐓 Onze kippen</div>${statsHtml}${actiefHtml}${uitHtml}`;
         })()}
+        </div>
       </div>
       <div class="card">
         <div class="sec-hdr-acc${beheerOpen.has('inst-locatie')?" open":""}" onclick="toggleBeheer('inst-locatie')">📍 Weerlocatie <span>${beheerOpen.has('inst-locatie')?'▲':'▼'}</span></div>
@@ -1523,7 +1526,8 @@ function render() {
         </div>
       </div>
       <div class="card">
-        <div class="card-title">📊 Statistieken</div>
+        <div class="sec-hdr-acc${beheerOpen.has('inst-statistieken')?" open":""}" onclick="toggleBeheer('inst-statistieken')">📊 Statistieken <span>${beheerOpen.has('inst-statistieken')?'▲':'▼'}</span></div>
+        <div class="acc-body${beheerOpen.has('inst-statistieken')?" open":""}">
         <div class="li"><div class="li-l"><div class="li-t">Totaal gelegde eieren</div></div><div class="li-r"><span class="fw text-or">${totGelegd}</span></div></div>
         <div class="li"><div class="li-l"><div class="li-t">💔 Waarvan kapot</div></div><div class="li-r"><span class="fw text-ro">${totKapot}</span></div></div>
         <div class="li"><div class="li-l"><div class="li-t">Totaal verkochte eieren</div></div><div class="li-r"><span class="fw text-gn">${totVerkocht}</span></div></div>
@@ -1531,6 +1535,7 @@ function render() {
         <div class="li"><div class="li-l"><div class="li-t">Invul-streak</div></div><div class="li-r"><span class="fw text-or">${streak} dagen ${streak>=7?"🔥":streak>=3?"⭐":"📆"}</span></div></div>
         <div class="li"><div class="li-l"><div class="li-t">Totaal klanten</div></div><div class="li-r"><span class="fw text-or">${klanten.length}</span></div></div>
         <div class="li" style="border:none"><div class="li-l"><div class="li-t">Totaal omzet</div></div><div class="li-r"><span class="fw text-gn">${fmt(omzet)}</span></div></div>
+        </div>
       </div>
       <div class="card">
         <div class="sec-hdr-acc${beheerOpen.has('inst-push')?" open":""}" onclick="toggleBeheer('inst-push')">🔔 Pushmeldingen <span>${beheerOpen.has('inst-push')?'▲':'▼'}</span></div>
@@ -1569,7 +1574,8 @@ function render() {
         </div>
       </div>
       <div class="card">
-        <div class="card-title">💾 Back-up (CSV)</div>
+        <div class="sec-hdr-acc${beheerOpen.has('inst-backup')?" open":""}" onclick="toggleBeheer('inst-backup')">💾 Back-up (CSV) <span>${beheerOpen.has('inst-backup')?'▲':'▼'}</span></div>
+        <div class="acc-body${beheerOpen.has('inst-backup')?" open":""}">
         <div class="data-box"><h4>📥 Downloaden</h4>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
             <button class="btn btn-g" onclick="exportCSV('legdagen')">🥚 Legdagen</button>
@@ -1579,6 +1585,7 @@ function render() {
           </div>
         </div>
         <p style="font-size:11px;color:var(--txl);text-align:center;margin-top:4px">☁️ Data wordt live gesynchroniseerd via Firebase op alle apparaten</p>
+        </div>
       </div>
     </div>
 
