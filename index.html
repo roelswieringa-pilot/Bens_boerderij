@@ -175,6 +175,7 @@ let instellingen = { prijsPerEi: 0.40, doosjeGrootte: 6, prijsDoosje6: 2.50, pri
 let zoekKlant = "";
 let currentUser = null;
 let kstTab = "kosten";
+let kstFilterMaand = null;
 let plMaand = null; // null = totaal, anders "YYYY-MM"
 let vkChartM = null; // maand voor omzetgrafiek in verkopen
 // Public data cache for login page
@@ -1971,7 +1972,7 @@ function renderKostenTabContent() {
   if(kstTab === "kosten") {
     // Maandfilter voor kosten
     const kstMaanden = [...new Set(kst.map(r=>r.datum.slice(0,7)))].sort().reverse();
-    const curKstM = (window._kstMaand && kstMaanden.includes(window._kstMaand)) ? window._kstMaand : (kstMaanden[0]||t.slice(0,7));
+    const curKstM = (kstFilterMaand && kstMaanden.includes(kstFilterMaand)) ? kstFilterMaand : (kstMaanden[0]||t.slice(0,7));
     const kstGefilterd = kst.filter(r=>r.datum.startsWith(curKstM));
     const [kmy,kmmo] = curKstM.split("-");
     const kstMaandLabel = kstMaanden.length>0 ? MNAMEN[parseInt(kmmo)-1]+" "+kmy : "";
@@ -1982,7 +1983,7 @@ function renderKostenTabContent() {
     const maxCat2 = Math.max(...Object.values(catTotals2), 1);
 
     const maandTabsHtml = kstMaanden.length > 1
-      ? '<div class="tabs">' + kstMaanden.map(m=>{const[y2,mo2]=m.split("-");return'<div class="tab'+(m===curKstM?" active":"")+'" onclick="setKstMaand(\\"'+m+'\\")">'+MNAMEN[parseInt(mo2)-1]+' '+y2+'</div>';}).join("") + '</div>'
+      ? '<div class="tabs">' + kstMaanden.map(m=>{const[y2,mo2]=m.split("-");return'<div class="tab'+(m===curKstM?" active":"") +'" onclick="setKstMaand(\''+m+'\')">'+MNAMEN[parseInt(mo2)-1]+' '+y2+'</div>';}).join("") + '</div>'
       : '';
 
     const barsHtml = CATS.map(c =>
@@ -2330,7 +2331,7 @@ async function laadWeer() {
   }
 }
 function setKstMaand(m) {
-  window._kstMaand = m;
+  kstFilterMaand = m;
   renderKostenTabContent();
 }
 
@@ -2490,13 +2491,10 @@ Object.assign(window, {
   saveKip, deleteKip, updateKip,
   uitvallenKip, saveKipUitval, heractiveerKip,
   openKipGezondheid, saveKipGezondheid, deleteKipGezondheid,
-  uitvallenKip, saveKipUitval, heractiveerKip,
-  openKipGezondheid, saveKipGezondheid, deleteKipGezondheid,
   updateOfflineBanner,
   saveReservering, accepteerRes, weigerRes, deleteRes, showResBevestiging,
   setKstMaand,
   bevestigSchoonmaak, uitstellenSchoonmaak, deleteSchoonmaak,
-  registreerSchoonmaak, openSchoonmaakHistorie, setSchoonHistorieJaar,
   registreerSchoonmaak, openSchoonmaakHistorie, setSchoonHistorieJaar,
   laadWeer,
   registreerPushNotificaties, uitschakelenPushNotificaties
