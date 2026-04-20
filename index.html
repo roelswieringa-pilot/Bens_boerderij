@@ -352,7 +352,7 @@ async function saveLegQuick() {
   await saveLeg();
 }
 async function deleteLeg(key) {
-  if(!confirm("Legdag verwijderen?")) return;
+  if(!await bevestig("Legdag verwijderen?")) return;
   await dbRemove("legdagen/"+key);
   toast("🗑 Verwijderd");
 }
@@ -432,7 +432,7 @@ async function saveKlant() {
   toast("✅ Klant opgeslagen!");
 }
 async function deleteKlant(key) {
-  if(!confirm("Klant verwijderen?")) return;
+  if(!await bevestig("Klant verwijderen?", "Ja, verwijderen", "btn-d", "Aankoophistorie blijft bewaard in de verkopen.")) return;
   await dbRemove("klanten/"+key);
   if(activeKlant===key) activeKlant=null;
   toast("🗑 Klant verwijderd");
@@ -446,7 +446,7 @@ async function updateKlant() {
   closeModal(); toast("✅ Klant bijgewerkt!");
 }
 async function deleteVk(key) {
-  if(!confirm("Verkoop verwijderen?")) return;
+  if(!await bevestig("Verkoop verwijderen?")) return;
   await dbRemove("verkopen/"+key);
   toast("🗑 Verwijderd");
 }
@@ -484,7 +484,7 @@ async function saveKst() {
   toast("✅ Kosten opgeslagen!");
 }
 async function deleteKst(key) {
-  if(!confirm("Kosten verwijderen?")) return;
+  if(!await bevestig("Kosten verwijderen?")) return;
   await dbRemove("kosten/"+key);
   toast("🗑 Verwijderd");
 }
@@ -1287,7 +1287,7 @@ function render() {
     <!-- INSTELLINGEN -->
     <div class="page${activePage==="instellingen"?" active":""}" id="page-instellingen">
       <div class="card">
-        <div class="sec-hdr-acc${beheerOpen.has('inst-prijzen')?" open":""}" onclick="toggleBeheer('inst-prijzen')">⚙️ Instellingen <span>${beheerOpen.has('inst-prijzen')?'▲':'▼'}</span></div>
+        <div class="sec-hdr-acc${beheerOpen.has('inst-prijzen')?" open":""}" onclick="toggleBeheer('inst-prijzen')">🥚 Eierprijzen <span>${beheerOpen.has('inst-prijzen')?'▲':'▼'}</span></div>
         <div class="acc-body${beheerOpen.has('inst-prijzen')?" open":""}">
         <div class="fg">
           <label class="fl">Prijs per ei (€)</label>
@@ -1396,7 +1396,7 @@ function render() {
         </div>
       </div>
       <div class="card">
-        <div class="sec-hdr-acc${beheerOpen.has('inst-kippen')?" open":""}" onclick="toggleBeheer('inst-kippen')">🐓 Kippen beheren <span>${beheerOpen.has('inst-kippen')?'▲':'▼'}</span></div>
+        <div class="sec-hdr-acc${beheerOpen.has('inst-kippen')?" open":""}" onclick="toggleBeheer('inst-kippen')">🐓 Kippen <span>${beheerOpen.has('inst-kippen')?'▲':'▼'}</span></div>
         <div class="acc-body${beheerOpen.has('inst-kippen')?" open":""}">
         <div class="frow">
           <div class="fg"><label class="fl">Naam</label><input type="text" id="kip-naam" placeholder="bijv. Max..."></div>
@@ -1416,11 +1416,7 @@ function render() {
           <input type="date" id="kip-aanschafdatum">
         </div>
         <button class="btn btn-p" onclick="saveKip()">🐣 Kip toevoegen</button>
-        </div>
-      </div>
-      <div class="card">
-        <div class="sec-hdr-acc${beheerOpen.has('inst-onze-kippen')?" open":""}" onclick="toggleBeheer('inst-onze-kippen')">🐓 Onze kippen <span>${beheerOpen.has('inst-onze-kippen')?'▲':'▼'}</span></div>
-        <div class="acc-body${beheerOpen.has('inst-onze-kippen')?" open":""}">
+        <div style="height:1px;background:var(--gd);margin:14px 0"></div>
         ${(()=>{
           const actief    = kippen.filter(k=>!k.status||k.status==="actief");
           const uitgevallen = kippen.filter(k=>k.status==="uitgevallen");
@@ -1602,6 +1598,12 @@ function render() {
   <div class="overlay" id="modal-overlay" onclick="closeModal()">
     <div class="modal" onclick="event.stopPropagation()">
       <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <div class="overlay" id="confirm-overlay">
+    <div class="modal" onclick="event.stopPropagation()" style="max-height:auto">
+      <div id="confirm-body"></div>
     </div>
   </div>
 
@@ -1889,7 +1891,7 @@ function showResBevestiging(naam, datum, aantal, doosPrijs) {
   </div>`;
 }
 async function accepteerRes(key, r) {
-  if(!confirm("Reservering accepteren en omzetten naar verkoop?")) return;
+  if(!await bevestig("Reservering omzetten naar verkoop?", "✅ Ja, omzetten", "btn-s")) return;
 
   // Find or create klant
   let klantId = "";
@@ -1943,13 +1945,13 @@ async function accepteerRes(key, r) {
   toast("✅ Reservering omgezet naar verkoop!");
 }
 async function weigerRes(key, r) {
-  if(!confirm("Reservering weigeren?")) return;
+  if(!await bevestig("Reservering weigeren?", "❌ Ja, weigeren", "btn-d")) return;
   await dbRemove("reserveringen/"+key);
   syncPubliekeData();
   toast("🗑 Reservering geweigerd");
 }
 async function deleteRes(key) {
-  if(!confirm("Reservering verwijderen?")) return;
+  if(!await bevestig("Reservering verwijderen?")) return;
   await dbRemove("reserveringen/"+key);
   toast("🗑 Verwijderd");
 }
@@ -1970,7 +1972,7 @@ async function saveInv() {
   toast("✅ Investering opgeslagen!");
 }
 async function deleteInv(key) {
-  if(!confirm("Investering verwijderen?")) return;
+  if(!await bevestig("Investering verwijderen?")) return;
   await dbRemove("investeringen/"+key);
   toast("🗑 Verwijderd");
 }
@@ -2132,7 +2134,7 @@ async function saveKip() {
   toast("✅ Kip opgeslagen!");
 }
 async function deleteKip(key) {
-  if(!confirm("Kip verwijderen?")) return;
+  if(!await bevestig("Kip verwijderen?", "Ja, verwijderen", "btn-d", "Dit verwijdert ook de gezondheidslog van deze kip.")) return;
   await dbRemove("kippen/"+key);
   toast("🗑 Kip verwijderd");
 }
@@ -2181,7 +2183,7 @@ async function saveKipUitval() {
 }
 
 async function heractiveerKip(key) {
-  if(!confirm("Kip weer als actief markeren?")) return;
+  if(!await bevestig("Kip weer als actief markeren?", "↩️ Ja, heractiveren", "btn-s")) return;
   const kip = kippen.find(k=>k._key===key);
   if(!kip) return;
   await dbSave("kippen/"+key, { ...kip, _key: undefined, status: "actief", uitval: null });
@@ -2213,7 +2215,7 @@ async function saveKipGezondheid() {
 }
 
 async function deleteKipGezondheid(kipKey, logKey) {
-  if(!confirm("Log verwijderen?")) return;
+  if(!await bevestig("Gezondheidslog verwijderen?")) return;
   await dbRemove("kippen/"+kipKey+"/gezondheid/"+logKey);
   toast("🗑 Verwijderd");
   // Heropen modal
@@ -2447,6 +2449,36 @@ function toggleBeheer(id) {
   render();
 }
 
+// ── In-app bevestigingsdialoog ────────────────────────────────────────────
+let _confirmResolve = null;
+
+function bevestig(vraag, bevestigTekst="Ja, verwijderen", bevestigKleur="btn-d", uitlegTekst="") {
+  return new Promise(resolve => {
+    _confirmResolve = resolve;
+    const el = document.getElementById("confirm-body");
+    const ov = document.getElementById("confirm-overlay");
+    if(!el || !ov) { resolve(window.confirm(vraag)); return; }
+    el.innerHTML = `
+      <div style="text-align:center;padding:8px 0 16px">
+        <div style="font-size:36px;margin-bottom:10px">🤔</div>
+        <div style="font-family:'Fredoka One',cursive;font-size:17px;color:var(--bd);margin-bottom:${uitlegTekst?"6px":"16px"}">${vraag}</div>
+        ${uitlegTekst?`<div style="font-size:12px;color:var(--txl);margin-bottom:16px">${uitlegTekst}</div>`:""}
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-g" onclick="sluitBevestig(false)" style="flex:1">Annuleren</button>
+          <button class="btn ${bevestigKleur}" onclick="sluitBevestig(true)" style="flex:1">${bevestigTekst}</button>
+        </div>
+      </div>`;
+    ov.classList.add("open");
+  });
+}
+
+function sluitBevestig(result) {
+  const ov = document.getElementById("confirm-overlay");
+  if(ov) ov.classList.remove("open");
+  if(_confirmResolve) { _confirmResolve(result); _confirmResolve = null; }
+}
+
+// ── In-app bevestigingsdialoog ────────────────────────────────────────────
 function setZoekKlant() {
   zoekKlant = (document.getElementById("klant-zoek")||{value:""}).value.toLowerCase();
   render();
@@ -2527,7 +2559,8 @@ Object.assign(window, {
   bevestigSchoonmaak, uitstellenSchoonmaak, deleteSchoonmaak,
   registreerSchoonmaak, openSchoonmaakHistorie, setSchoonHistorieJaar,
   laadWeer,
-  registreerPushNotificaties, uitschakelenPushNotificaties
+  registreerPushNotificaties, uitschakelenPushNotificaties,
+  sluitBevestig
 });
 
 
@@ -2678,7 +2711,7 @@ function showLoginError(msg) {
 }
 
 async function doLogout() {
-  if(!confirm("Uitloggen?")) return;
+  if(!await bevestig("Uitloggen?", "Uitloggen", "btn-d")) return;
   await signOut(auth);
 }
 
