@@ -173,7 +173,7 @@ const MNAMEN= ["Januari","Februari","Maart","April","Mei","Juni","Juli","Augustu
 const BB    = {Cash:"bg",Tikkie:"bb",Overboeking:"bo"};
 
 // ── State ──────────────────────────────────────────────────────────────────
-let leg=[], vk=[], kst=[], inv=[], klanten=[], kippen=[], reserveringen=[], schoonmaak=[], activePage="dashboard", activeM=null, activeKlant=null, modalState=null;
+let leg=[], vk=[], kst=[], inv=[], klanten=[], kippen=[], reserveringen=[], schoonmaak=[], notities=[], activePage="dashboard", activeM=null, activeKlant=null, modalState=null;
 let instellingen = { prijsPerEi: 0.40, doosjeGrootte: 6, prijsDoosje6: 2.50, prijsDoosje10: 4.00, klantGroen: 7, klantOranje: 14, hokFrequentie: 14, weerLat: 50.9057, weerLon: 5.7815, weerNaam: "Ulestraten" };
 let zoekKlant = "";
 let currentUser = null;
@@ -304,6 +304,16 @@ function startListeners() {
   onValue(ref(db,"schoonmaak"), snap => {
     const v2 = snap.val() || {};
     schoonmaak = Object.entries(v2).map(([k,v])=>({...v,_key:k})).sort((a,b)=>b.datum.localeCompare(a.datum));
+    render(); setSyncBadge("ok");
+  });
+  onValue(ref(db,"notities"), snap => {
+    const val = snap.val() || {};
+    notities = Object.entries(val).map(([k,v])=>({...v,_key:k})).sort((a,b)=>b.datum.localeCompare(a.datum));
+    render(); setSyncBadge("ok");
+  });
+  onValue(ref(db,"notities"), snap => {
+    const val = snap.val() || {};
+    notities = Object.entries(val).map(([k,v])=>({...v,_key:k})).sort((a,b)=>b.datum.localeCompare(a.datum));
     render(); setSyncBadge("ok");
   });
   onValue(ref(db,"klanten"), snap => {
@@ -1310,6 +1320,37 @@ function render() {
         </div>
       </div>
       <div class="card">
+        <div class="sec-hdr-acc${beheerOpen.has('inst-notities')?" open":""}" onclick="toggleBeheer('inst-notities')">&#x1F4DD; Notities <span>${beheerOpen.has('inst-notities')?'▲':'▼'}</span></div>
+        <div class="acc-body${beheerOpen.has('inst-notities')?" open":""}">
+        <div class="fg">
+          <label class="fl">Categorie</label>
+          <select id="notitie-cat">${NOTITIE_CATS.map(c=>`<option>${c}</option>`).join("")}</select>
+        </div>
+        <div class="fg">
+          <label class="fl">Notitie</label>
+          <textarea id="notitie-tekst" rows="3" placeholder="Schrijf hier je notitie..." style="width:100%;padding:11px 14px;border:1.5px solid var(--gd);border-radius:10px;font-size:15px;font-family:'Nunito',sans-serif;color:var(--tx);background:var(--gl);outline:none;resize:vertical;box-sizing:border-box"></textarea>
+        </div>
+        <button class="btn btn-p" onclick="saveNotitie()" style="margin-bottom:14px">&#x1F4DD; Notitie opslaan</button>
+        ${(()=>{
+          if(notities.length===0) return '<div class="empty" style="padding:12px 0"><div class="em">&#x1F4DD;</div><p>Nog geen notities</p></div>';
+          const cats = [...new Set(notities.map(n=>n.cat))];
+          return cats.map(cat=>{
+            const rijen = notities.filter(n=>n.cat===cat);
+            return `<div style="margin-bottom:10px">
+              <div style="font-size:11px;font-weight:800;color:var(--bl);margin-bottom:6px">${cat}</div>
+              ${rijen.map((n,i)=>`<div class="li" ${i===rijen.length-1?'style="border:none"':""}>
+                <div class="li-l">
+                  <div class="li-t" style="white-space:normal;line-height:1.4">${esc(n.tekst)}</div>
+                  <div class="li-s">${fmtD(n.datum)}</div>
+                </div>
+                <div class="li-r"><button class="dbtn" onclick="deleteNotitie('${n._key}')">&#x1F5D1;</button></div>
+              </div>`).join("")}
+            </div>`;
+          }).join("");
+        })()}
+        </div>
+      </div>
+      <div class="card">
         <div class="sec-hdr-acc${beheerOpen.has('inst-schoonmaak')?" open":""}" onclick="toggleBeheer('inst-schoonmaak')">🧹 Kippenhok schoonmaken <span>${beheerOpen.has('inst-schoonmaak')?'▲':'▼'}</span></div>
         <div class="acc-body${beheerOpen.has('inst-schoonmaak')?" open":""}">
         <div style="font-size:11px;color:var(--txl);margin-bottom:14px">Stel in hoe vaak het kippenhok schoongemaakt moet worden. Op het dashboard verschijnt een melding 3 dagen van tevoren.</div>
@@ -1349,50 +1390,6 @@ function render() {
           <button class="btn btn-s" onclick="registreerSchoonmaak()">&#x2705; Opslaan</button>
           <button class="btn btn-g" onclick="openSchoonmaakHistorie()" style="flex:0.7">&#x1F4CB; Historie</button>
         </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="sec-hdr-acc${beheerOpen.has('inst-klantstat')?" open":""}" onclick="toggleBeheer('inst-klantstat')">🟢 Klant status <span>${beheerOpen.has('inst-klantstat')?'▲':'▼'}</span></div>
-        <div class="acc-body${beheerOpen.has('inst-klantstat')?" open":""}">
-        <div style="font-size:11px;color:var(--txl);margin-bottom:14px">Stel in na hoeveel dagen een klant van status wisselt op de klantenpagina.</div>
-        <div style="background:var(--gl);border-radius:12px;border:1.5px solid var(--gd);overflow:hidden;margin-bottom:14px">
-          <div style="display:grid;grid-template-columns:2fr 3fr 3fr;background:var(--gd);padding:7px 12px;font-size:10px;font-weight:800;color:var(--bd)">
-            <span>Status</span><span>Betekenis</span><span>Drempel</span>
-          </div>
-          <div style="display:grid;grid-template-columns:2fr 3fr 3fr;padding:9px 12px;align-items:center;border-bottom:1px solid var(--gd)">
-            <span style="font-size:13px;font-weight:800;color:var(--gn)">&#x1F7E2; Groen</span>
-            <span style="font-size:11px;color:var(--txl)">Recent gekocht</span>
-            <span style="font-size:11px;color:var(--txl)">&le; <strong>${instellingen.klantGroen??7}</strong> dagen</span>
-          </div>
-          <div style="display:grid;grid-template-columns:2fr 3fr 3fr;padding:9px 12px;align-items:center;border-bottom:1px solid var(--gd)">
-            <span style="font-size:13px;font-weight:800;color:var(--or)">&#x1F7E1; Oranje</span>
-            <span style="font-size:11px;color:var(--txl)">Tijdje geleden</span>
-            <span style="font-size:11px;color:var(--txl)">> ${instellingen.klantGroen??7} en &le; <strong>${instellingen.klantOranje??14}</strong> dagen</span>
-          </div>
-          <div style="display:grid;grid-template-columns:2fr 3fr 3fr;padding:9px 12px;align-items:center;border-bottom:1px solid var(--gd)">
-            <span style="font-size:13px;font-weight:800;color:var(--rd)">&#x1F534; Rood</span>
-            <span style="font-size:11px;color:var(--txl)">Lang niet gezien</span>
-            <span style="font-size:11px;color:var(--txl)">> <strong>${instellingen.klantOranje??14}</strong> dagen</span>
-          </div>
-          <div style="display:grid;grid-template-columns:2fr 3fr 3fr;padding:9px 12px;align-items:center">
-            <span style="font-size:13px;font-weight:800;color:var(--txl)">&#x26AB; Grijs</span>
-            <span style="font-size:11px;color:var(--txl)">Nog nooit gekocht</span>
-            <span style="font-size:11px;color:var(--txl)">&#x2014;</span>
-          </div>
-        </div>
-        <div class="frow">
-          <div class="fg">
-            <label class="fl">&#x1F7E2; Groen t/m (dagen)</label>
-            <input type="number" id="inst-klant-groen" value="${instellingen.klantGroen??7}" min="1" max="365" inputmode="numeric">
-            <div style="font-size:11px;color:var(--txl);margin-top:4px">Huidig: <strong>${instellingen.klantGroen??7} dagen</strong></div>
-          </div>
-          <div class="fg">
-            <label class="fl">&#x1F7E1; Oranje t/m (dagen)</label>
-            <input type="number" id="inst-klant-oranje" value="${instellingen.klantOranje??14}" min="1" max="365" inputmode="numeric">
-            <div style="font-size:11px;color:var(--txl);margin-top:4px">Huidig: <strong>${instellingen.klantOranje??14} dagen</strong></div>
-          </div>
-        </div>
-        <button class="btn btn-p" onclick="saveInstellingen()">&#x1F4BE; Drempelwaarden opslaan</button>
         </div>
       </div>
       <div class="card">
@@ -1498,6 +1495,62 @@ function render() {
         </div>
       </div>
       <div class="card">
+        <div class="sec-hdr-acc${beheerOpen.has('inst-klantstat')?" open":""}" onclick="toggleBeheer('inst-klantstat')">🟢 Klant status <span>${beheerOpen.has('inst-klantstat')?'▲':'▼'}</span></div>
+        <div class="acc-body${beheerOpen.has('inst-klantstat')?" open":""}">
+        <div style="font-size:11px;color:var(--txl);margin-bottom:14px">Stel in na hoeveel dagen een klant van status wisselt op de klantenpagina.</div>
+        <div style="background:var(--gl);border-radius:12px;border:1.5px solid var(--gd);overflow:hidden;margin-bottom:14px">
+          <div style="display:grid;grid-template-columns:2fr 3fr 3fr;background:var(--gd);padding:7px 12px;font-size:10px;font-weight:800;color:var(--bd)">
+            <span>Status</span><span>Betekenis</span><span>Drempel</span>
+          </div>
+          <div style="display:grid;grid-template-columns:2fr 3fr 3fr;padding:9px 12px;align-items:center;border-bottom:1px solid var(--gd)">
+            <span style="font-size:13px;font-weight:800;color:var(--gn)">&#x1F7E2; Groen</span>
+            <span style="font-size:11px;color:var(--txl)">Recent gekocht</span>
+            <span style="font-size:11px;color:var(--txl)">&le; <strong>${instellingen.klantGroen??7}</strong> dagen</span>
+          </div>
+          <div style="display:grid;grid-template-columns:2fr 3fr 3fr;padding:9px 12px;align-items:center;border-bottom:1px solid var(--gd)">
+            <span style="font-size:13px;font-weight:800;color:var(--or)">&#x1F7E1; Oranje</span>
+            <span style="font-size:11px;color:var(--txl)">Tijdje geleden</span>
+            <span style="font-size:11px;color:var(--txl)">> ${instellingen.klantGroen??7} en &le; <strong>${instellingen.klantOranje??14}</strong> dagen</span>
+          </div>
+          <div style="display:grid;grid-template-columns:2fr 3fr 3fr;padding:9px 12px;align-items:center;border-bottom:1px solid var(--gd)">
+            <span style="font-size:13px;font-weight:800;color:var(--rd)">&#x1F534; Rood</span>
+            <span style="font-size:11px;color:var(--txl)">Lang niet gezien</span>
+            <span style="font-size:11px;color:var(--txl)">> <strong>${instellingen.klantOranje??14}</strong> dagen</span>
+          </div>
+          <div style="display:grid;grid-template-columns:2fr 3fr 3fr;padding:9px 12px;align-items:center">
+            <span style="font-size:13px;font-weight:800;color:var(--txl)">&#x26AB; Grijs</span>
+            <span style="font-size:11px;color:var(--txl)">Nog nooit gekocht</span>
+            <span style="font-size:11px;color:var(--txl)">&#x2014;</span>
+          </div>
+        </div>
+        <div class="frow">
+          <div class="fg">
+            <label class="fl">&#x1F7E2; Groen t/m (dagen)</label>
+            <input type="number" id="inst-klant-groen" value="${instellingen.klantGroen??7}" min="1" max="365" inputmode="numeric">
+            <div style="font-size:11px;color:var(--txl);margin-top:4px">Huidig: <strong>${instellingen.klantGroen??7} dagen</strong></div>
+          </div>
+          <div class="fg">
+            <label class="fl">&#x1F7E1; Oranje t/m (dagen)</label>
+            <input type="number" id="inst-klant-oranje" value="${instellingen.klantOranje??14}" min="1" max="365" inputmode="numeric">
+            <div style="font-size:11px;color:var(--txl);margin-top:4px">Huidig: <strong>${instellingen.klantOranje??14} dagen</strong></div>
+          </div>
+        </div>
+        <button class="btn btn-p" onclick="saveInstellingen()">&#x1F4BE; Drempelwaarden opslaan</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="sec-hdr-acc${beheerOpen.has('inst-statistieken')?" open":""}" onclick="toggleBeheer('inst-statistieken')">📊 Statistieken <span>${beheerOpen.has('inst-statistieken')?'▲':'▼'}</span></div>
+        <div class="acc-body${beheerOpen.has('inst-statistieken')?" open":""}">
+        <div class="li"><div class="li-l"><div class="li-t">Totaal gelegde eieren</div></div><div class="li-r"><span class="fw text-or">${totGelegd}</span></div></div>
+        <div class="li"><div class="li-l"><div class="li-t">💔 Waarvan kapot</div></div><div class="li-r"><span class="fw text-ro">${totKapot}</span></div></div>
+        <div class="li"><div class="li-l"><div class="li-t">Totaal verkochte eieren</div></div><div class="li-r"><span class="fw text-gn">${totVerkocht}</span></div></div>
+        <div class="li"><div class="li-l"><div class="li-t">Huidige voorraad</div></div><div class="li-r"><span class="fw" style="${voorraad<0?"color:var(--rd)":"color:var(--or)"}">${voorraad}</span></div></div>
+        <div class="li"><div class="li-l"><div class="li-t">Invul-streak</div></div><div class="li-r"><span class="fw text-or">${streak} dagen ${streak>=7?"🔥":streak>=3?"⭐":"📆"}</span></div></div>
+        <div class="li"><div class="li-l"><div class="li-t">Totaal klanten</div></div><div class="li-r"><span class="fw text-or">${klanten.length}</span></div></div>
+        <div class="li" style="border:none"><div class="li-l"><div class="li-t">Totaal omzet</div></div><div class="li-r"><span class="fw text-gn">${fmt(omzet)}</span></div></div>
+        </div>
+      </div>
+      <div class="card">
         <div class="sec-hdr-acc${beheerOpen.has('inst-locatie')?" open":""}" onclick="toggleBeheer('inst-locatie')">📍 Weerlocatie <span>${beheerOpen.has('inst-locatie')?'▲':'▼'}</span></div>
         <div class="acc-body${beheerOpen.has('inst-locatie')?" open":""}">
         <div style="font-size:11px;color:var(--txl);margin-bottom:14px">De locatie die gebruikt wordt voor het weerbericht op het dashboard.</div>
@@ -1519,18 +1572,6 @@ function render() {
           &#x1F4A1; Coördinaten vind je via <strong>maps.google.com</strong> — zoek je adres op en klik rechts op de locatie voor de coördinaten.
         </div>
         <button class="btn btn-p" onclick="saveInstellingen()">&#x1F4BE; Locatie opslaan</button>
-        </div>
-      </div>
-      <div class="card">
-        <div class="sec-hdr-acc${beheerOpen.has('inst-statistieken')?" open":""}" onclick="toggleBeheer('inst-statistieken')">📊 Statistieken <span>${beheerOpen.has('inst-statistieken')?'▲':'▼'}</span></div>
-        <div class="acc-body${beheerOpen.has('inst-statistieken')?" open":""}">
-        <div class="li"><div class="li-l"><div class="li-t">Totaal gelegde eieren</div></div><div class="li-r"><span class="fw text-or">${totGelegd}</span></div></div>
-        <div class="li"><div class="li-l"><div class="li-t">💔 Waarvan kapot</div></div><div class="li-r"><span class="fw text-ro">${totKapot}</span></div></div>
-        <div class="li"><div class="li-l"><div class="li-t">Totaal verkochte eieren</div></div><div class="li-r"><span class="fw text-gn">${totVerkocht}</span></div></div>
-        <div class="li"><div class="li-l"><div class="li-t">Huidige voorraad</div></div><div class="li-r"><span class="fw" style="${voorraad<0?"color:var(--rd)":"color:var(--or)"}">${voorraad}</span></div></div>
-        <div class="li"><div class="li-l"><div class="li-t">Invul-streak</div></div><div class="li-r"><span class="fw text-or">${streak} dagen ${streak>=7?"🔥":streak>=3?"⭐":"📆"}</span></div></div>
-        <div class="li"><div class="li-l"><div class="li-t">Totaal klanten</div></div><div class="li-r"><span class="fw text-or">${klanten.length}</span></div></div>
-        <div class="li" style="border:none"><div class="li-l"><div class="li-t">Totaal omzet</div></div><div class="li-r"><span class="fw text-gn">${fmt(omzet)}</span></div></div>
         </div>
       </div>
       <div class="card">
@@ -2447,6 +2488,25 @@ function setSchoonHistorieJaar(j) {
   renderModal();
 }
 
+// ── Notities ──────────────────────────────────────────────────────────────
+const NOTITIE_CATS = ["Algemeen"];
+
+async function saveNotitie() {
+  const tekst = (document.getElementById("notitie-tekst")||{}).value?.trim();
+  const cat   = (document.getElementById("notitie-cat")||{}).value || "Algemeen";
+  if(!tekst) return toast("⚠️ Vul een notitie in");
+  const key = uid();
+  await dbSave("notities/"+key, { datum: today(), tekst, cat });
+  if(document.getElementById("notitie-tekst")) document.getElementById("notitie-tekst").value = "";
+  toast("✅ Notitie opgeslagen!");
+}
+
+async function deleteNotitie(key) {
+  if(!await bevestig("Notitie verwijderen?")) return;
+  await dbRemove("notities/"+key);
+  toast("🗑 Verwijderd");
+}
+
 function toggleBeheer(id) {
   if(beheerOpen.has(id)) beheerOpen.delete(id);
   else beheerOpen.add(id);
@@ -2548,7 +2608,9 @@ Object.assign(window, {
   saveVk, deleteVk, updateVk, calcVkTot, calcNieuweKlantVeld, setVkType,
   saveKst, deleteKst, updateKst,
   saveKlant, deleteKlant, updateKlant,
-  saveInstellingen, setZoekKlant, toggleBeheer, toggleBeheer,
+  saveInstellingen, setZoekKlant, toggleBeheer,
+  saveNotitie, deleteNotitie,
+  saveNotitie, deleteNotitie, toggleBeheer,
   openModal, closeModal, exportCSV, setSyncBadge,
   openChart, closeChart, switchChartView, setChartM,
   doLogin, doLogout, renderLogin, showResBevestiging, syncPubliekeData,
