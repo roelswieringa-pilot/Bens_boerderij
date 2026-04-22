@@ -1,0 +1,56 @@
+<svg width="192" height="192" viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg">
+  <!-- Achtergrond -->
+  <rect width="192" height="192" rx="40" fill="#e07b00"/>
+  <!-- Oranje balk bovenaan -->
+  <rect width="192" height="64" rx="40" fill="#f5a623"/>
+  <rect x="0" y="40" width="192" height="24" fill="#f5a623"/>
+  <!-- Hoofd -->
+  <ellipse cx="96" cy="74" rx="30" ry="28" fill="#f4c18e"/>
+  <!-- Haar -->
+  <ellipse cx="96" cy="52" rx="28" ry="14" fill="#8B5E3C"/>
+  <!-- Pet -->
+  <ellipse cx="96" cy="50" rx="32" ry="10" fill="#c8860a"/>
+  <rect x="64" y="44" width="64" height="12" rx="6" fill="#c8860a"/>
+  <ellipse cx="96" cy="44" rx="32" ry="8" fill="#e07b00"/>
+  <!-- BEN tekst op pet -->
+  <text x="96" y="49" font-family="'Fredoka One',cursive" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">BEN</text>
+  <!-- Oren -->
+  <ellipse cx="66" cy="74" rx="7" ry="8" fill="#f4c18e"/>
+  <ellipse cx="126" cy="74" rx="7" ry="8" fill="#f4c18e"/>
+  <!-- Wangen -->
+  <ellipse cx="78" cy="80" rx="9" ry="6" fill="rgba(220,100,80,0.3)"/>
+  <ellipse cx="114" cy="80" rx="9" ry="6" fill="rgba(220,100,80,0.3)"/>
+  <!-- Ogen -->
+  <circle cx="84" cy="70" r="5.5" fill="#3d2000"/>
+  <circle cx="108" cy="70" r="5.5" fill="#3d2000"/>
+  <circle cx="86" cy="68" r="2" fill="#fff"/>
+  <circle cx="110" cy="68" r="2" fill="#fff"/>
+  <!-- Glimlach -->
+  <path d="M84 82 Q96 92 108 82" stroke="#c0604a" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <!-- Nek -->
+  <rect x="88" y="98" width="16" height="10" fill="#f4c18e"/>
+  <!-- Lichaam / tuinbroek -->
+  <ellipse cx="96" cy="130" rx="38" ry="34" fill="#5b9bd5"/>
+  <!-- Tuinbroek bib -->
+  <rect x="76" y="104" width="40" height="44" rx="8" fill="#4a7fc1"/>
+  <!-- Bretels -->
+  <rect x="76" y="104" width="6" height="26" rx="3" fill="#3a6fa0" transform="rotate(-8,79,117)"/>
+  <rect x="110" y="104" width="6" height="26" rx="3" fill="#3a6fa0" transform="rotate(8,113,117)"/>
+  <!-- Zakje -->
+  <rect x="83" y="116" width="26" height="18" rx="4" fill="#3a6fa0"/>
+  <!-- Linkerarm -->
+  <ellipse cx="58" cy="122" rx="10" ry="22" fill="#5b9bd5" transform="rotate(15,58,122)"/>
+  <ellipse cx="52" cy="136" rx="8" ry="9" fill="#f4c18e"/>
+  <!-- Rechterarm -->
+  <ellipse cx="134" cy="122" rx="10" ry="22" fill="#5b9bd5" transform="rotate(-15,134,122)"/>
+  <ellipse cx="140" cy="136" rx="8" ry="9" fill="#f4c18e"/>
+  <!-- Ei in rechterhand -->
+  <ellipse cx="148" cy="148" rx="10" ry="13" fill="#fffbe8" stroke="#e8d070" stroke-width="2"/>
+  <ellipse cx="144" cy="143" rx="3" ry="4" fill="rgba(255,255,255,0.6)" transform="rotate(-15,144,143)"/>
+  <!-- Benen -->
+  <rect x="80" y="152" width="14" height="24" rx="7" fill="#4a7fc1"/>
+  <rect x="98" y="152" width="14" height="24" rx="7" fill="#4a7fc1"/>
+  <!-- Schoenen -->
+  <ellipse cx="87" cy="176" rx="12" ry="7" fill="#3d2000"/>
+  <ellipse cx="105" cy="176" rx="12" ry="7" fill="#3d2000"/>
+</svg>
