@@ -724,27 +724,6 @@ function renderModal() {
       <div class="brow"><button class="btn btn-g" onclick="closeModal()">Annuleren</button><button class="btn btn-p" onclick="updateAbonnement()">&#x2705; Opslaan</button></div>`;
   } else if(type==="aboStop") {
     el.innerHTML = `
-      <div class="modal-title">🛑 Abonnement beheren <button onclick="closeModal()">✕</button></div>
-      <div style="font-size:13px;font-weight:800;color:var(--bd);margin-bottom:16px">🐔 ${esc(data.naam)} · doosje ${data.doosje}</div>
-      <div style="font-size:12px;color:var(--txl);margin-bottom:14px">Wat wil je doen met dit abonnement?</div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <div style="background:var(--gl);border:1.5px solid var(--gd);border-radius:12px;padding:14px">
-          <div style="font-family:'Fredoka One',cursive;font-size:15px;color:var(--or);margin-bottom:6px">⏸ Pauzeren</div>
-          <div style="font-size:11px;color:var(--txl);margin-bottom:10px">Tijdelijk stoppen, bijv. voor vakantie. Je kunt later eenvoudig hervatten.</div>
-          <div class="fg" style="margin-bottom:8px">
-            <label class="fl">Hervattingsdatum (optioneel)</label>
-            <input type="date" id="pauze-eind" min="${today()}">
-          </div>
-          <button class="btn btn-g" onclick="pauzeAbonnement('${esc(data._key)}', document.getElementById('pauze-eind')?.value||null)" style="width:100%">⏸ Pauzeren</button>
-        </div>
-        <div style="background:#fff5f5;border:1.5px solid #fcc;border-radius:12px;padding:14px">
-          <div style="font-family:'Fredoka One',cursive;font-size:15px;color:var(--rd);margin-bottom:6px">🛑 Definitief stoppen</div>
-          <div style="font-size:11px;color:var(--txl);margin-bottom:10px">Het abonnement wordt beëindigd. Je kunt het later nog heractiveren.</div>
-          <button class="btn btn-d" onclick="definitiefStopAbonnement('${esc(data._key)}')" style="width:100%">🛑 Stoppen</button>
-        </div>
-      </div>`;
-  } else if(type==="aboStop") {
-    el.innerHTML = `
       <div class="modal-title">&#x1F6D1; Abonnement beheren <button onclick="closeModal()">&#x2715;</button></div>
       <div style="font-size:13px;font-weight:800;color:var(--bd);margin-bottom:16px">&#x1F413; ${esc(data.naam)} &middot; doosje ${data.doosje}</div>
       <div style="font-size:12px;color:var(--txl);margin-bottom:14px">Wat wil je doen met dit abonnement?</div>
