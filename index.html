@@ -2406,7 +2406,8 @@ async function saveInstellingen() {
   const weerLat = parseFloat(val("inst-weer-lat")) || 50.9057;
   const weerLon = parseFloat(val("inst-weer-lon")) || 5.7815;
   const weerNaam = val("inst-weer-naam").trim() || "Ulestraten";
-  await dbSave("instellingen", { prijsPerEi: p, prijsDoosje6: p6, prijsDoosje10: p10, klantGroen, klantOranje, hokFrequentie, weerLat, weerLon, weerNaam });
+  const bezorgkosten = parseFloat((document.getElementById('inst-bezorgkosten')||{}).value) || 1.00;
+  await dbSave("instellingen", { prijsPerEi: p, prijsDoosje6: p6, prijsDoosje10: p10, bezorgkosten, klantGroen, klantOranje, hokFrequentie, weerLat, weerLon, weerNaam });
   toast("✅ Instellingen opgeslagen!");
 }
 
