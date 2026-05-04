@@ -2002,7 +2002,7 @@ async function saveReservering() {
     window._pubVoorraad = (window._pubVoorraad !== null) ? window._pubVoorraad - aantal : null;
     // Write updated gereserveerd to /publiek so refresh shows correct value
     // publiek/gereserveerd wordt bijgewerkt door syncPubliekeData na inlog
-    showResBevestiging(naam, datum, aantal, doosPrijs);
+    showResBevestiging(naam, datum, aantal, doosPrijs + bezorgKosten, bezorging, adres);
   } catch(e) {
     showResError("❌ Kon niet opslaan. Controleer je internetverbinding.");
   }
@@ -2011,22 +2011,48 @@ function showResError(msg) {
   const el = document.getElementById("res-error");
   if(el){ el.textContent=msg; el.classList.add("show"); }
 }
-function showResBevestiging(naam, datum, aantal, doosPrijs) {
+function showResBevestiging(naam, datum, aantal, doosPrijs, bezorging=false, adres="") {
   const app = $("app");
   if(!app) return;
-  const totaal = (doosPrijs || (aantal===10 ? (window._pubPrijsDoosje10||4.00) : (window._pubPrijsDoosje6||2.50))).toFixed(2).replace(".", ",");
+  const totaalNum = doosPrijs || (aantal===10 ? (window._pubPrijsDoosje10||4.00) : (window._pubPrijsDoosje6||2.50));
+  const totaal = totaalNum.toFixed(2).replace(".", ",");
+  const basisPrijs = bezorging ? (totaalNum - 1.00).toFixed(2).replace(".",",") : null;
   app.innerHTML = `
   <div class="login-screen">
     <div class="login-logo">🥚</div>
     <div class="login-title">Reservering ontvangen!</div>
     <div class="login-sub">Ben neemt contact met je op om te bevestigen</div>
-    <div class="login-card" style="text-align:center">
-      <div style="font-size:40px;margin-bottom:12px">✅</div>
-      <div style="font-family:'Fredoka One',cursive;font-size:16px;color:var(--bd);margin-bottom:8px">${esc(naam)}</div>
-      <div style="font-size:13px;color:var(--txl);margin-bottom:4px">🥚 ${aantal} eieren</div>
-      <div style="font-size:13px;color:var(--txl);margin-bottom:4px">📅 ${fmtD(datum)}</div>
-      <div style="font-family:'Fredoka One',cursive;font-size:20px;color:var(--gn);margin-bottom:16px">💰 € ${totaal}</div>
-      <div style="font-size:11px;color:var(--txl);background:var(--gl);border-radius:10px;padding:10px">
+    <div class="login-card" style="text-align:left">
+      <div style="text-align:center;font-size:36px;margin-bottom:12px">✅</div>
+      <div style="font-family:'Fredoka One',cursive;font-size:18px;color:var(--bd);margin-bottom:12px;text-align:center">${esc(naam)}</div>
+      <div style="background:var(--gl);border-radius:12px;border:1.5px solid var(--gd);padding:12px 14px;margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid var(--gd)">
+          <span style="color:var(--txl)">🥚 Eieren</span>
+          <span style="font-weight:800;color:var(--bd)">${aantal} stuks</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid var(--gd)">
+          <span style="color:var(--txl)">📅 Datum</span>
+          <span style="font-weight:800;color:var(--bd)">${fmtD(datum)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;${bezorging?'border-bottom:1px solid var(--gd)':''}">
+          <span style="color:var(--txl)">${bezorging?'🚲 Bezorgen':'🏠 Ophalen'}</span>
+          <span style="font-weight:800;color:var(--bd)">${bezorging ? esc(adres) : 'Bij Ben thuis'}</span>
+        </div>
+        ${bezorging ? `<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid var(--gd)">
+          <span style="color:var(--txl)">🥚 Eieren</span><span style="color:var(--bd)">€ ${basisPrijs}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid var(--gd)">
+          <span style="color:var(--txl)">🚲 Bezorgkosten</span><span style="color:var(--bd)">€ 1,00</span>
+        </div>` : ""}
+        <div style="display:flex;justify-content:space-between;font-size:15px;padding:6px 0;margin-top:2px">
+          <span style="font-family:'Fredoka One',cursive;color:var(--bd)">Totaal</span>
+          <span style="font-family:'Fredoka One',cursive;font-size:18px;color:var(--gn)">💰 € ${totaal}</span>
+        </div>
+      </div>
+      ${bezorging ? `<div style="background:#e8f4fd;border-radius:10px;border:1.5px solid #aed6f1;padding:10px 12px;font-size:12px;color:#1a5276;margin-bottom:12px">
+        🚲 <strong>Bezorging</strong> — Indien niet thuis zet Ben de eieren op een veilige plek.
+      </div>` : ""}
+      <div style="font-size:11px;color:var(--txl);background:var(--gl);border-radius:10px;padding:10px;text-align:center">
         Ben's Boerderij · Vrije uitloop · 0 Biologisch · 🇳🇱 NL
       </div>
     </div>
