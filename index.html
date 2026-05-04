@@ -869,11 +869,12 @@ function render() {
   // Derived stats
   const t  = today();
   const now = new Date();
-  const weekStart = new Date(now);
-  weekStart.setDate(now.getDate()-((now.getDay()+6)%7));
+  const todayDate = new Date(t + "T12:00:00");
+  const weekStart = new Date(t + "T12:00:00");
+  weekStart.setDate(todayDate.getDate()-((todayDate.getDay()+6)%7));
   const ws = weekStart.toISOString().slice(0,10);
   const vandaag = (leg.find(r=>r.datum===t)||{aantal:0}).aantal;
-  const week    = leg.filter(r=>r.datum>=ws).reduce((s,r)=>s+(r.aantal||0),0);
+  const week    = leg.filter(r=>r.datum>=ws && r.datum<=t).reduce((s,r)=>s+(r.aantal||0),0);
   const maand   = leg.filter(r=>r.datum.slice(0,7)===t.slice(0,7)).reduce((s,r)=>s+(r.aantal||0),0);
   const omzet   = vk.reduce((s,r)=>s+(r.totaal||0),0);
   const lasten  = kst.reduce((s,r)=>s+(r.bedrag||0),0);
@@ -952,11 +953,11 @@ function render() {
         </div>`;
       })()}
       <div class="stats">
-        <div class="stat"><div class="em">🥚</div><div class="vl">${vandaag}</div><div class="lb">VANDAAG</div></div>
-        <div class="stat"><div class="em">📅</div><div class="vl">${week}</div><div class="lb">DEZE WEEK</div></div>
+        <div class="stat"><div class="em">🗃️</div><div class="vl" style="${voorraad<0?"color:var(--rd)":""}">${voorraad}</div><div class="lb">VOORRAAD</div></div>
         <div class="stat"><div class="em">📦</div><div class="vl">${maand}</div><div class="lb">DEZE MAAND</div></div>
         <div class="stat"><div class="em">💰</div><div class="vl">€${omzet.toFixed(0)}</div><div class="lb">OMZET</div></div>
-        <div class="stat"><div class="em">🗃️</div><div class="vl" style="${voorraad<0?"color:var(--rd)":""}">${voorraad}</div><div class="lb">VOORRAAD</div></div>
+        <div class="stat"><div class="em">🥚</div><div class="vl">${vandaag}</div><div class="lb">VANDAAG</div></div>
+        <div class="stat"><div class="em">📅</div><div class="vl">${week}</div><div class="lb">DEZE WEEK</div></div>
         <div class="stat"><div class="em">${streak>=7?"🔥":streak>=3?"⭐":"📆"}</div><div class="vl" style="${streak>=7?"color:var(--rd)":streak>=3?"color:var(--or)":""}">${streak}</div><div class="lb">STREAK</div></div>
       </div>
       ${(()=>{
@@ -1062,7 +1063,7 @@ function render() {
               const mo = String(m).padStart(2,"0");
               const prefix = jaar+"-"+mo;
               const rijen = leg.filter(r=>r.datum.startsWith(prefix));
-              if(rijen.length===0) return;
+              if(rijen.length===0) continue;
               const dagenInMaand = new Date(parseInt(jaar),m,0).getDate();
               const isHuidigeMaand = prefix===today().slice(0,7);
               const dagen = isHuidigeMaand ? parseInt(today().slice(8,10)) : dagenInMaand;
@@ -1121,7 +1122,7 @@ function render() {
             `<div class="li-s">🥚 ${r.aantal} eieren · 📅 ${fmtD(r.datum)}${r.tel?" · 📱 "+esc(r.tel):""}${r.bezorging?' · 🚲 Bezorgen: '+esc(r.adres||""):" · 🏠 Ophalen"} · ${fmt(r.doosPrijs||(r.aantal===10?(instellingen.prijsDoosje10||4.00):(instellingen.prijsDoosje6||2.50)))}</div>`+
             `</div>`+
             `<div class="li-r" style="gap:4px">`+
-            `<button class="btn btn-s" style="padding:5px 8px;font-size:11px;width:auto;box-shadow:none" onclick='accepteerRes("${r._key}",${JSON.stringify(r)})'>✅ OK</button>`+`${r.tel?`<a href="https://wa.me/${("31"+r.tel.replace(/^0/,"").replace(/[^0-9]/g,""))}" target="_blank" class="btn btn-g" style="padding:5px 8px;font-size:11px;width:auto;box-shadow:none;text-decoration:none;display:inline-flex;align-items:center">📱 WhatsApp</a>`:""}`+
+            `<button class="btn btn-s" style="padding:5px 8px;font-size:11px;width:auto;box-shadow:none" onclick='accepteerRes("${r._key}",${JSON.stringify(r)})'>✅ OK</button>`+`${r.tel?`<a href="https://wa.me/${("31"+r.tel.replace(/^(\+?31|0)/,"").replace(/[^0-9]/g,""))}" target="_blank" class="btn btn-g" style="padding:5px 8px;font-size:11px;width:auto;box-shadow:none;text-decoration:none;display:inline-flex;align-items:center">📱 WhatsApp</a>`:""}`+
             `<button class="btn btn-d" style="padding:5px 8px;font-size:11px;width:auto;box-shadow:none" onclick='weigerRes("${r._key}",${JSON.stringify(r)})'>❌ Nee</button>`+
             `<button class="dbtn" onclick="deleteRes('${r._key}')">🗑</button>`+
             `</div></div>`
@@ -1179,30 +1180,14 @@ function render() {
         </div>
         <div class="fg"><label class="fl">Notities (optioneel)</label><input type="text" id="vk-notitie" placeholder="Bijv. kleinere eieren..."></div>
         <button class="btn btn-s" onclick="saveVk()">💰 Verkoop opslaan</button>
+
         ${(()=>{
-          const betaal = (document.getElementById("vk-betaal")||{}).value;
-          const klantKey = (document.getElementById("vk-klant-select")||{}).value;
-          const klantObj = klanten.find(k=>k._key===klantKey);
-          const tel = klantObj?.tel||"";
-          const waNum = tel ? "31"+tel.replace(/^0/,"").replace(/[^0-9]/g,"") : "";
-          const totStr = (document.getElementById("vk-totaal")||{}).value||"";
-          const tot = parseFloat(totStr.replace(",",".").replace(/[^0-9.]/g,""))||0;
-          const knoppen = [];
-          if(betaal==="Tikkie"&&tot>0) knoppen.push(`<a href="https://tikkie.me/pay/request?amount=${tot.toFixed(2)}" target="_blank" class="btn btn-g" style="text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;flex:1">&#x1F4F2; Tikkie &#x20AC;${tot.toFixed(2).replace(".",",")}</a>`);
-          if(waNum) knoppen.push(`<a href="https://wa.me/${waNum}?text=${encodeURIComponent("Hi! 🥚 Bedankt voor je aankoop bij Ben's Boerderij! 🐔")}" target="_blank" class="btn btn-g" style="text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;flex:1">&#x1F4F1; WhatsApp</a>`);
-          return knoppen.length ? `<div class="brow" style="margin-top:8px">${knoppen.join("")}</div>` : "";
-        })()}
-        ${(()=>{
-          const tot = parseFloat((document.getElementById("vk-totaal")||{}).value?.replace(",",".").replace("€","").trim())||0;
-          const betaal = (document.getElementById("vk-betaal")||{}).value;
           const klantKey = (document.getElementById("vk-klant-select")||{}).value;
           const klantObj = klanten.find(k=>k._key===klantKey);
           const tel = klantObj?.tel || "";
-          const waNum = tel ? "31"+tel.replace(/^0/,"").replace(/[^0-9]/g,"") : "";
-          return `<div class="brow" style="margin-top:8px">
-            ${betaal==="Tikkie"&&tot>0?`<a href="https://tikkie.me/pay/request?amount=${tot.toFixed(2)}" target="_blank" class="btn btn-g" style="text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">📲 Tikkie €${tot.toFixed(2).replace(".",",")}</a>`:""}
-            ${waNum?`<a href="https://wa.me/${waNum}?text=${encodeURIComponent("Hi! 🥚 Je eieren zijn klaar. Bedankt voor je aankoop bij Ben's Boerderij! 🐔")}" target="_blank" class="btn btn-g" style="text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">📱 WhatsApp</a>`:""}
-          </div>`;
+          const waNum = tel ? "31"+tel.replace(/^(\+?31|0)/,"").replace(/[^0-9]/g,"") : "";
+          if(!waNum) return "";
+          return `<a href="https://wa.me/${waNum}?text=${encodeURIComponent("Hi! 🥚 Je eieren zijn klaar. Bedankt voor je aankoop bij Ben's Boerderij! 🐔")}" target="_blank" class="btn btn-g" style="text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;margin-top:8px">📱 WhatsApp bericht sturen</a>`;
         })()}
         </div>
       </div>
