@@ -6,9 +6,12 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Ben's Boerderij">
+<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#e07b00">
 <title>Ben's Boerderij</title>
-<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23e07b00'/><text y='.9em' font-size='80'>🐔</text></svg>">
+<link rel="apple-touch-icon" href="icon-192.svg">
+<link rel="icon" type="image/svg+xml" href="icon-192.svg">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap');
 :root{--or:#e07b00;--orl:#f5a623;--bd:#7a4500;--bl:#c8860a;--gl:#fffbe8;--gm:#fff8d6;--gd:#ffeeb0;--tx:#5a3200;--txl:#a06020;--rd:#c0392b;--gn:#27ae60;--bu:#4a6fa5;--safe-top:env(safe-area-inset-top,0px);--safe-bot:env(safe-area-inset-bottom,0px)}
@@ -33,9 +36,12 @@ body{font-family:'Nunito',sans-serif;background:var(--gl);color:var(--tx);min-he
 .card{background:#fff;border-radius:16px;border:1.5px solid var(--gd);box-shadow:0 2px 12px rgba(200,134,10,.12);padding:16px;margin-bottom:14px;width:100%;box-sizing:border-box;overflow:hidden}
 .card-title{font-family:'Fredoka One',cursive;font-size:15px;color:var(--bd);margin-bottom:12px}
 .sec-hdr{background:linear-gradient(90deg,var(--or),var(--orl));color:#fff;padding:10px 16px;margin:-16px -16px 14px;border-radius:16px 16px 0 0;font-family:'Fredoka One',cursive;font-size:16px}
+.sec-hdr-acc{background:linear-gradient(90deg,var(--or),var(--orl));color:#fff;padding:10px 16px;margin:-16px -16px -16px;border-radius:16px;font-family:'Fredoka One',cursive;font-size:16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;-webkit-user-select:none;user-select:none}
+.sec-hdr-acc.open{border-radius:16px 16px 0 0;margin-bottom:14px}
+.acc-body{display:none}.acc-body.open{display:block}
 .stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;width:100%}
-.stat{background:linear-gradient(135deg,var(--gl),var(--gd));border-radius:12px;border:1.5px solid var(--gd);padding:9px 10px;display:flex;align-items:center;gap:8px}
-.stat .em{font-size:24px;margin-bottom:4px}.stat .vl{font-family:'Fredoka One',cursive;font-size:26px;color:var(--or);line-height:1}.stat .lb{font-size:9px;color:var(--txl);font-weight:700;margin-top:2px}
+.stat{background:linear-gradient(135deg,var(--gl),var(--gd));border-radius:14px;border:1.5px solid var(--gd);padding:14px 12px;text-align:center}
+.stat{display:flex!important;align-items:center;gap:8px;padding:9px 10px!important}.stat .em{font-size:22px;line-height:1;flex-shrink:0}.stat .vl{font-family:'Fredoka One',cursive;font-size:20px;color:var(--or);line-height:1.1}.stat .lb{font-size:9px;color:var(--txl);font-weight:700;margin-top:2px}
 .fg{margin-bottom:12px}.fl{font-size:12px;font-weight:700;color:var(--bd);margin-bottom:4px;display:block}
 input[type=text],input[type=number],input[type=date],select,textarea{width:100%;padding:11px 14px;border:1.5px solid var(--gd);border-radius:10px;font-size:15px;font-family:'Nunito',sans-serif;color:var(--tx);background:var(--gl);outline:none;-webkit-appearance:none;appearance:none}
 input:focus,select:focus,textarea:focus{border-color:var(--or);background:#fff}
@@ -75,8 +81,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--or);background:#fff}
 .kip-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .kip{background:var(--gl);border-radius:12px;border:1.5px solid var(--gd);padding:10px;text-align:center}
 .kip .ke{font-size:26px}.kip .kr{font-size:11px;font-weight:800;color:var(--bd);margin-top:3px}.kip .kn{font-size:9.5px;color:var(--txl);font-style:italic;margin-top:2px;line-height:1.3}
+.fw-emoji{position:fixed;pointer-events:none;z-index:600;font-size:30px;line-height:1;transform-origin:center;}
 .toast{position:fixed;bottom:86px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--bd);color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:700;opacity:0;transition:all .3s;z-index:200;white-space:nowrap;pointer-events:none;max-width:90vw;text-align:center}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.fw-emoji{position:fixed;pointer-events:none;z-index:600;font-size:30px;line-height:1;transform-origin:center;}
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:flex-end;justify-content:center}
 .overlay.open{display:flex}
 .modal{background:#fff;border-radius:20px 20px 0 0;padding:20px 20px calc(var(--safe-bot) + 20px);width:100%;max-width:480px;max-height:88vh;overflow-y:auto}
@@ -139,6 +147,8 @@ import { getDatabase, ref, set, get, onValue, push, remove, update }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getMessaging, getToken, onMessage }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 
 // ── Firebase config
 // NOTE: Firebase rules must allow public WRITE to "reserveringen"
@@ -158,6 +168,7 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getDatabase(firebaseApp);
 const auth = getAuth(firebaseApp);
+const messaging = getMessaging(firebaseApp);
 
 // ── Constants ──────────────────────────────────────────────────────────────
 const CATS     = ["Voer","Kippen","Verzorging","Materiaal","Dierenarts","Overig"];
@@ -167,11 +178,14 @@ const MNAMEN= ["Januari","Februari","Maart","April","Mei","Juni","Juli","Augustu
 const BB    = {Cash:"bg",Tikkie:"bb",Overboeking:"bo"};
 
 // ── State ──────────────────────────────────────────────────────────────────
-let leg=[], vk=[], kst=[], inv=[], klanten=[], kippen=[], reserveringen=[], abonnementen=[], activePage="dashboard", activeM=null, activeKlant=null, modalState=null;
-let instellingen = { prijsPerEi: 0.40, doosjeGrootte: 6, prijsDoosje6: 2.50, prijsDoosje10: 4.00, klantGroen: 7, klantOranje: 14 };
+let leg=[], vk=[], kst=[], inv=[], klanten=[], kippen=[], reserveringen=[], abonnementen=[], schoonmaak=[], notities=[], activePage="dashboard", activeM=null, activeKlant=null, modalState=null;
+let instellingen = { prijsPerEi: 0.40, doosjeGrootte: 6, prijsDoosje6: 2.50, prijsDoosje10: 4.00, klantGroen: 7, klantOranje: 14, hokFrequentie: 14, weerLat: 50.9057, weerLon: 5.7815, weerNaam: "Ulestraten" };
 let zoekKlant = "";
 let currentUser = null;
 let kstTab = "kosten";
+// Beheer accordion — standaard alles ingeklapt behalve niets
+let beheerOpen = new Set(['inst-schoonmaak']);
+let kstFilterMaand = null;
 let plMaand = null; // null = totaal, anders "YYYY-MM"
 let vkChartM = null; // maand voor omzetgrafiek in verkopen
 // Public data cache for login page
@@ -297,6 +311,26 @@ function startListeners() {
     kippen = Object.entries(val).map(([k,v])=>({...v,_key:k}));
     render(); setSyncBadge("ok");
   });
+  onValue(ref(db,"schoonmaak"), snap => {
+    const val = snap.val() || {};
+    schoonmaak = Object.entries(val).map(([k,v])=>({...v,_key:k})).sort((a,b)=>b.datum.localeCompare(a.datum));
+    render(); setSyncBadge("ok");
+  });
+  onValue(ref(db,"schoonmaak"), snap => {
+    const v2 = snap.val() || {};
+    schoonmaak = Object.entries(v2).map(([k,v])=>({...v,_key:k})).sort((a,b)=>b.datum.localeCompare(a.datum));
+    render(); setSyncBadge("ok");
+  });
+  onValue(ref(db,"notities"), snap => {
+    const val = snap.val() || {};
+    notities = Object.entries(val).map(([k,v])=>({...v,_key:k})).sort((a,b)=>b.datum.localeCompare(a.datum));
+    render(); setSyncBadge("ok");
+  });
+  onValue(ref(db,"notities"), snap => {
+    const val = snap.val() || {};
+    notities = Object.entries(val).map(([k,v])=>({...v,_key:k})).sort((a,b)=>b.datum.localeCompare(a.datum));
+    render(); setSyncBadge("ok");
+  });
   onValue(ref(db,"klanten"), snap => {
     const val = snap.val() || {};
     klanten = Object.entries(val).map(([k,v])=>({...v,_key:k})).sort((a,b)=>a.naam.localeCompare(b.naam));
@@ -304,7 +338,7 @@ function startListeners() {
   });
   onValue(ref(db,"instellingen"), snap => {
     const val = snap.val() || {};
-    instellingen = { prijsPerEi: val.prijsPerEi ?? 0.40, doosjeGrootte: val.doosjeGrootte ?? 6, prijsDoosje6: val.prijsDoosje6 ?? 2.50, prijsDoosje10: val.prijsDoosje10 ?? 4.00, klantGroen: val.klantGroen ?? 7, klantOranje: val.klantOranje ?? 14 };
+    instellingen = { prijsPerEi: val.prijsPerEi ?? 0.40, doosjeGrootte: val.doosjeGrootte ?? 6, prijsDoosje6: val.prijsDoosje6 ?? 2.50, prijsDoosje10: val.prijsDoosje10 ?? 4.00, klantGroen: val.klantGroen ?? 7, klantOranje: val.klantOranje ?? 14, hokFrequentie: val.hokFrequentie ?? 14, weerLat: val.weerLat ?? 50.9057, weerLon: val.weerLon ?? 5.7815, weerNaam: val.weerNaam ?? "Ulestraten" };
     render(); setSyncBadge("ok");
   });
 }
@@ -325,15 +359,21 @@ async function dbRemove(path) {
 async function saveLeg() {
   const datum   = val("leg-datum");
   const aantal  = parseInt(val("leg-aantal"))||0;
+  const kapot   = parseInt(val("leg-kapot"))||0;
   const notitie = val("leg-notitie");
   if(!datum) return toast("⚠️ Kies een datum");
-  // Per datum: zelfde datum overschrijven
+  if(kapot > aantal) return toast("⚠️ Kapotte eieren kunnen niet meer zijn dan het totaal");
   const existing = leg.find(r=>r.datum===datum);
   const key = existing?existing._key:uid();
-  await dbSave("legdagen/"+key, {datum,aantal,notitie});
-  set_val("leg-datum", today()); set_val("leg-aantal",""); set_val("leg-notitie","");
+  await dbSave("legdagen/"+key, {datum,aantal,kapot,notitie});
+  set_val("leg-datum", today()); set_val("leg-aantal",""); set_val("leg-kapot",""); set_val("leg-notitie","");
   set_val("quick-datum", today()); set_val("quick-eieren","");
-  toast("✅ Legdag opgeslagen!");
+  if(aantal >= 10) {
+    toast("🎆 " + aantal + " eieren geraapt! 🐔");
+    setTimeout(startVuurwerk, 300);
+  } else {
+    toast("✅ Legdag opgeslagen!");
+  }
 }
 async function saveLegQuick() {
   set_val("leg-datum", val("quick-datum"));
@@ -342,7 +382,7 @@ async function saveLegQuick() {
   await saveLeg();
 }
 async function deleteLeg(key) {
-  if(!confirm("Legdag verwijderen?")) return;
+  if(!await bevestig("Legdag verwijderen?")) return;
   await dbRemove("legdagen/"+key);
   toast("🗑 Verwijderd");
 }
@@ -350,8 +390,10 @@ async function updateLeg() {
   const key     = val("edit-leg-key");
   const datum   = val("edit-leg-datum");
   const aantal  = parseInt(val("edit-leg-aantal"))||0;
+  const kapot   = parseInt(val("edit-leg-kapot"))||0;
   const notitie = val("edit-leg-notitie");
-  await dbSave("legdagen/"+key, {datum,aantal,notitie});
+  if(kapot > aantal) return toast("⚠️ Kapotte eieren kunnen niet meer zijn dan het totaal");
+  await dbSave("legdagen/"+key, {datum,aantal,kapot,notitie});
   closeModal(); toast("✅ Bijgewerkt!");
 }
 
@@ -420,7 +462,7 @@ async function saveKlant() {
   toast("✅ Klant opgeslagen!");
 }
 async function deleteKlant(key) {
-  if(!confirm("Klant verwijderen?")) return;
+  if(!await bevestig("Klant verwijderen?", "Ja, verwijderen", "btn-d", "Aankoophistorie blijft bewaard in de verkopen.")) return;
   await dbRemove("klanten/"+key);
   if(activeKlant===key) activeKlant=null;
   toast("🗑 Klant verwijderd");
@@ -434,7 +476,7 @@ async function updateKlant() {
   closeModal(); toast("✅ Klant bijgewerkt!");
 }
 async function deleteVk(key) {
-  if(!confirm("Verkoop verwijderen?")) return;
+  if(!await bevestig("Verkoop verwijderen?")) return;
   await dbRemove("verkopen/"+key);
   toast("🗑 Verwijderd");
 }
@@ -445,8 +487,16 @@ async function updateVk() {
   const koper  = val("edit-vk-koper");
   const betaal = val("edit-vk-betaal");
   const notitie= val("edit-vk-notitie");
-  await dbSave("verkopen/"+key, {datum,aantal,koper,betaal,totaal:aantal*prijs(),notitie});
+  const totaal = parseFloat(val("edit-vk-totaal"))||0;
+  await dbSave("verkopen/"+key, {datum,aantal,koper,betaal,totaal,notitie});
   closeModal(); toast("✅ Bijgewerkt!");
+}
+
+function calcEditVkTot() {
+  const aantal = parseInt(val("edit-vk-aantal"))||0;
+  const origPrijs = parseFloat(val("edit-vk-origprijs"))||0;
+  const totEl = document.getElementById("edit-vk-totaal");
+  if(totEl && origPrijs) totEl.value = (aantal * origPrijs).toFixed(2);
 }
 
 // ── CRUD — Kosten ─────────────────────────────────────────────────────────
@@ -464,7 +514,7 @@ async function saveKst() {
   toast("✅ Kosten opgeslagen!");
 }
 async function deleteKst(key) {
-  if(!confirm("Kosten verwijderen?")) return;
+  if(!await bevestig("Kosten verwijderen?")) return;
   await dbRemove("kosten/"+key);
   toast("🗑 Verwijderd");
 }
@@ -501,16 +551,23 @@ function renderModal() {
       <div class="modal-title">✏️ Legdag aanpassen <button onclick="closeModal()">✕</button></div>
       <input type="hidden" id="edit-leg-key" value="${esc(data._key)}">
       <div class="fg"><label class="fl">Datum</label><input type="date" id="edit-leg-datum" value="${esc(data.datum)}"></div>
-      <div class="fg"><label class="fl">Aantal eieren</label><input type="number" id="edit-leg-aantal" value="${data.aantal}" min="0" inputmode="numeric"></div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Aantal eieren</label><input type="number" id="edit-leg-aantal" value="${data.aantal}" min="0" inputmode="numeric"></div>
+        <div class="fg"><label class="fl">Waarvan kapot 💔</label><input type="number" id="edit-leg-kapot" value="${data.kapot||0}" min="0" inputmode="numeric"></div>
+      </div>
       <div class="fg"><label class="fl">Notities</label><input type="text" id="edit-leg-notitie" value="${esc(data.notitie||'')}"></div>
       <div class="brow"><button class="btn btn-g" onclick="closeModal()">Annuleren</button><button class="btn btn-p" onclick="updateLeg()">✅ Opslaan</button></div>`;
   } else if(type==="vk") {
+    const prijsPerStuk = data.totaal && data.aantal ? (data.totaal / data.aantal) : prijs();
     el.innerHTML = `
       <div class="modal-title">✏️ Verkoop aanpassen <button onclick="closeModal()">✕</button></div>
       <input type="hidden" id="edit-vk-key" value="${esc(data._key)}">
+      <input type="hidden" id="edit-vk-origprijs" value="${prijsPerStuk.toFixed(4)}">
+      <input type="hidden" id="edit-vk-origtotaal" value="${data.totaal||0}">
+      <input type="hidden" id="edit-vk-origaantal" value="${data.aantal||0}">
       <div class="frow">
         <div class="fg"><label class="fl">Datum</label><input type="date" id="edit-vk-datum" value="${esc(data.datum)}"></div>
-        <div class="fg"><label class="fl">Aantal</label><input type="number" id="edit-vk-aantal" value="${data.aantal}" min="1" inputmode="numeric"></div>
+        <div class="fg"><label class="fl">Aantal</label><input type="number" id="edit-vk-aantal" value="${data.aantal}" min="1" inputmode="numeric" oninput="calcEditVkTot()"></div>
       </div>
       <div class="fg"><label class="fl">Koper</label><input type="text" id="edit-vk-koper" value="${esc(data.koper||'')}"></div>
       <div class="fg"><label class="fl">Betaalwijze</label>
@@ -519,6 +576,10 @@ function renderModal() {
           <option${data.betaal==="Tikkie"?" selected":""}>Tikkie</option>
           <option${data.betaal==="Overboeking"?" selected":""}>Overboeking</option>
         </select></div>
+      <div class="fg"><label class="fl">Totaal (€)</label>
+        <input type="number" id="edit-vk-totaal" value="${(data.totaal||0).toFixed(2)}" step="0.01" inputmode="decimal" style="color:var(--bl);font-weight:800">
+        <div style="font-size:10px;color:var(--txl);margin-top:3px">Originele prijs: € ${prijsPerStuk.toFixed(2)} per stuk — past automatisch mee bij aantal wijziging</div>
+      </div>
       <div class="fg"><label class="fl">Notities</label><input type="text" id="edit-vk-notitie" value="${esc(data.notitie||'')}"></div>
       <div class="brow"><button class="btn btn-g" onclick="closeModal()">Annuleren</button><button class="btn btn-s" onclick="updateVk()">✅ Opslaan</button></div>`;
   } else if(type==="kst") {
@@ -558,8 +619,61 @@ function renderModal() {
       <div class="modal-title">✏️ Kip aanpassen <button onclick="closeModal()">✕</button></div>
       <input type="hidden" id="edit-kip-key" value="${esc(data._key)}">
       <div class="fg"><label class="fl">Naam</label><input type="text" id="edit-kip-naam" value="${esc(data.naam||'')}"></div>
-      <div class="fg"><label class="fl">Ras</label><select id="edit-kip-ras">${rasOpts}</select></div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Ras</label><select id="edit-kip-ras">${rasOpts}</select></div>
+        <div class="fg"><label class="fl">Geslacht</label>
+          <select id="edit-kip-geslacht">
+            <option value="Hen"${(data.geslacht||"Hen")==="Hen"?" selected":""}>🐔 Hen</option>
+            <option value="Haan"${data.geslacht==="Haan"?" selected":""}>🐓 Haan</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Geboortedatum</label><input type="date" id="edit-kip-geboortedatum" value="${esc(data.geboortedatum||'')}"></div>
+        <div class="fg"><label class="fl">Aanschafdatum</label><input type="date" id="edit-kip-aanschafdatum" value="${esc(data.aanschafdatum||'')}"></div>
+      </div>
       <div class="brow"><button class="btn btn-g" onclick="closeModal()">Annuleren</button><button class="btn btn-p" onclick="updateKip()">✅ Opslaan</button></div>`;
+  } else if(type==="kipUitval") {
+    el.innerHTML = `
+      <div class="modal-title">🪦 Uitval registreren <button onclick="closeModal()">✕</button></div>
+      <input type="hidden" id="uitval-kip-key" value="${esc(data._key)}">
+      <div style="font-size:13px;font-weight:800;color:var(--bd);margin-bottom:12px">🐔 ${esc(data.naam)} · ${esc(data.ras)}</div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Datum</label><input type="date" id="uitval-datum" value="${today()}"></div>
+        <div class="fg"><label class="fl">Reden</label>
+          <select id="uitval-reden">
+            <option>Gestorven</option><option>Ziek</option><option>Verkocht</option><option>Anders</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg"><label class="fl">Notitie (optioneel)</label><input type="text" id="uitval-notitie" placeholder="bijv. plotseling gestorven..."></div>
+      <div class="brow"><button class="btn btn-g" onclick="closeModal()">Annuleren</button><button class="btn btn-d" onclick="saveKipUitval()">🪦 Opslaan</button></div>`;
+  } else if(type==="kipGezondheid") {
+    const logs = data.gezondheid ? Object.entries(data.gezondheid).map(([k,v])=>({...v,_key:k})).sort((a,b)=>b.datum.localeCompare(a.datum)) : [];
+    const typeIcons = { Ziek:"🤒", Behandeling:"💊", Controle:"🔍", Ontworming:"🪱", Anders:"📝" };
+    el.innerHTML = `
+      <div class="modal-title">🏥 Gezondheidslog <button onclick="closeModal()">✕</button></div>
+      <div style="font-size:13px;font-weight:800;color:var(--bd);margin-bottom:12px">🐔 ${esc(data.naam)} · ${esc(data.ras)}</div>
+      <input type="hidden" id="gezond-kip-key" value="${esc(data._key)}">
+      <div class="frow">
+        <div class="fg"><label class="fl">Datum</label><input type="date" id="gezond-datum" value="${today()}"></div>
+        <div class="fg"><label class="fl">Type</label>
+          <select id="gezond-type">
+            <option>Ziek</option><option>Behandeling</option><option>Controle</option><option>Ontworming</option><option>Anders</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg"><label class="fl">Notitie</label><input type="text" id="gezond-notitie" placeholder="bijv. antibiotica kuur gestart..."></div>
+      <button class="btn btn-s" onclick="saveKipGezondheid()" style="margin-bottom:14px">➕ Toevoegen</button>
+      ${logs.length===0
+        ? '<div class="empty" style="padding:12px 0"><div class="em">🏥</div><p>Nog geen gezondheidslog</p></div>'
+        : logs.map(l=>`<div class="li">
+            <div class="li-l">
+              <div class="li-t">${typeIcons[l.type]||"📝"} ${l.type}</div>
+              <div class="li-s">${fmtD(l.datum)}${l.notitie?" · "+esc(l.notitie):""}</div>
+            </div>
+            <div class="li-r"><button class="dbtn" onclick="deleteKipGezondheid('${data._key}','${l._key}')">🗑</button></div>
+          </div>`).join("")}`;
   } else if(type==="klant") {
     el.innerHTML = `
       <div class="modal-title">✏️ Klant aanpassen <button onclick="closeModal()">✕</button></div>
@@ -567,6 +681,139 @@ function renderModal() {
       <div class="fg"><label class="fl">Naam</label><input type="text" id="edit-klant-naam" value="${esc(data.naam||'')}"></div>
       <div class="fg"><label class="fl">Notities</label><input type="text" id="edit-klant-notitie" value="${esc(data.notitie||'')}"></div>
       <div class="brow"><button class="btn btn-g" onclick="closeModal()">Annuleren</button><button class="btn btn-p" onclick="updateKlant()">✅ Opslaan</button></div>`;
+  } else if(type==="abo") {
+    const dagNamen = ["Zondag","Maandag","Dinsdag","Woensdag","Donderdag","Vrijdag","Zaterdag"];
+    const dagOpts  = dagNamen.map((d,i)=>`<option value="${i}"${data.dag===i?" selected":""}>${d}</option>`).join("");
+    const freqOpts = [["week","Wekelijks"],["2week","Twee-wekelijks"],["maand","Maandelijks"]]
+      .map(([v,l])=>`<option value="${v}"${data.frequentie===v?" selected":""}>${l}</option>`).join("");
+    el.innerHTML = `
+      <div class="modal-title">&#x270F;&#xFE0F; Abonnement aanpassen <button onclick="closeModal()">&#x2715;</button></div>
+      <input type="hidden" id="abo-edit-key" value="${esc(data._key)}">
+      <div class="fg"><label class="fl">Naam</label><input type="text" id="abo-edit-naam" value="${esc(data.naam||'')}"></div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Doosje</label>
+          <select id="abo-edit-doosje">
+            <option value="6"${data.doosje===6?" selected":""}>6 eieren</option>
+            <option value="10"${data.doosje===10?" selected":""}>10 eieren</option>
+          </select>
+        </div>
+        <div class="fg"><label class="fl">Frequentie</label><select id="abo-edit-freq">${freqOpts}</select></div>
+      </div>
+      <div class="fg"><label class="fl">Dag van de week</label><select id="abo-edit-dag">${dagOpts}</select></div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Startdatum</label><input type="date" id="abo-edit-start" value="${esc(data.startdatum||'')}"></div>
+        <div class="fg"><label class="fl">Einddatum (optioneel)</label><input type="date" id="abo-edit-eind" value="${esc(data.einddatum||'')}"></div>
+      </div>
+      <div class="fg"><label class="fl">Telefoonnummer</label><input type="tel" id="abo-edit-tel" value="${esc(data.tel||'')}"></div>
+      <div class="brow"><button class="btn btn-g" onclick="closeModal()">Annuleren</button><button class="btn btn-p" onclick="updateAbonnement()">&#x2705; Opslaan</button></div>`;
+  } else if(type==="abo") {
+    const dagNamen = ["Zondag","Maandag","Dinsdag","Woensdag","Donderdag","Vrijdag","Zaterdag"];
+    const dagOpts  = dagNamen.map((d,i)=>`<option value="${i}"${data.dag===i?" selected":""}>${d}</option>`).join("");
+    const freqOpts = [["week","Wekelijks"],["2week","Twee-wekelijks"],["maand","Maandelijks"]]
+      .map(([v,l])=>`<option value="${v}"${data.frequentie===v?" selected":""}>${l}</option>`).join("");
+    el.innerHTML = `
+      <div class="modal-title">&#x270F;&#xFE0F; Abonnement aanpassen <button onclick="closeModal()">&#x2715;</button></div>
+      <input type="hidden" id="abo-edit-key" value="${esc(data._key)}">
+      <div class="fg"><label class="fl">Naam</label><input type="text" id="abo-edit-naam" value="${esc(data.naam||'')}"></div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Doosje</label>
+          <select id="abo-edit-doosje">
+            <option value="6"${data.doosje===6?" selected":""}>6 eieren</option>
+            <option value="10"${data.doosje===10?" selected":""}>10 eieren</option>
+          </select>
+        </div>
+        <div class="fg"><label class="fl">Frequentie</label><select id="abo-edit-freq">${freqOpts}</select></div>
+      </div>
+      <div class="fg"><label class="fl">Dag van de week</label><select id="abo-edit-dag">${dagOpts}</select></div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Startdatum</label><input type="date" id="abo-edit-start" value="${esc(data.startdatum||'')}"></div>
+        <div class="fg"><label class="fl">Einddatum (optioneel)</label><input type="date" id="abo-edit-eind" value="${esc(data.einddatum||'')}"></div>
+      </div>
+      <div class="fg"><label class="fl">Telefoonnummer</label><input type="tel" id="abo-edit-tel" value="${esc(data.tel||'')}"></div>
+      <div class="brow"><button class="btn btn-g" onclick="closeModal()">Annuleren</button><button class="btn btn-p" onclick="updateAbonnement()">&#x2705; Opslaan</button></div>`;
+  } else if(type==="schoonmaakHistorie") {
+    const echt = schoonmaak.filter(r=>!r.type||r.type!=="uitstel").sort((a,b)=>b.datum.localeCompare(a.datum));
+    // Beschikbare jaren
+    const jaren = [...new Set(echt.map(r=>r.datum.slice(0,4)))].sort().reverse();
+    const curJaar = schoonHistorieJaar || (jaren[0] || new Date().getFullYear().toString());
+    const rijen = echt.filter(r=>r.datum.startsWith(curJaar));
+    const freq = instellingen.hokFrequentie || 14;
+
+    // Bereken dagen tussen schoonmaken per rij
+    const rijsMetDagen = rijen.map((r,i) => {
+      const vorigeRij = rijen[i+1];
+      const dagenNaVorige = vorigeRij
+        ? Math.round((new Date(r.datum+"T12:00:00") - new Date(vorigeRij.datum+"T12:00:00")) / 86400000)
+        : null;
+      return { ...r, dagenNaVorige };
+    });
+
+    // Balkengrafiek SVG
+    const maxDagen = Math.max(...rijsMetDagen.filter(r=>r.dagenNaVorige).map(r=>r.dagenNaVorige), freq, 1);
+    const W=340, H=120, padL=36, padB=20, padT=10, padR=8;
+    const chartW=W-padL-padR, chartH=H-padB-padT;
+    const grafiekRijen = rijsMetDagen.filter(r=>r.dagenNaVorige!==null).reverse();
+    const barW = grafiekRijen.length > 0 ? Math.max(8, Math.floor((chartW-(grafiekRijen.length+1)*3)/grafiekRijen.length)) : 20;
+    const bars = grafiekRijen.map((r,i)=>{
+      const bh = Math.max(2, Math.round((r.dagenNaVorige/maxDagen)*chartH));
+      const bx = padL + i*(barW+3) + 4;
+      const by = padT+chartH-bh;
+      const kleur = r.dagenNaVorige > freq ? "#c0392b" : "#27ae60";
+      const maandLbl = r.datum.slice(5,7)+"/"+r.datum.slice(2,4);
+      return `<rect x="${bx}" y="${by}" width="${barW}" height="${bh}" fill="${kleur}" rx="3"/>
+        <text x="${bx+barW/2}" y="${H-6}" text-anchor="middle" font-size="8" fill="#a06020">${maandLbl}</text>
+        <text x="${bx+barW/2}" y="${by-3}" text-anchor="middle" font-size="8" fill="#5a3200">${r.dagenNaVorige}d</text>`;
+    }).join("");
+    const freqY = padT + chartH - (freq/maxDagen)*chartH;
+    const freqLine = `<line x1="${padL}" y1="${freqY}" x2="${W-padR}" y2="${freqY}" stroke="#e07b00" stroke-width="1.5" stroke-dasharray="4,3"/>
+      <text x="${W-padR+2}" y="${freqY+4}" font-size="8" fill="#e07b00">${freq}d</text>`;
+    const yTick = Math.round(maxDagen/2);
+    const yLines = [0,yTick,maxDagen].map(v=>{
+      const y2=padT+chartH-(v/maxDagen)*chartH;
+      return `<line x1="${padL}" y1="${y2}" x2="${W-padR}" y2="${y2}" stroke="#e8d5a0" stroke-dasharray="2,3"/>
+        <text x="${padL-4}" y="${y2+4}" text-anchor="end" font-size="8" fill="#a06020">${v}</text>`;
+    }).join("");
+    const svg = grafiekRijen.length > 0 ? `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px;display:block">
+      ${yLines}${bars}${freqLine}
+      <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT+chartH}" stroke="#c8860a" stroke-width="1"/>
+      <line x1="${padL}" y1="${padT+chartH}" x2="${W-padR}" y2="${padT+chartH}" stroke="#c8860a" stroke-width="1"/>
+    </svg>` : `<div style="font-size:12px;color:var(--txl);text-align:center;padding:20px 0">Niet genoeg data voor grafiek</div>`;
+
+    // Tabel
+    const tabel = rijen.length === 0
+      ? `<div style="font-size:12px;color:var(--txl);text-align:center;padding:16px 0">Geen data in ${curJaar}</div>`
+      : `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="background:var(--gd)">
+            <th style="padding:6px 8px;text-align:left;color:var(--bd);font-weight:800">Datum</th>
+            <th style="padding:6px 8px;text-align:center;color:var(--bd);font-weight:800">Interval</th>
+            <th style="padding:6px 8px;text-align:left;color:var(--bd);font-weight:800">Notitie</th>
+            <th style="padding:6px 8px;text-align:center;color:var(--bd);font-weight:800"></th>
+          </tr></thead>
+          <tbody>${rijsMetDagen.map((r,i)=>`<tr style="border-bottom:1px solid var(--gd)">
+            <td style="padding:6px 8px;color:var(--tx)">${fmtD(r.datum)}</td>
+            <td style="padding:6px 8px;text-align:center;font-weight:800;color:${r.dagenNaVorige===null?"var(--txl)":r.dagenNaVorige>freq?"var(--rd)":"var(--gn)"}">
+              ${r.dagenNaVorige===null?"—":r.dagenNaVorige+"d"}
+            </td>
+            <td style="padding:6px 8px;color:var(--txl);font-style:italic">${esc(r.notitie||"")}</td>
+            <td style="padding:6px 8px;text-align:center"><button class="dbtn" onclick="deleteSchoonmaak('${r._key}')">🗑</button></td>
+          </tr>`).join("")}</tbody>
+        </table></div>`;
+
+    const jaarTabs = jaren.length > 1
+      ? `<div class="tabs" style="margin-bottom:12px">${jaren.map(j=>`<div class="tab${j===curJaar?" active":""}" onclick="setSchoonHistorieJaar('${j}')">${j}</div>`).join("")}</div>`
+      : "";
+
+    const legenda = `<div style="display:flex;gap:12px;font-size:10px;color:var(--txl);margin-top:6px;margin-bottom:12px;align-items:center">
+      <span style="display:inline-block;width:10px;height:10px;background:#27ae60;border-radius:2px"></span> Binnen frequentie
+      <span style="display:inline-block;width:10px;height:10px;background:#c0392b;border-radius:2px"></span> Overschreden
+      <span style="display:inline-block;width:18px;height:0;border-top:2px dashed #e07b00"></span> Doel ${freq}d
+    </div>`;
+
+    el.innerHTML = `
+      <div class="modal-title">&#x1F9F9; Schoonmaak historie <button onclick="closeModal()">&#x2715;</button></div>
+      ${jaarTabs}
+      ${grafiekRijen.length > 0 ? `<div style="margin-bottom:4px">${svg}</div>${legenda}` : ""}
+      ${tabel}`;
   }
 }
 
@@ -620,10 +867,11 @@ function render() {
   const lasten  = kst.reduce((s,r)=>s+(r.bedrag||0),0);
   const result  = omzet-lasten;
 
-  // Voorraad: gelegd - verkocht
+  // Voorraad: gelegd - kapot - verkocht
   const totGelegd   = leg.reduce((s,r)=>s+(r.aantal||0),0);
+  const totKapot    = leg.reduce((s,r)=>s+(r.kapot||0),0);
   const totVerkocht = vk.reduce((s,r)=>s+(r.aantal||0),0);
-  const voorraad    = totGelegd - totVerkocht;
+  const voorraad    = totGelegd - totKapot - totVerkocht;
 
   // Streak
   const streak = calcStreak();
@@ -665,13 +913,39 @@ function render() {
         <div><div style="font-family:'Fredoka One',cursive;font-size:13px;color:#fff">Nog niet ingevuld vandaag!</div>
         <div style="font-size:11px;color:rgba(255,255,255,.85)">Vergeet de eieren niet te registreren</div></div>
       </div>`:""}
+      ${(()=>{
+        const dagen = getDagenTotSchoonmaak();
+        const volgende = getVolgendeSchoonmaak();
+        const isVervallen = dagen <= 0;
+        const isMorgen = dagen === 1;
+        const isVandaag = dagen === 0;
+        if (dagen > 3) return "";
+        const tekst = isVervallen
+          ? "Het kippenhok moet schoongemaakt worden!"
+          : isVandaag ? "Vandaag het kippenhok schoonmaken"
+          : isMorgen ? "Morgen het kippenhok schoonmaken"
+          : "Kippenhok schoonmaken over " + dagen + " dagen (" + fmtD(volgende) + ")";
+        return `<div style="background:linear-gradient(90deg,#1e8449,#27ae60);border-radius:12px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
+            <span style="font-size:22px">🧹</span>
+            <div>
+              <div style="font-family:'Fredoka One',cursive;font-size:13px;color:#fff">${tekst}</div>
+              <div style="font-size:11px;color:rgba(255,255,255,.85)">Frequentie: elke ${instellingen.hokFrequentie||14} dagen</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0">
+            <button onclick="goPage('instellingen')" style="background:rgba(255,255,255,.25);border:1.5px solid rgba(255,255,255,.5);border-radius:8px;color:#fff;font-size:11px;font-weight:800;padding:5px 9px;cursor:pointer;font-family:'Nunito',sans-serif">✅ Registreren</button>
+            <button onclick="uitstellenSchoonmaak()" style="background:rgba(0,0,0,.15);border:1.5px solid rgba(255,255,255,.3);border-radius:8px;color:rgba(255,255,255,.9);font-size:11px;font-weight:700;padding:5px 9px;cursor:pointer;font-family:'Nunito',sans-serif">⏰ +3d</button>
+          </div>
+        </div>`;
+      })()}
       <div class="stats">
-        <div class="stat"><div style="font-size:22px;line-height:1">🥚</div><div><div class="vl" style="font-size:20px;line-height:1.1">${vandaag}</div><div class="lb" style="font-size:9px;margin-top:2px">VANDAAG</div></div></div>
-        <div class="stat"><div style="font-size:22px;line-height:1">📅</div><div><div class="vl" style="font-size:20px;line-height:1.1">${week}</div><div class="lb" style="font-size:9px;margin-top:2px">DEZE WEEK</div></div></div>
-        <div class="stat"><div style="font-size:22px;line-height:1">📦</div><div><div class="vl" style="font-size:20px;line-height:1.1">${maand}</div><div class="lb" style="font-size:9px;margin-top:2px">DEZE MAAND</div></div></div>
-        <div class="stat"><div style="font-size:22px;line-height:1">💰</div><div><div class="vl" style="font-size:20px;line-height:1.1">€${omzet.toFixed(0)}</div><div class="lb" style="font-size:9px;margin-top:2px">OMZET</div></div></div>
-        <div class="stat"><div style="font-size:22px;line-height:1">🗃️</div><div><div class="vl" style="font-size:20px;line-height:1.1;${voorraad<0?"color:var(--rd)":""}">${voorraad}</div><div class="lb" style="font-size:9px;margin-top:2px">VOORRAAD</div></div></div>
-        <div class="stat"><div style="font-size:22px;line-height:1">${streak>=7?"🔥":streak>=3?"⭐":"📆"}</div><div><div class="vl" style="font-size:20px;line-height:1.1;${streak>=7?"color:var(--rd)":streak>=3?"color:var(--or)":""}">${streak}</div><div class="lb" style="font-size:9px;margin-top:2px">STREAK</div></div></div>
+        <div class="stat"><div class="em">🥚</div><div><div class="vl">${vandaag}</div><div class="lb">VANDAAG</div></div></div>
+        <div class="stat"><div class="em">📅</div><div><div class="vl">${week}</div><div class="lb">DEZE WEEK</div></div></div>
+        <div class="stat"><div class="em">📦</div><div><div class="vl">${maand}</div><div class="lb">DEZE MAAND</div></div></div>
+        <div class="stat"><div class="em">💰</div><div><div class="vl">€${omzet.toFixed(0)}</div><div class="lb">OMZET</div></div></div>
+        <div class="stat"><div class="em">🗃️</div><div><div class="vl" style="${voorraad<0?"color:var(--rd)":""}">${voorraad}</div><div class="lb">VOORRAAD</div></div></div>
+        <div class="stat"><div class="em">${streak>=7?"🔥":streak>=3?"⭐":"📆"}</div><div><div class="vl" style="${streak>=7?"color:var(--rd)":streak>=3?"color:var(--or)":""}">${streak}</div><div class="lb">STREAK</div></div></div>
       </div>
       <div class="card">
         <div class="card-title">⚡ Snel invullen</div>
@@ -679,15 +953,7 @@ function render() {
         <div class="fg"><label class="fl">Aantal eieren geraapt</label><input type="number" id="quick-eieren" placeholder="0" min="0" inputmode="numeric"></div>
         <button class="btn btn-p" onclick="saveLegQuick()">🥚 Opslaan</button>
       </div>
-      <div class="card">
-        <div class="card-title">📋 Laatste dagen</div>
-        ${leg.length===0?'<div class="empty"><div class="em">🐣</div><p>Nog geen gegevens</p></div>':
-          [...leg].reverse().slice(0,7).map(r=>`
-          <div class="li">
-            <div class="li-l"><div class="li-t">${fmtD(r.datum)}</div>${r.notitie?`<div class="li-s">${esc(r.notitie)}</div>`:""}</div>
-            <div class="li-r"><span class="badge bo">🥚 ${r.aantal}</span></div>
-          </div>`).join("")}
-      </div>
+      <div id="weer-blok"></div>
       ${(()=>{
         const ym = t.slice(0,7);
         const sm = getMaandSamenvatting(ym);
@@ -717,7 +983,10 @@ function render() {
       <div class="card">
         <div class="sec-hdr">🥚 Legdagen bijhouden</div>
         <div class="fg"><label class="fl">Datum</label><input type="date" id="leg-datum" value="${t}"></div>
-        <div class="fg"><label class="fl">Aantal eieren geraapt</label><input type="number" id="leg-aantal" placeholder="0" min="0" inputmode="numeric"></div>
+        <div class="frow">
+          <div class="fg"><label class="fl">Aantal eieren geraapt</label><input type="number" id="leg-aantal" placeholder="0" min="0" inputmode="numeric"></div>
+          <div class="fg"><label class="fl">Waarvan kapot 🥚💔</label><input type="number" id="leg-kapot" placeholder="0" min="0" inputmode="numeric"></div>
+        </div>
         <div class="fg"><label class="fl">Notities (optioneel)</label><input type="text" id="leg-notitie" placeholder="bijv. 2 gebroken..."></div>
         <button class="btn btn-p" onclick="saveLeg()">✅ Opslaan</button>
       </div>
@@ -728,7 +997,10 @@ function render() {
         ${(()=>{
           const rows=leg.filter(r=>r.datum.startsWith(curM)).reverse();
           const tot=rows.reduce((s,r)=>s+(r.aantal||0),0);
-          const gem=rows.length>0?(tot/rows.length).toFixed(1):0;
+          const [gemJaar,gemMo]=curM.split("-");
+          const dagenInMaand=new Date(parseInt(gemJaar),parseInt(gemMo),0).getDate();
+          const vandaagInMaand=curM===t.slice(0,7)?parseInt(t.slice(8,10)):dagenInMaand;
+          const gem=(tot/vandaagInMaand).toFixed(1);
           return `<div class="li" style="border-bottom:2px solid var(--gd)">
             <span style="font-size:12px;font-weight:800;color:var(--bl)">Totaal maand</span>
             <div style="display:flex;gap:6px;align-items:center">
@@ -736,7 +1008,9 @@ function render() {
               <span class="badge bo fw">🥚 ${tot}</span>
             </div></div>`+
           rows.map(r=>`<div class="li">
-            <div class="li-l"><div class="li-t">${fmtD(r.datum)}</div>${r.notitie?`<div class="li-s">${esc(r.notitie)}</div>`:""}</div>
+            <div class="li-l"><div class="li-t">${fmtD(r.datum)}</div>
+            ${r.kapot?`<div class="li-s" style="color:var(--rd)">💔 ${r.kapot} kapot · verkoopbaar: ${r.aantal-(r.kapot||0)}</div>`:""}
+            ${r.notitie?`<div class="li-s">${esc(r.notitie)}</div>`:""}</div>
             <div class="li-r"><span class="badge bo">🥚 ${r.aantal}</span>
               <button class="ebtn" onclick='openModal("leg",${JSON.stringify(r)})'>✏️</button>
               <button class="dbtn" onclick="deleteLeg('${r._key}')">🗑</button></div>
@@ -821,59 +1095,59 @@ function render() {
         <button class="btn btn-s" onclick="saveVk()">💰 Verkoop opslaan</button>
       </div>
       <div class="card">
-        <div class="card-title">📊 Per betaalwijze</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-          ${["Cash","Tikkie","Overboeking"].map(bw=>`
-          <div style="background:var(--gl);border-radius:10px;border:1.5px solid var(--gd);padding:10px;text-align:center">
-            <div style="font-size:18px">${bw==="Cash"?"💵":bw==="Tikkie"?"📱":"🏦"}</div>
-            <div style="font-family:'Fredoka One',cursive;font-size:15px;color:var(--or)">${fmt(bwTotals[bw].e)}</div>
-            <div style="font-size:9px;color:var(--txl);font-weight:700">${bwTotals[bw].n} eieren</div>
-            <div style="font-size:9px;color:var(--txl);margin-top:1px">${bw}</div>
-          </div>`).join("")}
-        </div>
+        ${(()=>{
+          const vkMaandenBW = [...new Set(vk.map(r=>r.datum.slice(0,7)))].sort().reverse();
+          const curBW = (vkChartM && vkMaandenBW.includes(vkChartM)) ? vkChartM : vkMaandenBW[0];
+          const [bwy,bwmo] = curBW ? curBW.split("-") : [null,null];
+          const bwLabel = curBW ? MNAMEN[parseInt(bwmo)-1]+" "+bwy : "—";
+          const vkBW = vk.filter(r=>r.datum.startsWith(curBW));
+          const bwData = {};
+          ["Cash","Tikkie","Overboeking"].forEach(bw=>{
+            bwData[bw]={n:vkBW.filter(r=>r.betaal===bw).reduce((s,r)=>s+(r.aantal||0),0),
+                        e:vkBW.filter(r=>r.betaal===bw).reduce((s,r)=>s+(r.totaal||0),0)};
+          });
+          return `<div class="card-title">📊 Per betaalwijze <span style="font-size:11px;color:var(--txl);font-weight:400">${bwLabel}</span></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+            ${["Cash","Tikkie","Overboeking"].map(bw=>`
+            <div style="background:var(--gl);border-radius:10px;border:1.5px solid var(--gd);padding:10px;text-align:center">
+              <div style="font-size:18px">${bw==="Cash"?"💵":bw==="Tikkie"?"📱":"🏦"}</div>
+              <div style="font-family:'Fredoka One',cursive;font-size:15px;color:var(--or)">${fmt(bwData[bw].e)}</div>
+              <div style="font-size:9px;color:var(--txl);font-weight:700">${bwData[bw].n} eieren</div>
+              <div style="font-size:9px;color:var(--txl);margin-top:1px">${bw}</div>
+            </div>`).join("")}
+          </div>`;
+        })()}
       </div>
       <div class="card">
         <div class="card-title">🧾 Verkoophistorie</div>
-        ${vk.length===0?'<div class="empty"><div class="em">🛒</div><p>Nog geen verkopen</p></div>':
-          vk.map(r=>`<div class="li">
-            <div class="li-l">
-              <div class="li-t">${fmtD(r.datum)}${r.koper?" · "+esc(r.koper):""}</div>
-              <div class="li-s">🥚 ${r.aantal} · <span class="badge ${BB[r.betaal]||"bo"}">${r.betaal}</span>${r.notitie?" · "+esc(r.notitie):""}</div>
-            </div>
-            <div class="li-r"><span class="fw text-gn">${fmt(r.totaal)}</span>
-              <button class="ebtn" onclick='openModal("vk",${JSON.stringify(r)})'>✏️</button>
-              <button class="dbtn" onclick="deleteVk('${r._key}')">🗑</button></div>
-          </div>`).join("")}
-      </div>
-      <div class="card">
-        <div class="card-title">🔄 Abonnementen (${abonnementen.filter(a=>a.status==="actief").length} actief)</div>
         ${(()=>{
-          const actief = abonnementen.filter(a=>a.status==="actief");
-          const gestopt = abonnementen.filter(a=>a.status!=="actief");
-          const dagNamen = ["Zondag","Maandag","Dinsdag","Woensdag","Donderdag","Vrijdag","Zaterdag"];
-          const freqLabel = f => f==="week"?"Wekelijks":f==="2week"?"Twee-wekelijks":"Maandelijks";
-          if(!actief.length && !gestopt.length) return '<div class="empty"><div class="em">🔄</div><p>Nog geen abonnementen</p></div>';
-          const actiefHtml = actief.map(a=>{
-            const volgende = getVolgendeAboDatum(a, today());
-            return `<div class="li">
+          if(vk.length===0) return '<div class="empty"><div class="em">🛒</div><p>Nog geen verkopen</p></div>';
+          const vkMaandenHist = [...new Set(vk.map(r=>r.datum.slice(0,7)))].sort().reverse();
+          const curVKH = (vkChartM && vkMaandenHist.includes(vkChartM)) ? vkChartM : vkMaandenHist[0];
+          const vkGefilterd = vk.filter(r=>r.datum.startsWith(curVKH));
+          const [hy,hmo] = curVKH.split("-");
+          const maandTotaal = vkGefilterd.reduce((s,r)=>s+(r.totaal||0),0);
+          return `<div class="tabs">${vkMaandenHist.map(m=>{const[y2,mo2]=m.split("-");return`<div class="tab${m===curVKH?" active":""}" onclick="setVkChartM('${m}')">${MNAMEN[parseInt(mo2)-1]} ${y2}</div>`;}).join("")}</div>
+          <div class="li" style="border-bottom:2px solid var(--gd)">
+            <span style="font-size:12px;font-weight:800;color:var(--bl)">${MNAMEN[parseInt(hmo)-1]} ${hy}</span>
+            <span class="fw text-gn">${fmt(maandTotaal)} · ${vkGefilterd.length} verkopen</span>
+          </div>
+          ${vkGefilterd.length===0?'<div class="empty" style="padding:16px 0"><div class="em">🛒</div><p>Geen verkopen deze maand</p></div>':
+            vkGefilterd.map(r=>`<div class="li">
               <div class="li-l">
-                <div class="li-t">${esc(a.naam)} · 🥚 doosje ${a.doosje}</div>
-                <div class="li-s">${freqLabel(a.frequentie)} · ${dagNamen[a.dag]} · volgende: <strong>${volgende?fmtD(volgende):"—"}</strong>${a.einddatum?" · t/m "+fmtD(a.einddatum):""}</div>
+                <div class="li-t">${fmtD(r.datum)}${r.koper?" · "+esc(r.koper):""}</div>
+                <div class="li-s">🥚 ${r.aantal} · <span class="badge ${BB[r.betaal]||"bo"}">${r.betaal}</span>${r.notitie?" · "+esc(r.notitie):""}</div>
               </div>
-              <div class="li-r">
-                <button class="ebtn" onclick='openModal("abo",${JSON.stringify(a)})'>✏️</button>
-                <button class="dbtn" onclick="stopAbonnement('${a._key}')">🛑</button>
-              </div>
-            </div>`;
-          }).join("");
-          const gestoptHtml = gestopt.length ? `<div style="margin-top:10px;border-top:1px solid var(--gd);padding-top:8px"><div style="font-size:11px;font-weight:800;color:var(--txl);margin-bottom:6px">Gestopt</div>${gestopt.map(a=>`<div class="li"><div class="li-l"><div class="li-t" style="color:var(--txl)">${esc(a.naam)} · doosje ${a.doosje}</div><div class="li-s">${freqLabel(a.frequentie)}</div></div><div class="li-r"><button class="dbtn" onclick="deleteAbonnement('${a._key}')">🗑</button></div></div>`).join("")}</div>` : "";
-          return actiefHtml + gestoptHtml;
+              <div class="li-r"><span class="fw text-gn">${fmt(r.totaal)}</span>
+                <button class="ebtn" onclick='openModal("vk",${JSON.stringify(r)})'>✏️</button>
+                <button class="dbtn" onclick="deleteVk('${r._key}')">🗑</button></div>
+            </div>`).join("")}`;
         })()}
       </div>
       <div class="card">
         <div class="card-title">&#x1F504; Abonnementen (${abonnementen.filter(a=>a.status==="actief").length} actief)</div>
         ${(()=>{
-          const actief = abonnementen.filter(a=>a.status==="actief");
+          const actief  = abonnementen.filter(a=>a.status==="actief");
           const gestopt = abonnementen.filter(a=>a.status!=="actief");
           const dagNamen = ["Zondag","Maandag","Dinsdag","Woensdag","Donderdag","Vrijdag","Zaterdag"];
           const freqLabel = f => f==="week"?"Wekelijks":f==="2week"?"Twee-wekelijks":"Maandelijks";
@@ -891,11 +1165,7 @@ function render() {
               </div>
             </div>`;
           }).join("");
-          const gestoptHtml = gestopt.length
-            ? `<div style="margin-top:10px;border-top:1px solid var(--gd);padding-top:8px">
-                <div style="font-size:11px;font-weight:800;color:var(--txl);margin-bottom:6px">Gestopt</div>
-                ${gestopt.map(a=>`<div class="li"><div class="li-l"><div class="li-t" style="color:var(--txl)">${esc(a.naam)} &middot; doosje ${a.doosje}</div><div class="li-s">${freqLabel(a.frequentie)}</div></div><div class="li-r"><button class="dbtn" onclick="deleteAbonnement('${a._key}')">&#x1F5D1;</button></div></div>`).join("")}
-              </div>` : "";
+          const gestoptHtml = gestopt.length ? `<div style="margin-top:10px;border-top:1px solid var(--gd);padding-top:8px"><div style="font-size:11px;font-weight:800;color:var(--txl);margin-bottom:6px">Gestopt</div>${gestopt.map(a=>`<div class="li"><div class="li-l"><div class="li-t" style="color:var(--txl)">${esc(a.naam)} &middot; doosje ${a.doosje}</div><div class="li-s">${freqLabel(a.frequentie)}</div></div><div class="li-r"><button class="dbtn" onclick="deleteAbonnement('${a._key}')">&#x1F5D1;</button></div></div>`).join("")}</div>` : "";
           return actiefHtml + gestoptHtml;
         })()}
       </div>
@@ -1122,7 +1392,8 @@ function render() {
     <!-- INSTELLINGEN -->
     <div class="page${activePage==="instellingen"?" active":""}" id="page-instellingen">
       <div class="card">
-        <div class="sec-hdr">⚙️ Instellingen</div>
+        <div class="sec-hdr-acc${beheerOpen.has('inst-prijzen')?" open":""}" onclick="toggleBeheer('inst-prijzen')">🥚 Eierprijzen <span>${beheerOpen.has('inst-prijzen')?'▲':'▼'}</span></div>
+        <div class="acc-body${beheerOpen.has('inst-prijzen')?" open":""}">
         <div class="fg">
           <label class="fl">Prijs per ei (€)</label>
           <input type="number" id="inst-prijs" value="${instellingen.prijsPerEi.toFixed(2)}" step="0.01" min="0.01" inputmode="decimal">
@@ -1141,9 +1412,186 @@ function render() {
           </div>
         </div>
         <button class="btn btn-p" onclick="saveInstellingen()">💾 Opslaan</button>
+        </div>
       </div>
       <div class="card">
-        <div class="sec-hdr">&#x1F7E2; Klant status drempelwaarden</div>
+        <div class="sec-hdr-acc${beheerOpen.has('inst-notities')?" open":""}" onclick="toggleBeheer('inst-notities')">&#x1F4DD; Notities <span>${beheerOpen.has('inst-notities')?'▲':'▼'}</span></div>
+        <div class="acc-body${beheerOpen.has('inst-notities')?" open":""}">
+        <div class="fg">
+          <label class="fl">Categorie</label>
+          <select id="notitie-cat">${NOTITIE_CATS.map(c=>`<option>${c}</option>`).join("")}</select>
+        </div>
+        <div class="fg">
+          <label class="fl">Notitie</label>
+          <textarea id="notitie-tekst" rows="3" placeholder="Schrijf hier je notitie..." style="width:100%;padding:11px 14px;border:1.5px solid var(--gd);border-radius:10px;font-size:15px;font-family:'Nunito',sans-serif;color:var(--tx);background:var(--gl);outline:none;resize:vertical;box-sizing:border-box"></textarea>
+        </div>
+        <button class="btn btn-p" onclick="saveNotitie()" style="margin-bottom:14px">&#x1F4DD; Notitie opslaan</button>
+        ${(()=>{
+          if(notities.length===0) return '<div class="empty" style="padding:12px 0"><div class="em">&#x1F4DD;</div><p>Nog geen notities</p></div>';
+          const cats = [...new Set(notities.map(n=>n.cat))];
+          return cats.map(cat=>{
+            const rijen = notities.filter(n=>n.cat===cat);
+            return `<div style="margin-bottom:10px">
+              <div style="font-size:11px;font-weight:800;color:var(--bl);margin-bottom:6px">${cat}</div>
+              ${rijen.map((n,i)=>`<div class="li" ${i===rijen.length-1?'style="border:none"':""}>
+                <div class="li-l">
+                  <div class="li-t" style="white-space:normal;line-height:1.4">${esc(n.tekst)}</div>
+                  <div class="li-s">${fmtD(n.datum)}</div>
+                </div>
+                <div class="li-r"><button class="dbtn" onclick="deleteNotitie('${n._key}')">&#x1F5D1;</button></div>
+              </div>`).join("")}
+            </div>`;
+          }).join("");
+        })()}
+        </div>
+      </div>
+      <div class="card">
+        <div class="sec-hdr-acc${beheerOpen.has('inst-schoonmaak')?" open":""}" onclick="toggleBeheer('inst-schoonmaak')">🧹 Kippenhok schoonmaken <span>${beheerOpen.has('inst-schoonmaak')?'▲':'▼'}</span></div>
+        <div class="acc-body${beheerOpen.has('inst-schoonmaak')?" open":""}">
+        <div style="font-size:11px;color:var(--txl);margin-bottom:14px">Stel in hoe vaak het kippenhok schoongemaakt moet worden. Op het dashboard verschijnt een melding 3 dagen van tevoren.</div>
+        <div class="fg">
+          <label class="fl">&#x1F9F9; Schoonmaak frequentie (dagen)</label>
+          <input type="number" id="inst-hok-frequentie" value="${instellingen.hokFrequentie??14}" min="1" max="365" inputmode="numeric">
+          <div style="font-size:11px;color:var(--txl);margin-top:4px">Huidig: <strong>${instellingen.hokFrequentie??14} dagen</strong> &middot; Aanbeveling: 7&ndash;14 dagen voor vrije uitloop</div>
+        </div>
+        ${(()=>{
+          const volgende = getVolgendeSchoonmaak();
+          const laatste = schoonmaak.filter(r=>!r.type||r.type!=="uitstel")[0];
+          return `<div style="background:var(--gl);border-radius:10px;border:1.5px solid var(--gd);padding:10px 14px;margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+              <span style="color:var(--txl);font-weight:700">Laatste schoonmaak</span>
+              <span style="font-weight:800;color:var(--bd)">${laatste?fmtD(laatste.datum):"Nog niet geregistreerd"}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:12px">
+              <span style="color:var(--txl);font-weight:700">Volgende gepland</span>
+              <span style="font-weight:800;color:var(--gn)">${fmtD(volgende)}</span>
+            </div>
+          </div>`;
+        })()}
+        <button class="btn btn-p" onclick="saveInstellingen()">&#x1F4BE; Frequentie opslaan</button>
+        <div style="height:1px;background:var(--gd);margin:14px 0"></div>
+        <div style="font-family:'Fredoka One',cursive;font-size:14px;color:var(--bd);margin-bottom:10px">&#x1F9F9; Schoonmaak registreren</div>
+        <div class="frow">
+          <div class="fg">
+            <label class="fl">Datum schoonmaak</label>
+            <input type="date" id="schoon-datum" value="${today()}">
+          </div>
+          <div class="fg">
+            <label class="fl">Notitie (optioneel)</label>
+            <input type="text" id="schoon-notitie" placeholder="bijv. grondig + ontsmetting">
+          </div>
+        </div>
+        <div class="brow">
+          <button class="btn btn-s" onclick="registreerSchoonmaak()">&#x2705; Opslaan</button>
+          <button class="btn btn-g" onclick="openSchoonmaakHistorie()" style="flex:0.7">&#x1F4CB; Historie</button>
+        </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="sec-hdr-acc${beheerOpen.has('inst-kippen')?" open":""}" onclick="toggleBeheer('inst-kippen')">🐓 Kippen <span>${beheerOpen.has('inst-kippen')?'▲':'▼'}</span></div>
+        <div class="acc-body${beheerOpen.has('inst-kippen')?" open":""}">
+        <div class="frow">
+          <div class="fg"><label class="fl">Naam</label><input type="text" id="kip-naam" placeholder="bijv. Max..."></div>
+          <div class="fg"><label class="fl">Ras</label>
+            <select id="kip-ras">${RASSEN.map(r=>`<option>${r}</option>`).join("")}</select>
+          </div>
+        </div>
+        <div class="frow">
+          <div class="fg"><label class="fl">Geslacht</label>
+            <select id="kip-geslacht"><option value="Hen">🐔 Hen</option><option value="Haan">🐓 Haan</option></select>
+          </div>
+          <div class="fg"><label class="fl">Geboortedatum</label>
+            <input type="date" id="kip-geboortedatum">
+          </div>
+        </div>
+        <div class="fg"><label class="fl">Aanschafdatum</label>
+          <input type="date" id="kip-aanschafdatum">
+        </div>
+        <button class="btn btn-p" onclick="saveKip()">🐣 Kip toevoegen</button>
+        <div style="height:1px;background:var(--gd);margin:14px 0"></div>
+        ${(()=>{
+          const actief    = kippen.filter(k=>!k.status||k.status==="actief");
+          const uitgevallen = kippen.filter(k=>k.status==="uitgevallen");
+
+          function leeftijdTekst(geboortedatum) {
+            if(!geboortedatum) return null;
+            const ms = new Date() - new Date(geboortedatum+"T12:00:00");
+            const mnd = Math.floor(ms / (1000*60*60*24*30.5));
+            if(mnd < 24) return mnd + " mnd";
+            return (mnd/12).toFixed(1).replace(".0","") + " jr";
+          }
+          function leeftijdKleur(geboortedatum) {
+            if(!geboortedatum) return "var(--txl)";
+            const jr = (new Date() - new Date(geboortedatum+"T12:00:00")) / (1000*60*60*24*365);
+            return jr > 3 ? "var(--rd)" : jr > 2.5 ? "var(--or)" : "var(--gn)";
+          }
+
+          function kipKaartje(k, isUit=false) {
+            const leeftijd = leeftijdTekst(k.geboortedatum);
+            const lKleur   = leeftijdKleur(k.geboortedatum);
+            const geslachtIcon = k.geslacht==="Haan" ? "🐓" : "🐔";
+            const kipData  = JSON.stringify(k).replace(/'/g,"&#39;");
+            return `<div class="kip" style="position:relative;padding-bottom:32px;${isUit?"opacity:0.6;background:#f5f5f5;":""}">` +
+              `<div class="ke">${RAS_ICONS[k.ras]||"🐔"}</div>` +
+              `<div class="kr">${geslachtIcon} ${esc(k.naam)}</div>` +
+              (leeftijd ? `<div class="kn" style="color:${lKleur};font-weight:700">${leeftijd}</div>` : "") +
+              (isUit && k.uitval ? `<div class="kn" style="color:var(--rd)">${k.uitval.reden}</div>` : "") +
+              `<div style="position:absolute;bottom:4px;left:0;right:0;display:flex;gap:2px;justify-content:center;flex-wrap:wrap">` +
+              (isUit
+                ? `<button class="ebtn" onclick="heractiveerKip('${k._key}')" style="font-size:11px" title="Heractiveren">↩️</button>`
+                : `<button class="ebtn" onclick="openKipGezondheid('${k._key}')" style="font-size:11px" title="Gezondheidslog">🏥</button>` +
+                  `<button class="ebtn" onclick="uitvallenKip('${k._key}')" style="font-size:11px;color:var(--rd)" title="Uitval">🪦</button>`) +
+              `<button class="ebtn" onclick='openModal("kip",${kipData})' style="font-size:11px">✏️</button>` +
+              `<button class="dbtn" onclick="deleteKip('${k._key}')" style="font-size:11px">🗑</button>` +
+              `</div></div>`;
+          }
+
+          const actiefByRas = {};
+          actief.forEach(k=>{ if(!actiefByRas[k.ras]) actiefByRas[k.ras]=[]; actiefByRas[k.ras].push(k); });
+
+          const actiefHtml = actief.length===0
+            ? '<div class="empty"><div class="em">🐣</div><p>Nog geen kippen toegevoegd</p></div>'
+            : Object.entries(actiefByRas).map(([ras,kips])=>
+                `<div style="margin-bottom:10px">` +
+                `<div style="font-size:11px;font-weight:800;color:var(--bl);margin-bottom:6px">${RAS_ICONS[ras]||"🐔"} ${ras}</div>` +
+                `<div class="kip-grid">${kips.map(k=>kipKaartje(k,false)).join("")}</div></div>`
+              ).join("");
+
+          const uitHtml = uitgevallen.length===0 ? "" :
+            `<div style="margin-top:12px;border-top:1px solid var(--gd);padding-top:10px">` +
+            `<div style="font-size:11px;font-weight:800;color:var(--txl);margin-bottom:8px">🪦 Niet meer actief (${uitgevallen.length})</div>` +
+            `<div class="kip-grid">${uitgevallen.map(k=>kipKaartje(k,true)).join("")}</div></div>`;
+
+          // Statistieken
+          const metGeb = actief.filter(k=>k.geboortedatum);
+          const gemLeeftijdMnd = metGeb.length
+            ? Math.round(metGeb.reduce((s,k)=>{
+                return s + (new Date()-new Date(k.geboortedatum+"T12:00:00"))/(1000*60*60*24*30.5);
+              },0)/metGeb.length)
+            : null;
+
+          const statsHtml = `<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+            <div style="background:var(--gl);border-radius:8px;border:1px solid var(--gd);padding:6px 12px;font-size:11px;text-align:center;flex:1">
+              <div style="font-family:'Fredoka One',cursive;font-size:18px;color:var(--or)">${actief.length}</div>
+              <div style="color:var(--txl);font-weight:700">Actief</div>
+            </div>
+            <div style="background:var(--gl);border-radius:8px;border:1px solid var(--gd);padding:6px 12px;font-size:11px;text-align:center;flex:1">
+              <div style="font-family:'Fredoka One',cursive;font-size:18px;color:var(--txl)">${uitgevallen.length}</div>
+              <div style="color:var(--txl);font-weight:700">Uitgevallen</div>
+            </div>
+            ${gemLeeftijdMnd!==null?`<div style="background:var(--gl);border-radius:8px;border:1px solid var(--gd);padding:6px 12px;font-size:11px;text-align:center;flex:1">
+              <div style="font-family:'Fredoka One',cursive;font-size:18px;color:var(--or)">${gemLeeftijdMnd<24?gemLeeftijdMnd+"m":(gemLeeftijdMnd/12).toFixed(1)+"j"}</div>
+              <div style="color:var(--txl);font-weight:700">Gem. leeftijd</div>
+            </div>`:""}
+          </div>`;
+
+          return `<div class="card-title">🐓 Onze kippen</div>${statsHtml}${actiefHtml}${uitHtml}`;
+        })()}
+        </div>
+      </div>
+      <div class="card">
+        <div class="sec-hdr-acc${beheerOpen.has('inst-klantstat')?" open":""}" onclick="toggleBeheer('inst-klantstat')">🟢 Klant status <span>${beheerOpen.has('inst-klantstat')?'▲':'▼'}</span></div>
+        <div class="acc-body${beheerOpen.has('inst-klantstat')?" open":""}">
         <div style="font-size:11px;color:var(--txl);margin-bottom:14px">Stel in na hoeveel dagen een klant van status wisselt op de klantenpagina.</div>
         <div style="background:var(--gl);border-radius:12px;border:1.5px solid var(--gd);overflow:hidden;margin-bottom:14px">
           <div style="display:grid;grid-template-columns:2fr 3fr 3fr;background:var(--gd);padding:7px 12px;font-size:10px;font-weight:800;color:var(--bd)">
@@ -1183,51 +1631,83 @@ function render() {
           </div>
         </div>
         <button class="btn btn-p" onclick="saveInstellingen()">&#x1F4BE; Drempelwaarden opslaan</button>
-      </div>
-      <div class="card">
-        <div class="sec-hdr">🐓 Kippen beheren</div>
-        <div class="frow">
-          <div class="fg"><label class="fl">Naam</label><input type="text" id="kip-naam" placeholder="bijv. Max..."></div>
-          <div class="fg"><label class="fl">Ras</label>
-            <select id="kip-ras">${RASSEN.map(r=>`<option>${r}</option>`).join("")}</select>
-          </div>
         </div>
-        <button class="btn btn-p" onclick="saveKip()">🐣 Kip toevoegen</button>
       </div>
       <div class="card">
-        <div class="card-title">🐓 Onze kippen (${kippen.length})</div>
-        ${(()=>{
-          if(kippen.length===0) return '<div class="empty"><div class="em">🐣</div><p>Nog geen kippen toegevoegd</p></div>';
-          const byRas = {};
-          kippen.forEach(k=>{ if(!byRas[k.ras]) byRas[k.ras]=[]; byRas[k.ras].push(k); });
-          return Object.entries(byRas).map(([ras,kips])=>
-            `<div style="margin-bottom:10px">`+
-            `<div style="font-size:11px;font-weight:800;color:var(--bl);margin-bottom:6px">${RAS_ICONS[ras]||"🐔"} ${ras}</div>`+
-            `<div class="kip-grid">`+
-            kips.map(k=>
-              `<div class="kip" style="position:relative;padding-bottom:28px">`+
-              `<div class="ke">${RAS_ICONS[k.ras]||"🐔"}</div>`+
-              `<div class="kr">${esc(k.naam)}</div>`+
-              `<div style="position:absolute;bottom:6px;right:4px;display:flex;gap:2px">`+
-              `<button class="ebtn" onclick='openModal("kip",${JSON.stringify(k)})' style="font-size:13px">✏️</button>`+
-              `<button class="dbtn" onclick="deleteKip('${k._key}')" style="font-size:13px">🗑</button>`+
-              `</div></div>`
-            ).join("")+
-            `</div></div>`
-          ).join("");
-        })()}
-      </div>
-      <div class="card">
-        <div class="card-title">📊 Statistieken</div>
+        <div class="sec-hdr-acc${beheerOpen.has('inst-statistieken')?" open":""}" onclick="toggleBeheer('inst-statistieken')">📊 Statistieken <span>${beheerOpen.has('inst-statistieken')?'▲':'▼'}</span></div>
+        <div class="acc-body${beheerOpen.has('inst-statistieken')?" open":""}">
         <div class="li"><div class="li-l"><div class="li-t">Totaal gelegde eieren</div></div><div class="li-r"><span class="fw text-or">${totGelegd}</span></div></div>
+        <div class="li"><div class="li-l"><div class="li-t">💔 Waarvan kapot</div></div><div class="li-r"><span class="fw text-ro">${totKapot}</span></div></div>
         <div class="li"><div class="li-l"><div class="li-t">Totaal verkochte eieren</div></div><div class="li-r"><span class="fw text-gn">${totVerkocht}</span></div></div>
         <div class="li"><div class="li-l"><div class="li-t">Huidige voorraad</div></div><div class="li-r"><span class="fw" style="${voorraad<0?"color:var(--rd)":"color:var(--or)"}">${voorraad}</span></div></div>
         <div class="li"><div class="li-l"><div class="li-t">Invul-streak</div></div><div class="li-r"><span class="fw text-or">${streak} dagen ${streak>=7?"🔥":streak>=3?"⭐":"📆"}</span></div></div>
         <div class="li"><div class="li-l"><div class="li-t">Totaal klanten</div></div><div class="li-r"><span class="fw text-or">${klanten.length}</span></div></div>
         <div class="li" style="border:none"><div class="li-l"><div class="li-t">Totaal omzet</div></div><div class="li-r"><span class="fw text-gn">${fmt(omzet)}</span></div></div>
+        </div>
       </div>
       <div class="card">
-        <div class="card-title">💾 Back-up (CSV)</div>
+        <div class="sec-hdr-acc${beheerOpen.has('inst-locatie')?" open":""}" onclick="toggleBeheer('inst-locatie')">📍 Weerlocatie <span>${beheerOpen.has('inst-locatie')?'▲':'▼'}</span></div>
+        <div class="acc-body${beheerOpen.has('inst-locatie')?" open":""}">
+        <div style="font-size:11px;color:var(--txl);margin-bottom:14px">De locatie die gebruikt wordt voor het weerbericht op het dashboard.</div>
+        <div class="fg">
+          <label class="fl">Plaatsnaam (weergave)</label>
+          <input type="text" id="inst-weer-naam" value="${instellingen.weerNaam??'Ulestraten'}" placeholder="bijv. Ulestraten">
+        </div>
+        <div class="frow">
+          <div class="fg">
+            <label class="fl">Breedtegraad (lat)</label>
+            <input type="number" id="inst-weer-lat" value="${instellingen.weerLat??50.9057}" step="0.0001" inputmode="decimal">
+          </div>
+          <div class="fg">
+            <label class="fl">Lengtegraad (lon)</label>
+            <input type="number" id="inst-weer-lon" value="${instellingen.weerLon??5.7815}" step="0.0001" inputmode="decimal">
+          </div>
+        </div>
+        <div style="background:var(--gl);border-radius:10px;border:1.5px solid var(--gd);padding:10px 14px;margin-bottom:12px;font-size:11px;color:var(--txl)">
+          &#x1F4A1; Coördinaten vind je via <strong>maps.google.com</strong> — zoek je adres op en klik rechts op de locatie voor de coördinaten.
+        </div>
+        <button class="btn btn-p" onclick="saveInstellingen()">&#x1F4BE; Locatie opslaan</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="sec-hdr-acc${beheerOpen.has('inst-push')?" open":""}" onclick="toggleBeheer('inst-push')">🔔 Pushmeldingen <span>${beheerOpen.has('inst-push')?'▲':'▼'}</span></div>
+        <div class="acc-body${beheerOpen.has('inst-push')?" open":""}">
+        <div style="font-size:11px;color:var(--txl);margin-bottom:14px">Ontvang meldingen op dit apparaat voor legdagen, schoonmaak, reserveringen en voorraad.</div>
+        ${(()=>{
+          const supported = ("Notification" in window) && ("serviceWorker" in navigator);
+          if(!supported) return '<div style="font-size:12px;color:var(--txl);background:var(--gl);border-radius:10px;padding:10px 14px">' +
+            '⚠️ Pushmeldingen worden niet ondersteund in deze browser.<br><br>' +
+            '<strong>Op iPhone:</strong> open de app in Safari, tik op het deel-icoon (□↑) en kies <em>Zet op beginscherm</em>. ' +
+            'Start de app daarna vanaf je beginscherm en probeer opnieuw.<br><br>' +
+            '<strong>Op desktop:</strong> gebruik Google Chrome voor de beste ondersteuning.' +
+            '</div>';
+          const perm = Notification.permission;
+          const permLabel = perm==="granted"?"✅ Toestemming verleend":perm==="denied"?"❌ Geblokkeerd door browser":"⏳ Nog niet gevraagd";
+          const permKleur = perm==="granted"?"color:var(--gn)":perm==="denied"?"color:var(--rd)":"color:var(--or)";
+          return `<div style="background:var(--gl);border-radius:10px;border:1.5px solid var(--gd);padding:10px 14px;margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+              <span style="color:var(--txl);font-weight:700">Status browser</span>
+              <span style="font-weight:800;${permKleur}">${permLabel}</span>
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--txl);margin-bottom:10px">
+            <div style="margin-bottom:3px">📋 Actieve meldingen:</div>
+            <div style="padding-left:8px;line-height:1.8">
+              🥚 Legdag herinnering — dagelijks 19:00 als niet ingevuld<br>
+              🧹 Schoonmaak herinnering — op geplande datum om 08:00<br>
+              🔔 Nieuwe reservering — direct bij binnenkomst<br>
+              📦 Voorraad waarschuwing — dagelijks als voorraad hoog is
+            </div>
+          </div>
+          ${perm==="denied"
+            ? '<div style="font-size:11px;color:var(--rd);background:#fadbd8;border-radius:8px;padding:8px 12px">Notificaties zijn geblokkeerd in je browser. Ga naar browserinstellingen → Site-instellingen om dit te herstellen.</div>'
+            : '<div class="brow"><button class="btn btn-s" onclick="registreerPushNotificaties()">🔔 Inschakelen op dit apparaat</button><button class="btn btn-g" onclick="uitschakelenPushNotificaties()" style="flex:0.5">🔕 Uit</button></div>'}`;
+        })()}
+        </div>
+      </div>
+      <div class="card">
+        <div class="sec-hdr-acc${beheerOpen.has('inst-backup')?" open":""}" onclick="toggleBeheer('inst-backup')">💾 Back-up (CSV) <span>${beheerOpen.has('inst-backup')?'▲':'▼'}</span></div>
+        <div class="acc-body${beheerOpen.has('inst-backup')?" open":""}">
         <div class="data-box"><h4>📥 Downloaden</h4>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
             <button class="btn btn-g" onclick="exportCSV('legdagen')">🥚 Legdagen</button>
@@ -1237,6 +1717,7 @@ function render() {
           </div>
         </div>
         <p style="font-size:11px;color:var(--txl);text-align:center;margin-top:4px">☁️ Data wordt live gesynchroniseerd via Firebase op alle apparaten</p>
+        </div>
       </div>
     </div>
 
@@ -1248,11 +1729,19 @@ function render() {
     ).join("")}
   </nav>
 
+  <canvas id="fw-canvas" style="position:fixed;inset:0;pointer-events:none;z-index:500;display:none"></canvas>
+  <canvas id="fw-canvas" style="position:fixed;inset:0;pointer-events:none;z-index:500;display:none"></canvas>
   <div class="toast" id="toast"></div>
 
   <div class="overlay" id="modal-overlay" onclick="closeModal()">
     <div class="modal" onclick="event.stopPropagation()">
       <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <div class="overlay" id="confirm-overlay">
+    <div class="modal" onclick="event.stopPropagation()" style="max-height:auto">
+      <div id="confirm-body"></div>
     </div>
   </div>
 
@@ -1273,6 +1762,8 @@ function render() {
   </div>`;
   // Render tab content after main render
   setTimeout(renderKostenTabContent, 0);
+  // Laad weerdata als we op dashboard zijn
+  if (activePage === "dashboard") setTimeout(laadWeer, 0);
 }
 
 // ── CHART ──────────────────────────────────────────────────────────────────
@@ -1511,44 +2002,6 @@ async function saveReservering() {
     showResError("❌ Kon niet opslaan. Controleer je internetverbinding.");
   }
 }
-function switchBestelTab(tab) {
-  const eenmalig  = document.getElementById("form-eenmalig");
-  const periodiek = document.getElementById("form-periodiek");
-  const tabE = document.getElementById("tab-eenmalig");
-  const tabP = document.getElementById("tab-periodiek");
-  if(!eenmalig || !periodiek) return;
-  if(tab === "eenmalig") {
-    eenmalig.style.display  = "block"; periodiek.style.display = "none";
-    if(tabE) { tabE.style.background="var(--or)"; tabE.style.color="#fff"; }
-    if(tabP) { tabP.style.background="var(--gl)"; tabP.style.color="var(--bd)"; }
-  } else {
-    eenmalig.style.display  = "none"; periodiek.style.display = "block";
-    if(tabP) { tabP.style.background="var(--or)"; tabP.style.color="#fff"; }
-    if(tabE) { tabE.style.background="var(--gl)"; tabE.style.color="var(--bd)"; }
-  }
-}
-
-async function savePeriodiekBestelling() {
-  const naam   = (document.getElementById("abo-naam")||{}).value?.trim();
-  const doosje = parseInt((document.getElementById("abo-doosje")||{}).value)||6;
-  const freq   = (document.getElementById("abo-freq")||{}).value||"week";
-  const dag    = parseInt((document.getElementById("abo-dag")||{}).value);
-  const start  = (document.getElementById("abo-start")||{}).value||today();
-  const eind   = (document.getElementById("abo-eind")||{}).value||null;
-  const tel    = (document.getElementById("abo-tel")||{}).value?.trim()||"";
-  if(!naam) return showResError("\u26A0\uFE0F Vul je naam in");
-  const key = uid();
-  try {
-    await dbSave("abonnementen/"+key, { naam, tel, doosje, frequentie:freq, dag, startdatum:start, einddatum:eind||null, status:"actief", aangemeld:today() });
-    const dagNamen=["Zondag","Maandag","Dinsdag","Woensdag","Donderdag","Vrijdag","Zaterdag"];
-    const freqLabel=freq==="week"?"wekelijks":freq==="2week"?"twee-wekelijks":"maandelijks";
-    const app=document.getElementById("app");
-    if(app) app.innerHTML=`<div style="background:linear-gradient(160deg,var(--gl),var(--gm),var(--gd));min-height:100vh;padding:24px 16px;display:flex;align-items:center;justify-content:center"><div style="background:#fff;border-radius:20px;border:1.5px solid var(--gd);padding:28px 24px;max-width:340px;text-align:center;box-shadow:0 4px 24px rgba(200,134,10,.15)"><div style="font-size:52px;margin-bottom:12px">&#x1F504;&#x2705;</div><div style="font-family:'Fredoka One',cursive;font-size:22px;color:var(--gn);margin-bottom:8px">Ingesteld!</div><div style="font-size:14px;color:var(--bd);margin-bottom:16px">Jouw periodieke bestelling is ingesteld:<br><strong>${doosje} eieren</strong> &middot; ${freqLabel} op <strong>${dagNamen[dag]}</strong></div><div style="font-size:12px;color:var(--txl);margin-bottom:20px">Ben zorgt dat jouw eieren klaarstaan! &#x1F413;</div><button class="btn btn-p" onclick="window.renderLogin()" style="max-width:280px">&#x2190; Terug</button></div></div>`;
-  } catch(e) {
-    showResError("\u274C Kon niet opslaan. Controleer je internetverbinding.");
-  }
-}
-
 function showResError(msg) {
   const el = document.getElementById("res-error");
   if(el){ el.textContent=msg; el.classList.add("show"); }
@@ -1576,7 +2029,7 @@ function showResBevestiging(naam, datum, aantal, doosPrijs) {
   </div>`;
 }
 async function accepteerRes(key, r) {
-  if(!confirm("Reservering accepteren en omzetten naar verkoop?")) return;
+  if(!await bevestig("Reservering omzetten naar verkoop?", "✅ Ja, omzetten", "btn-s")) return;
 
   // Find or create klant
   let klantId = "";
@@ -1608,11 +2061,17 @@ async function accepteerRes(key, r) {
     }
   }
 
-  // Sla op als verkoop
+  // Sla op als verkoop — gebruik de doosPrijs uit de reservering
   const vkKey = uid();
+  // Gebruik doosPrijs uit reservering, anders huidige doosjesprijs uit instellingen
+  const resTotaal = (r.doosPrijs && r.doosPrijs > 0)
+    ? r.doosPrijs
+    : r.aantal === 10 ? (instellingen.prijsDoosje10 || 4.00)
+    : r.aantal === 6  ? (instellingen.prijsDoosje6  || 2.50)
+    : r.aantal * prijs();
   await dbSave("verkopen/"+vkKey, {
     datum: r.datum, aantal: r.aantal, koper: r.naam, klantId,
-    betaal: "Reservering", totaal: r.aantal*prijs(),
+    betaal: "Reservering", totaal: resTotaal,
     notitie: "Via reservering" + (r.tel?" · "+r.tel:"")
   });
 
@@ -1624,13 +2083,13 @@ async function accepteerRes(key, r) {
   toast("✅ Reservering omgezet naar verkoop!");
 }
 async function weigerRes(key, r) {
-  if(!confirm("Reservering weigeren?")) return;
+  if(!await bevestig("Reservering weigeren?", "❌ Ja, weigeren", "btn-d")) return;
   await dbRemove("reserveringen/"+key);
   syncPubliekeData();
   toast("🗑 Reservering geweigerd");
 }
 async function deleteRes(key) {
-  if(!confirm("Reservering verwijderen?")) return;
+  if(!await bevestig("Reservering verwijderen?")) return;
   await dbRemove("reserveringen/"+key);
   toast("🗑 Verwijderd");
 }
@@ -1651,7 +2110,7 @@ async function saveInv() {
   toast("✅ Investering opgeslagen!");
 }
 async function deleteInv(key) {
-  if(!confirm("Investering verwijderen?")) return;
+  if(!await bevestig("Investering verwijderen?")) return;
   await dbRemove("investeringen/"+key);
   toast("🗑 Verwijderd");
 }
@@ -1673,10 +2132,23 @@ function renderKostenTabContent() {
   if(!el) return;
   const t = today();
 
+
   if(kstTab === "kosten") {
+    // Maandfilter voor kosten
+    const kstMaanden = [...new Set(kst.map(r=>r.datum.slice(0,7)))].sort().reverse();
+    const curKstM = (kstFilterMaand && kstMaanden.includes(kstFilterMaand)) ? kstFilterMaand : (kstMaanden[0]||t.slice(0,7));
+    const kstGefilterd = kst.filter(r=>r.datum.startsWith(curKstM));
+    const [kmy,kmmo] = curKstM.split("-");
+    const kstMaandLabel = kstMaanden.length>0 ? MNAMEN[parseInt(kmmo)-1]+" "+kmy : "";
+    const kstMaandTotaal = kstGefilterd.reduce((s,r)=>s+(r.bedrag||0),0);
+
     const catTotals2 = {};
-    CATS.forEach(c => catTotals2[c] = kst.filter(r=>r.cat===c).reduce((s,r)=>s+(r.bedrag||0),0));
+    CATS.forEach(c => catTotals2[c] = kstGefilterd.filter(r=>r.cat===c).reduce((s,r)=>s+(r.bedrag||0),0));
     const maxCat2 = Math.max(...Object.values(catTotals2), 1);
+
+    const maandTabsHtml = kstMaanden.length > 1
+      ? '<div class="tabs">' + kstMaanden.map(m=>{const[y2,mo2]=m.split("-");return'<div class="tab'+(m===curKstM?" active":"") +'" onclick="setKstMaand(\''+m+'\')">'+MNAMEN[parseInt(mo2)-1]+' '+y2+'</div>';}).join("") + '</div>'
+      : '';
 
     const barsHtml = CATS.map(c =>
       '<div class="bar-row"><span class="bar-lbl">' + ICONS[c] + '</span>' +
@@ -1685,26 +2157,29 @@ function renderKostenTabContent() {
       '</div></div></div>'
     ).join("");
 
-    const histHtml = kst.length===0
-      ? '<div class="empty"><div class="em">🧾</div><p>Nog geen kosten</p></div>'
-      : kst.map(r =>
+    const histHtml = kstGefilterd.length===0
+      ? '<div class="empty"><div class="em">&#x1F9FE;</div><p>Geen kosten in ' + kstMaandLabel + '</p></div>'
+      : '<div class="li" style="border-bottom:2px solid var(--gd)">' +
+        '<span style="font-size:12px;font-weight:800;color:var(--rd)">' + kstMaandLabel + '</span>' +
+        '<span class="fw text-ro">' + fmt(kstMaandTotaal) + '</span></div>' +
+        kstGefilterd.map(r =>
           '<div class="li">' +
           '<div class="li-l">' +
-          '<div class="li-t">' + (ICONS[r.cat]||"📦") + " " + esc(r.omschr||r.cat) + '</div>' +
-          '<div class="li-s">' + fmtD(r.datum) + (r.leverancier?" · "+esc(r.leverancier):"") + " · " + r.cat + '</div>' +
+          '<div class="li-t">' + (ICONS[r.cat]||"&#x1F4E6;") + " " + esc(r.omschr||r.cat) + '</div>' +
+          '<div class="li-s">' + fmtD(r.datum) + (r.leverancier?" &middot; "+esc(r.leverancier):"") + " &middot; " + r.cat + '</div>' +
           '</div>' +
           '<div class="li-r"><span class="fw text-ro">' + fmt(r.bedrag) + '</span>' +
-          '<button class="ebtn" onclick=\'openModal("kst",' + JSON.stringify(r) + ')\'>✏️</button>' +
-          '<button class="dbtn" onclick="deleteKst(\'' + r._key + '\')">🗑</button></div>' +
+          '<button class="ebtn" onclick=\'openModal("kst",' + JSON.stringify(r) + ')\'>&#x270F;&#xFE0F;</button>' +
+          '<button class="dbtn" onclick="deleteKst(\"' + r._key + '\")">&#x1F5D1;</button></div>' +
           '</div>'
         ).join("");
 
     el.innerHTML =
       '<div class="card">' +
-      '<div class="sec-hdr">📋 Kosten registreren</div>' +
+      '<div class="sec-hdr">&#x1F4CB; Kosten registreren</div>' +
       '<div class="frow">' +
       '<div class="fg"><label class="fl">Datum</label><input type="date" id="kst-datum" value="' + t + '"></div>' +
-      '<div class="fg"><label class="fl">Bedrag (€)</label><input type="number" id="kst-bedrag" placeholder="0.00" step="0.01" inputmode="decimal"></div>' +
+      '<div class="fg"><label class="fl">Bedrag (&euro;)</label><input type="number" id="kst-bedrag" placeholder="0.00" step="0.01" inputmode="decimal"></div>' +
       '</div>' +
       '<div class="fg"><label class="fl">Omschrijving</label><input type="text" id="kst-omschrijving" placeholder="bijv. zakje kippenvoer..."></div>' +
       '<div class="frow">' +
@@ -1713,11 +2188,15 @@ function renderKostenTabContent() {
       '</div>' +
       '<div class="fg"><label class="fl">Leverancier</label><input type="text" id="kst-leverancier" placeholder="optioneel..."></div>' +
       '</div>' +
-      '<button class="btn btn-d" onclick="saveKst()">💸 Kosten opslaan</button>' +
+      '<button class="btn btn-d" onclick="saveKst()">&#x1F4B8; Kosten opslaan</button>' +
       '</div>' +
-      '<div class="card"><div class="card-title">📊 Kosten per categorie</div>' +
-      '<div class="bar-wrap">' + barsHtml + '</div></div>' +
-      '<div class="card"><div class="card-title">🧾 Kostenhistorie</div>' + histHtml + '</div>';
+      '<div class="card">' +
+      '<div class="card-title">&#x1F4CA; Kosten overzicht <span style="font-size:11px;color:var(--txl);font-weight:400">' + kstMaandLabel + '</span></div>' +
+      maandTabsHtml +
+      '<div class="bar-wrap" style="margin-bottom:14px">' + barsHtml + '</div>' +
+      '<div style="height:1px;background:var(--gd);margin:0 0 12px"></div>' +
+      '<div style="font-size:12px;font-weight:800;color:var(--bd);margin-bottom:8px">&#x1F9FE; Historie</div>' +
+      histHtml + '</div>';
 
   } else {
     // INVESTERINGEN tab
@@ -1785,26 +2264,105 @@ const RAS_ICONS = {"ISA Brown":"🟠","Koekoek":"⚫","Sussex":"🟡","Blue des 
 const RASSEN = ["ISA Brown","Koekoek","Sussex","Blue des Landes","Haan","Anders"];
 
 async function saveKip() {
-  const naam = val("kip-naam").trim();
-  const ras  = val("kip-ras");
+  const naam        = val("kip-naam").trim();
+  const ras         = val("kip-ras");
+  const geslacht    = val("kip-geslacht") || "Hen";
+  const geboortedatum = val("kip-geboortedatum") || "";
+  const aanschafdatum = val("kip-aanschafdatum") || "";
   if(!naam) return toast("⚠️ Vul een naam in");
   const key = uid();
-  await dbSave("kippen/"+key, {naam, ras});
-  set_val("kip-naam","");
+  await dbSave("kippen/"+key, {naam, ras, geslacht, geboortedatum, aanschafdatum, status:"actief"});
+  set_val("kip-naam",""); set_val("kip-geboortedatum",""); set_val("kip-aanschafdatum","");
   toast("✅ Kip opgeslagen!");
 }
 async function deleteKip(key) {
-  if(!confirm("Kip verwijderen?")) return;
+  if(!await bevestig("Kip verwijderen?", "Ja, verwijderen", "btn-d", "Dit verwijdert ook de gezondheidslog van deze kip.")) return;
   await dbRemove("kippen/"+key);
   toast("🗑 Kip verwijderd");
 }
 async function updateKip() {
-  const key  = val("edit-kip-key");
-  const naam = val("edit-kip-naam").trim();
-  const ras  = val("edit-kip-ras");
+  const key           = val("edit-kip-key");
+  const naam          = val("edit-kip-naam").trim();
+  const ras           = val("edit-kip-ras");
+  const geslacht      = val("edit-kip-geslacht") || "Hen";
+  const geboortedatum = val("edit-kip-geboortedatum") || "";
+  const aanschafdatum = val("edit-kip-aanschafdatum") || "";
   if(!naam) return toast("⚠️ Vul een naam in");
-  await dbSave("kippen/"+key, {naam, ras});
+  // Bewaar bestaande status en gezondheidslog
+  const bestaand = kippen.find(k=>k._key===key) || {};
+  await dbSave("kippen/"+key, {
+    naam, ras, geslacht, geboortedatum, aanschafdatum,
+    status: bestaand.status || "actief",
+    uitval: bestaand.uitval || null,
+    gezondheid: bestaand.gezondheid || null
+  });
   closeModal(); toast("✅ Bijgewerkt!");
+}
+
+async function uitvallenKip(key) {
+  const kip = kippen.find(k=>k._key===key);
+  if(!kip) return;
+  modalState = { type: "kipUitval", data: kip };
+  const ov = document.getElementById("modal-overlay");
+  if(ov) ov.classList.add("open");
+  renderModal();
+}
+
+async function saveKipUitval() {
+  const key    = val("uitval-kip-key");
+  const datum  = val("uitval-datum") || today();
+  const reden  = val("uitval-reden");
+  const notitie= val("uitval-notitie").trim();
+  const kip = kippen.find(k=>k._key===key);
+  if(!kip) return;
+  await dbSave("kippen/"+key, {
+    ...kip, _key: undefined,
+    status: "uitgevallen",
+    uitval: { datum, reden, notitie }
+  });
+  closeModal();
+  toast("🪦 " + kip.naam + " geregistreerd als uitgevallen");
+}
+
+async function heractiveerKip(key) {
+  if(!await bevestig("Kip weer als actief markeren?", "↩️ Ja, heractiveren", "btn-s")) return;
+  const kip = kippen.find(k=>k._key===key);
+  if(!kip) return;
+  await dbSave("kippen/"+key, { ...kip, _key: undefined, status: "actief", uitval: null });
+  toast("✅ Kip weer actief");
+}
+
+function openKipGezondheid(key) {
+  const kip = kippen.find(k=>k._key===key);
+  if(!kip) return;
+  modalState = { type: "kipGezondheid", data: kip };
+  const ov = document.getElementById("modal-overlay");
+  if(ov) ov.classList.add("open");
+  renderModal();
+}
+
+async function saveKipGezondheid() {
+  const key     = val("gezond-kip-key");
+  const datum   = val("gezond-datum") || today();
+  const type    = val("gezond-type");
+  const notitie = val("gezond-notitie").trim();
+  if(!notitie && type==="Anders") return toast("⚠️ Vul een notitie in");
+  const kip = kippen.find(k=>k._key===key);
+  if(!kip) return;
+  const bestaand = kip.gezondheid ? Object.values(kip.gezondheid) : [];
+  const newKey = uid();
+  await dbSave("kippen/"+key+"/gezondheid/"+newKey, { datum, type, notitie });
+  closeModal();
+  toast("✅ Gezondheidslog opgeslagen!");
+}
+
+async function deleteKipGezondheid(kipKey, logKey) {
+  if(!await bevestig("Gezondheidslog verwijderen?")) return;
+  await dbRemove("kippen/"+kipKey+"/gezondheid/"+logKey);
+  toast("🗑 Verwijderd");
+  // Heropen modal
+  const kip = kippen.find(k=>k._key===kipKey);
+  if(kip) { modalState = { type: "kipGezondheid", data: kip }; renderModal(); }
 }
 
 // ── Instellingen ──────────────────────────────────────────────────────────
@@ -1816,16 +2374,483 @@ async function saveInstellingen() {
   const klantGroen = parseInt(val("inst-klant-groen")) || 7;
   const klantOranje = parseInt(val("inst-klant-oranje")) || 14;
   if(klantOranje <= klantGroen) return toast("⚠️ Oranje drempel moet groter zijn dan groen");
-  await dbSave("instellingen", { prijsPerEi: p, prijsDoosje6: p6, prijsDoosje10: p10, klantGroen, klantOranje });
+  const hokFrequentie = parseInt(val("inst-hok-frequentie")) || 14;
+  const weerLat = parseFloat(val("inst-weer-lat")) || 50.9057;
+  const weerLon = parseFloat(val("inst-weer-lon")) || 5.7815;
+  const weerNaam = val("inst-weer-naam").trim() || "Ulestraten";
+  await dbSave("instellingen", { prijsPerEi: p, prijsDoosje6: p6, prijsDoosje10: p10, klantGroen, klantOranje, hokFrequentie, weerLat, weerLon, weerNaam });
   toast("✅ Instellingen opgeslagen!");
 }
+
+// ── Schoonmaak helpers ────────────────────────────────────────────────────
+function getVolgendeSchoonmaak() {
+  const freq = instellingen.hokFrequentie || 14;
+  if (schoonmaak.length === 0) {
+    // Geen historie: plan eerste aanstaande woensdag
+    const d = new Date();
+    const dag = d.getDay(); // 0=zo,1=ma,...,3=wo
+    const diffNaarWo = (3 - dag + 7) % 7 || 7;
+    d.setDate(d.getDate() + diffNaarWo);
+    return d.toISOString().slice(0, 10);
+  }
+  const laatste = schoonmaak[0].datum;
+  const volgende = new Date(laatste + "T12:00:00");
+  volgende.setDate(volgende.getDate() + freq);
+  return volgende.toISOString().slice(0, 10);
+}
+
+function getDagenTotSchoonmaak() {
+  const volgende = getVolgendeSchoonmaak();
+  return Math.ceil((new Date(volgende + "T12:00:00") - new Date()) / 86400000);
+}
+
+async function bevestigSchoonmaak() {
+  const datum = today();
+  const key = uid();
+  await dbSave("schoonmaak/" + key, { datum, notitie: "" });
+  toast("✅ Kippenhok schoongemaakt geregistreerd!");
+}
+
+async function uitstellenSchoonmaak() {
+  // Stel 3 dagen uit door een tijdelijk record te schrijven met datum = volgende + 3
+  const volgende = getVolgendeSchoonmaak();
+  const uitgesteld = new Date(volgende + "T12:00:00");
+  uitgesteld.setDate(uitgesteld.getDate() + 3);
+  // We slaan de uitstel op als een record met type="uitstel" zodat het telt als "laatste actie"
+  const key = uid();
+  await dbSave("schoonmaak/" + key, { datum: uitgesteld.toISOString().slice(0,10), notitie: "uitgesteld", type: "uitstel" });
+  toast("⏰ Schoonmaak 3 dagen uitgesteld");
+}
+
+async function deleteSchoonmaak(key) {
+  if (!confirm("Schoonmaak record verwijderen?")) return;
+  await dbRemove("schoonmaak/" + key);
+  toast("🗑 Verwijderd");
+}
+
+
+// ── Weer ──────────────────────────────────────────────────────────────────
+const WEER_LAT  = 50.9057;
+const WEER_LON  = 5.7815;
+const WEER_NAAM = "Ulestraten";
+
+const WMO_ICON = {
+  0:"☀️", 1:"🌤️", 2:"⛅", 3:"☁️",
+  45:"🌫️", 48:"🌫️",
+  51:"🌦️", 53:"🌦️", 55:"🌧️",
+  61:"🌧️", 63:"🌧️", 65:"🌧️",
+  71:"🌨️", 73:"🌨️", 75:"❄️",
+  77:"🌨️",
+  80:"🌦️", 81:"🌧️", 82:"⛈️",
+  85:"🌨️", 86:"❄️",
+  95:"⛈️", 96:"⛈️", 99:"⛈️"
+};
+const WMO_TEKST = {
+  0:"Helder", 1:"Licht bewolkt", 2:"Half bewolkt", 3:"Bewolkt",
+  45:"Mist", 48:"Rijpmist",
+  51:"Lichte motregen", 53:"Motregen", 55:"Zware motregen",
+  61:"Lichte regen", 63:"Regen", 65:"Zware regen",
+  71:"Lichte sneeuw", 73:"Sneeuw", 75:"Zware sneeuw",
+  77:"Sneeuwkorrels",
+  80:"Lichte buien", 81:"Buien", 82:"Zware buien",
+  85:"Sneeuwbuien", 86:"Zware sneeuwbuien",
+  95:"Onweer", 96:"Onweer met hagel", 99:"Zwaar onweer"
+};
+
+async function laadWeer() {
+  const el = document.getElementById("weer-blok");
+  if (!el) return;
+  try {
+    const lat  = instellingen.weerLat  ?? WEER_LAT;
+    const lon  = instellingen.weerLon  ?? WEER_LON;
+    const naam = instellingen.weerNaam ?? WEER_NAAM;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Europe%2FAmsterdam&forecast_days=3`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    const d = data.daily;
+    const dagNamen = ["Vandaag", "Morgen", "Overmorgen"];
+    const cols = [0,1,2].map(i => {
+      const code  = d.weathercode[i] ?? 0;
+      const icon  = WMO_ICON[code]  ?? "🌡️";
+      const tekst = WMO_TEKST[code] ?? "";
+      const max   = Math.round(d.temperature_2m_max[i]);
+      const min   = Math.round(d.temperature_2m_min[i]);
+      const regen = d.precipitation_probability_max[i] ?? 0;
+      const regenKleur = regen >= 70 ? "color:#c0392b" : regen >= 40 ? "color:#e07b00" : "color:#27ae60";
+      return `<div style="flex:1;text-align:center;padding:8px 4px;${i<2?"border-right:1px solid var(--gd)":""}">
+        <div style="font-size:10px;font-weight:800;color:var(--bd);margin-bottom:4px">${dagNamen[i]}</div>
+        <div style="font-size:26px;line-height:1;margin-bottom:4px">${icon}</div>
+        <div style="font-size:10px;color:var(--txl);margin-bottom:5px;min-height:28px;line-height:1.3">${tekst}</div>
+        <div style="font-family:'Fredoka One',cursive;font-size:15px;color:var(--or)">${max}° <span style="font-size:11px;color:var(--txl);font-family:'Nunito',sans-serif">/ ${min}°</span></div>
+        <div style="font-size:11px;font-weight:700;margin-top:3px;${regenKleur}">🌧️ ${regen}%</div>
+      </div>`;
+    }).join("");
+    el.innerHTML = `<div class="card" style="padding:12px 16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-family:'Fredoka One',cursive;font-size:14px;color:var(--bd)">🌤️ Weer · ${naam}</span>
+        <span style="font-size:10px;color:var(--txl)">Open-Meteo</span>
+      </div>
+      <div style="display:flex;gap:0">${cols}</div>
+    </div>`;
+  } catch(e) {
+    // Geen internet of API fout: blok niet tonen
+    if (el) el.innerHTML = "";
+  }
+}
+function setKstMaand(m) {
+  kstFilterMaand = m;
+  renderKostenTabContent();
+}
+
+
+
+// ── Push Notificaties (FCM) ───────────────────────────────────────────────
+// Stap 1: Haal je VAPID key op via Firebase Console → Project Settings
+//         → Cloud Messaging → Web Push certificates → Generate key pair
+// Stap 2: Vervang de waarde hieronder door jouw eigen key
+const FCM_VAPID_KEY = "JOUW_VAPID_KEY_HIER";
+
+async function registreerPushNotificaties() {
+  try {
+    if (!("serviceWorker" in navigator)) {
+      return toast("⚠️ Service Workers worden niet ondersteund door deze browser");
+    }
+    const reg = await navigator.serviceWorker.register("/Bens_boerderij/firebase-messaging-sw.js", { scope: "/Bens_boerderij/" });
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") {
+      toast("🔕 Geen toestemming voor notificaties");
+      return;
+    }
+    const token = await getToken(messaging, {
+      vapidKey: FCM_VAPID_KEY,
+      serviceWorkerRegistration: reg
+    });
+    if (token) {
+      // Verwijder eerst alle bestaande tokens om duplicaten te voorkomen
+      await dbRemove("fcmTokens/" + currentUser.uid);
+      // Sla nieuw token op
+      await dbSave("fcmTokens/" + currentUser.uid, {
+        token,
+        bijgewerkt: today(),
+        apparaat: navigator.userAgent.slice(0, 100)
+      });
+      toast("🔔 Pushmeldingen ingeschakeld!");
+      render();
+    } else {
+      toast("⚠️ Kon geen FCM token ophalen");
+    }
+  } catch(e) {
+    console.error("FCM registratie mislukt:", e);
+    toast("⚠️ " + (e.message || e.code || "Onbekende fout"));
+  }
+}
+
+async function uitschakelenPushNotificaties() {
+  if (!currentUser) return;
+  await dbRemove("fcmTokens/" + currentUser.uid);
+  toast("🔕 Pushmeldingen uitgeschakeld");
+  render();
+}
+
+
+// ── Schoonmaak registreren vanuit Beheer ──────────────────────────────────
+
+// ── Schoonmaak registreren vanuit Beheer ──────────────────────────────────
+async function registreerSchoonmaak() {
+  const datum   = (document.getElementById("schoon-datum")||{}).value || today();
+  const notitie = (document.getElementById("schoon-notitie")||{}).value.trim() || "";
+  if(datum > today()) return toast("\u26A0\uFE0F Datum kan niet in de toekomst liggen");
+  const key = uid();
+  await dbSave("schoonmaak/" + key, { datum, notitie });
+  if(document.getElementById("schoon-notitie")) document.getElementById("schoon-notitie").value = "";
+  if(document.getElementById("schoon-datum")) document.getElementById("schoon-datum").value = today();
+  toast("\u2705 Schoonmaak geregistreerd! Volgende: " + fmtD(getVolgendeSchoonmaak()));
+  render();
+}
+
+// ── Schoonmaak historie modal ─────────────────────────────────────────────
+let schoonHistorieJaar = null;
+
+function openSchoonmaakHistorie() {
+  schoonHistorieJaar = null;
+  modalState = { type: "schoonmaakHistorie", data: {} };
+  const ov = document.getElementById("modal-overlay");
+  if(ov) ov.classList.add("open");
+  renderModal();
+}
+
+function setSchoonHistorieJaar(j) {
+  schoonHistorieJaar = j;
+  renderModal();
+}
+
+// ── Abonnementen ─────────────────────────────────────────────────────────────
+function getVolgendeAboDatum(abo, vanafDatum) {
+  const start = abo.startdatum || vanafDatum;
+  const eind  = abo.einddatum || null;
+  const dag   = abo.dag;
+  const freq  = abo.frequentie || "week";
+  let d = new Date(vanafDatum + "T12:00:00");
+  for (let i = 0; i < 370; i++) {
+    const ds = d.toISOString().slice(0, 10);
+    if (ds < start) { d.setDate(d.getDate()+1); continue; }
+    if (eind && ds > eind) return null;
+    if (d.getDay() === dag) {
+      if (freq === "week") return ds;
+      const diffDagen = Math.round((d - new Date(start+"T12:00:00")) / 86400000);
+      if (freq === "2week" && diffDagen % 14 === 0) return ds;
+      if (freq === "maand") {
+        const startDag = new Date(start+"T12:00:00").getDate();
+        if (d.getDate() === startDag || Math.abs(d.getDate()-startDag) <= 6) return ds;
+      }
+    }
+    d.setDate(d.getDate()+1);
+  }
+  return null;
+}
+
+async function updateAbonnement() {
+  const key    = val("abo-edit-key");
+  const naam   = val("abo-edit-naam").trim();
+  const doosje = parseInt(val("abo-edit-doosje"))||6;
+  const freq   = val("abo-edit-freq");
+  const dag    = parseInt(val("abo-edit-dag"));
+  const start  = val("abo-edit-start");
+  const eind   = val("abo-edit-eind")||null;
+  const tel    = val("abo-edit-tel").trim();
+  if(!naam) return toast("\u26A0\uFE0F Vul een naam in");
+  const bestaand = abonnementen.find(a=>a._key===key)||{};
+  await dbSave("abonnementen/"+key, { ...bestaand, _key:undefined, naam, doosje, frequentie:freq, dag, startdatum:start, einddatum:eind, tel, status:bestaand.status||"actief" });
+  closeModal(); toast("\u2705 Abonnement bijgewerkt!");
+}
+
+async function stopAbonnement(key) {
+  if(!await bevestig("Abonnement stoppen?", "\uD83D\uDED1 Ja, stoppen", "btn-d")) return;
+  const abo = abonnementen.find(a=>a._key===key);
+  if(!abo) return;
+  await dbSave("abonnementen/"+key, { ...abo, _key:undefined, status:"gestopt", gestoptOp:today() });
+  toast("\uD83D\uDED1 Abonnement gestopt");
+}
+
+async function deleteAbonnement(key) {
+  if(!await bevestig("Abonnement verwijderen?")) return;
+  await dbRemove("abonnementen/"+key);
+  toast("\uD83D\uDDD1 Verwijderd");
+}
+
+function switchBestelTab(tab) {
+  const eenmalig  = document.getElementById("form-eenmalig");
+  const periodiek = document.getElementById("form-periodiek");
+  const tabE = document.getElementById("tab-eenmalig");
+  const tabP = document.getElementById("tab-periodiek");
+  if(!eenmalig||!periodiek) return;
+  if(tab==="eenmalig") {
+    eenmalig.style.display="block"; periodiek.style.display="none";
+    if(tabE){tabE.style.background="var(--or)";tabE.style.color="#fff";}
+    if(tabP){tabP.style.background="var(--gl)";tabP.style.color="var(--bd)";}
+  } else {
+    eenmalig.style.display="none"; periodiek.style.display="block";
+    if(tabP){tabP.style.background="var(--or)";tabP.style.color="#fff";}
+    if(tabE){tabE.style.background="var(--gl)";tabE.style.color="var(--bd)";}
+  }
+}
+
+async function savePeriodiekBestelling() {
+  const naam   = (document.getElementById("abo-naam")||{}).value?.trim();
+  const doosje = parseInt((document.getElementById("abo-doosje")||{}).value)||6;
+  const freq   = (document.getElementById("abo-freq")||{}).value||"week";
+  const dag    = parseInt((document.getElementById("abo-dag")||{}).value);
+  const start  = (document.getElementById("abo-start")||{}).value||today();
+  const eind   = (document.getElementById("abo-eind")||{}).value||null;
+  const tel    = (document.getElementById("abo-tel")||{}).value?.trim()||"";
+  if(!naam) { const el=document.getElementById("res-error"); if(el){el.textContent="\u26A0\uFE0F Vul je naam in";el.classList.add("show");} return; }
+  try {
+    await dbSave("abonnementen/"+uid(), { naam, tel, doosje, frequentie:freq, dag, startdatum:start, einddatum:eind||null, status:"actief", aangemeld:today() });
+    const dagNamen=["Zondag","Maandag","Dinsdag","Woensdag","Donderdag","Vrijdag","Zaterdag"];
+    const freqLabel=freq==="week"?"wekelijks":freq==="2week"?"twee-wekelijks":"maandelijks";
+    const app=document.getElementById("app");
+    if(app) app.innerHTML=`<div style="background:linear-gradient(160deg,var(--gl),var(--gm),var(--gd));min-height:100vh;padding:24px 16px;display:flex;align-items:center;justify-content:center"><div style="background:#fff;border-radius:20px;border:1.5px solid var(--gd);padding:28px 24px;max-width:340px;text-align:center"><div style="font-size:48px;margin-bottom:12px">&#x1F504;&#x2705;</div><div style="font-family:'Fredoka One',cursive;font-size:22px;color:var(--gn);margin-bottom:8px">Ingesteld!</div><div style="font-size:14px;color:var(--bd);margin-bottom:16px"><strong>${doosje} eieren</strong> &middot; ${freqLabel} op <strong>${dagNamen[dag]}</strong></div><div style="font-size:12px;color:var(--txl);margin-bottom:20px">Ben zorgt dat jouw eieren klaarstaan! &#x1F413;</div><button class="btn btn-p" onclick="window.renderLogin()">&#x2190; Terug</button></div></div>`;
+  } catch(e) {
+    const el=document.getElementById("res-error"); if(el){el.textContent="\u274C Kon niet opslaan.";el.classList.add("show");}
+  }
+}
+
+// ── Notities ──────────────────────────────────────────────────────────────
+const NOTITIE_CATS = ["Algemeen"];
+
+async function saveNotitie() {
+  const tekst = (document.getElementById("notitie-tekst")||{}).value?.trim();
+  const cat   = (document.getElementById("notitie-cat")||{}).value || "Algemeen";
+  if(!tekst) return toast("⚠️ Vul een notitie in");
+  const key = uid();
+  await dbSave("notities/"+key, { datum: today(), tekst, cat });
+  if(document.getElementById("notitie-tekst")) document.getElementById("notitie-tekst").value = "";
+  toast("✅ Notitie opgeslagen!");
+}
+
+async function deleteNotitie(key) {
+  if(!await bevestig("Notitie verwijderen?")) return;
+  await dbRemove("notities/"+key);
+  toast("🗑 Verwijderd");
+}
+
+// ── Vuurwerk celebratie ───────────────────────────────────────────────────
+const FW_EMOJIS = ['🥚','🥚','🥚','🐔','🐔','🐣','✨','⭐'];
+let _fwParticles = [];
+let _fwAnimId = null;
+
+function _fwExplode(x, y) {
+  const colors = ['#e07b00','#f5a623','#ffd700','#27ae60','#3498db','#e74c3c','#fff','#ff6b9d','#a29bfe'];
+  const color = colors[Math.floor(Math.random() * colors.length)];
+  const count = 55 + Math.floor(Math.random() * 35);
+  for(let i = 0; i < count; i++) {
+    const angle = (Math.PI * 2 / count) * i + (Math.random() - 0.5) * 0.4;
+    const speed = 1.5 + Math.random() * 5;
+    _fwParticles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 0.5,
+      alpha: 1,
+      color,
+      size: 1.5 + Math.random() * 2.5,
+      gravity: 0.07,
+      decay: 0.013 + Math.random() * 0.007
+    });
+  }
+}
+
+function _fwSpawnEmoji(x, y) {
+  const emoji = FW_EMOJIS[Math.floor(Math.random() * FW_EMOJIS.length)];
+  const angle = Math.random() * Math.PI * 2;
+  const speed = 3 + Math.random() * 5;
+  const el = document.createElement('div');
+  el.className = 'fw-emoji';
+  el.textContent = emoji;
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  document.body.appendChild(el);
+  let vx = Math.cos(angle) * speed;
+  let vy = Math.sin(angle) * speed - 3;
+  let opacity = 1;
+  let scale = 0.4;
+  let frame = 0;
+  function tick() {
+    frame++; vx *= 0.97; vy += 0.15; opacity -= 0.018; scale = Math.min(1.2, scale + 0.06);
+    el.style.left = (parseFloat(el.style.left) + vx) + 'px';
+    el.style.top  = (parseFloat(el.style.top)  + vy) + 'px';
+    el.style.opacity = opacity;
+    el.style.transform = `scale(${scale}) rotate(${frame*3}deg)`;
+    if(opacity > 0.02) requestAnimationFrame(tick); else el.remove();
+  }
+  requestAnimationFrame(tick);
+}
+
+function _fwAnimate() {
+  const canvas = document.getElementById('fw-canvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = 'rgba(0,0,0,0.13)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  _fwParticles = _fwParticles.filter(p => p.alpha > 0.02);
+  _fwParticles.forEach(p => {
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+    ctx.fillStyle = p.color + Math.floor(p.alpha*255).toString(16).padStart(2,'0');
+    ctx.fill();
+    ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx*2, p.y - p.vy*2);
+    ctx.strokeStyle = p.color + Math.floor(p.alpha*120).toString(16).padStart(2,'0');
+    ctx.lineWidth = p.size * 0.6; ctx.stroke();
+    p.x += p.vx; p.y += p.vy; p.vy += p.gravity; p.vx *= 0.985; p.alpha -= p.decay;
+  });
+  if(_fwParticles.length > 0) { _fwAnimId = requestAnimationFrame(_fwAnimate); }
+  else { canvas.style.display='none'; ctx.clearRect(0,0,canvas.width,canvas.height); _fwAnimId=null; }
+}
+
+function _fwLaunch(canvas, targetX, targetY) {
+  const ctx = canvas.getContext('2d');
+  let cy = canvas.height + 10;
+  const step = (canvas.height - targetY) / 18;
+  const interval = setInterval(() => {
+    cy -= step;
+    ctx.beginPath(); ctx.arc(targetX, cy, 2, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(255,200,80,0.8)'; ctx.fill();
+    if(cy <= targetY) {
+      clearInterval(interval);
+      _fwExplode(targetX, targetY);
+      const n = 4 + Math.floor(Math.random()*4);
+      for(let i=0;i<n;i++) setTimeout(()=>_fwSpawnEmoji(targetX,targetY), i*80);
+      if(!_fwAnimId) _fwAnimId = requestAnimationFrame(_fwAnimate);
+    }
+  }, 16);
+}
+
+function startVuurwerk() {
+  const canvas = document.getElementById('fw-canvas');
+  if(!canvas) return;
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  canvas.style.display = 'block';
+  _fwParticles = [];
+  if(_fwAnimId) { cancelAnimationFrame(_fwAnimId); _fwAnimId = null; }
+  canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
+
+  const cx = canvas.width/2;
+  const shots = [
+    {x:cx,       y:canvas.height*0.22, d:0},
+    {x:cx-130,   y:canvas.height*0.30, d:300},
+    {x:cx+130,   y:canvas.height*0.30, d:500},
+    {x:cx-60,    y:canvas.height*0.18, d:700},
+    {x:cx+60,    y:canvas.height*0.18, d:900},
+    {x:cx,       y:canvas.height*0.28, d:1200},
+    {x:cx-100,   y:canvas.height*0.22, d:1500},
+    {x:cx+100,   y:canvas.height*0.22, d:1700},
+  ];
+  shots.forEach(s => setTimeout(()=>_fwLaunch(canvas,s.x,s.y), s.d));
+  setTimeout(()=>{ if(_fwAnimId){cancelAnimationFrame(_fwAnimId);_fwAnimId=null;} canvas.style.display='none'; canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height); }, 5000);
+}
+function toggleBeheer(id) {
+  if(beheerOpen.has(id)) beheerOpen.delete(id);
+  else beheerOpen.add(id);
+  render();
+}
+
+// ── In-app bevestigingsdialoog ────────────────────────────────────────────
+let _confirmResolve = null;
+
+function bevestig(vraag, bevestigTekst="Ja, verwijderen", bevestigKleur="btn-d", uitlegTekst="") {
+  return new Promise(resolve => {
+    _confirmResolve = resolve;
+    const el = document.getElementById("confirm-body");
+    const ov = document.getElementById("confirm-overlay");
+    if(!el || !ov) { resolve(window.confirm(vraag)); return; }
+    el.innerHTML = `
+      <div style="text-align:center;padding:8px 0 16px">
+        <div style="font-size:36px;margin-bottom:10px">🤔</div>
+        <div style="font-family:'Fredoka One',cursive;font-size:17px;color:var(--bd);margin-bottom:${uitlegTekst?"6px":"16px"}">${vraag}</div>
+        ${uitlegTekst?`<div style="font-size:12px;color:var(--txl);margin-bottom:16px">${uitlegTekst}</div>`:""}
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-g" onclick="sluitBevestig(false)" style="flex:1">Annuleren</button>
+          <button class="btn ${bevestigKleur}" onclick="sluitBevestig(true)" style="flex:1">${bevestigTekst}</button>
+        </div>
+      </div>`;
+    ov.classList.add("open");
+  });
+}
+
+function sluitBevestig(result) {
+  const ov = document.getElementById("confirm-overlay");
+  if(ov) ov.classList.remove("open");
+  if(_confirmResolve) { _confirmResolve(result); _confirmResolve = null; }
+}
+
+// ── In-app bevestigingsdialoog ────────────────────────────────────────────
 function setZoekKlant() {
   zoekKlant = (document.getElementById("klant-zoek")||{value:""}).value.toLowerCase();
   render();
 }
 
 // ── Navigation ─────────────────────────────────────────────────────────────
-function goPage(id) { activePage=id; render(); }
+function goPage(id) { activePage=id; render(); if(id==="dashboard") setTimeout(laadWeer, 0); }
 function setM(m) { activeM=m; render(); }
 function setActiveKlant(key) { activeKlant = activeKlant===key?null:key; render(); }
 let vkType = "los"; // "los" | "doos6" | "doos10"
@@ -1879,18 +2904,34 @@ function calcNieuweKlantVeld() {
 // ── Expose to global scope (needed for onclick handlers) ───────────────────
 Object.assign(window, {
   goPage, setM, setActiveKlant, saveLeg, saveLegQuick, deleteLeg, updateLeg,
+  calcEditVkTot,
+  calcEditVkTot,
   saveVk, deleteVk, updateVk, calcVkTot, calcNieuweKlantVeld, setVkType,
   saveKst, deleteKst, updateKst,
   saveKlant, deleteKlant, updateKlant,
-  saveInstellingen, setZoekKlant,
+  saveInstellingen, setZoekKlant, toggleBeheer,
+  saveNotitie, deleteNotitie,
+  startVuurwerk,
+  startVuurwerk,
+  startVuurwerk, toggleBeheer,
   openModal, closeModal, exportCSV, setSyncBadge,
   openChart, closeChart, switchChartView, setChartM,
   doLogin, doLogout, renderLogin, showResBevestiging, syncPubliekeData,
   saveInv, deleteInv, updateInv, setKstTab, setPLMaand, setVkChartM,
   renderKostenTabContent,
   saveKip, deleteKip, updateKip,
+  uitvallenKip, saveKipUitval, heractiveerKip,
+  openKipGezondheid, saveKipGezondheid, deleteKipGezondheid,
   updateOfflineBanner,
-  saveReservering, accepteerRes, weigerRes, deleteRes, showResBevestiging
+  saveReservering, accepteerRes, weigerRes, deleteRes, showResBevestiging,
+  switchBestelTab, savePeriodiekBestelling,
+  stopAbonnement, deleteAbonnement, updateAbonnement,
+  setKstMaand,
+  bevestigSchoonmaak, uitstellenSchoonmaak, deleteSchoonmaak,
+  registreerSchoonmaak, openSchoonmaakHistorie, setSchoonHistorieJaar,
+  laadWeer,
+  registreerPushNotificaties, uitschakelenPushNotificaties,
+  sluitBevestig
 });
 
 
@@ -1899,17 +2940,16 @@ Object.assign(window, {
 async function syncPubliekeData() {
   // Bereken voorraad en gemiddelde
   const totGelegd      = leg.reduce((s,r)=>s+(r.aantal||0),0);
+  const totKapotSync   = leg.reduce((s,r)=>s+(r.kapot||0),0);
   const totVerkocht    = vk.reduce((s,r)=>s+(r.aantal||0),0);
   const totGereserveerd= reserveringen.filter(r=>r.status==="nieuw").reduce((s,r)=>s+(r.aantal||0),0);
-  // Tel komende 14 dagen abonnementen mee in voorraadberekening
-  const vandaag = today();
-  const over14 = new Date(); over14.setDate(over14.getDate()+14);
+  // Tel abonnementen komende 14 dagen mee in voorraad
+  const _over14 = new Date(); _over14.setDate(_over14.getDate()+14);
   const totAbonnement = abonnementen.filter(a=>a.status==="actief").reduce((s,a)=>{
-    const volgende = getVolgendeAboDatum(a, vandaag);
-    if(volgende && volgende <= over14.toISOString().slice(0,10)) return s + (a.doosje||6);
-    return s;
+    const v = getVolgendeAboDatum(a, today());
+    return (v && v <= _over14.toISOString().slice(0,10)) ? s+(a.doosje||6) : s;
   },0);
-  const voorraad = totGelegd - totVerkocht - totGereserveerd - totAbonnement;
+  const voorraad = totGelegd - totKapotSync - totVerkocht - totGereserveerd - totAbonnement;
   const recent7     = [...leg].reverse().slice(0,7).filter(r=>r.aantal>0);
   const gemDag      = recent7.length
     ? Math.round(recent7.reduce((s,r)=>s+(r.aantal||0),0)/recent7.length)
@@ -2048,7 +3088,7 @@ function showLoginError(msg) {
 }
 
 async function doLogout() {
-  if(!confirm("Uitloggen?")) return;
+  if(!await bevestig("Uitloggen?", "Uitloggen", "btn-d")) return;
   await signOut(auth);
 }
 
