@@ -60,7 +60,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--or);background:#fff}
 .badge{display:inline-block;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700}
 .bg{background:#d5f5e3;color:#1e8449}.bo{background:#fef3cd;color:#b7770d}.br{background:#fadbd8;color:#922b21}.bb{background:#d6eaf8;color:#1a5276}
 .ebtn{background:none;border:none;font-size:15px;cursor:pointer;padding:3px;color:var(--bu);opacity:.75}
-.dbtn{background:none;border:none;font-size:15px;cursor:pointer;padding:3px;color:var(--rd);opacity:.65}
+.dbtn{background:none;border:none;font-size:15px;cursor:pointer;padding:3px;color:var(--rd);opacity:.65}.stopbtn{background:none;border:none;font-size:15px;cursor:pointer;padding:3px;color:var(--or);opacity:.8}
 .tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:12px;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
 .tab{flex-shrink:0;padding:6px 14px;border-radius:20px;border:1.5px solid var(--gd);background:var(--gl);font-size:12px;font-weight:700;color:var(--txl);cursor:pointer}
@@ -184,7 +184,7 @@ let zoekKlant = "";
 let currentUser = null;
 let kstTab = "kosten";
 // Beheer accordion — standaard alles ingeklapt behalve niets
-let beheerOpen = new Set(['inst-schoonmaak']);
+let beheerOpen = new Set(['inst-schoonmaak','vk-form']);
 let kstFilterMaand = null;
 let plMaand = null; // null = totaal, anders "YYYY-MM"
 let vkChartM = null; // maand voor omzetgrafiek in verkopen
@@ -1024,6 +1024,7 @@ function render() {
 
     <!-- VERKOPEN -->
     <div class="page${activePage==="verkopen"?" active":""}" id="page-verkopen">
+
       ${(()=>{
         const nieuweRes = reserveringen.filter(r=>r.status==="nieuw");
         if(!nieuweRes.length) return "";
@@ -1031,8 +1032,8 @@ function render() {
           `<div class="card-title" style="color:var(--oranje)">🔔 Reserveringen (${nieuweRes.length} nieuw)</div>`+
           nieuweRes.map(r=>`<div class="li">`+
             `<div class="li-l">`+
-            `<div class="li-t">👤 ${esc(r.naam)}</div>`+
-            `<div class="li-s">🥚 ${r.aantal} eieren · 📅 ${fmtD(r.datum)}${r.tel?" · 📱 "+esc(r.tel):""} · ${fmt(r.doosPrijs||(r.aantal===10?(instellingen.prijsDoosje10||4.00):(instellingen.prijsDoosje6||2.50)))}</div>`+
+            `<div class="li-t">👤 ${esc(r.naam)}${r.type==="abonnement"?' <span class="badge bo" style="font-size:9px">🔄 abo</span>':""}</div>`+
+            `<div class="li-s">🥚 ${r.aantal} eieren · 📅 ${fmtD(r.datum)}${r.tel?" · 📱 "+esc(r.tel):""}${r.bezorging?' · 🚲 Bezorgen: '+esc(r.adres||""):" · 🏠 Ophalen"} · ${fmt(r.doosPrijs||(r.aantal===10?(instellingen.prijsDoosje10||4.00):(instellingen.prijsDoosje6||2.50)))}</div>`+
             `</div>`+
             `<div class="li-r" style="gap:4px">`+
             `<button class="btn btn-s" style="padding:5px 8px;font-size:11px;width:auto;box-shadow:none" onclick='accepteerRes("${r._key}",${JSON.stringify(r)})'>✅ OK</button>`+
@@ -1042,9 +1043,9 @@ function render() {
           ).join("")+
           `</div>`;
       })()}
-
       <div class="card">
-        <div class="sec-hdr">💰 Verkoop registreren</div>
+        <div class="sec-hdr-acc${beheerOpen.has('vk-form')?" open":""}" onclick="toggleBeheer('vk-form')">💰 Verkoop registreren <span>${beheerOpen.has('vk-form')?'▲':'▼'}</span></div>
+        <div class="acc-body${beheerOpen.has('vk-form')?" open":""}">
         ${(()=>{
           const isLos   = vkType==="los";
           const isDoos6 = vkType==="doos6";
@@ -1093,8 +1094,36 @@ function render() {
         </div>
         <div class="fg"><label class="fl">Notities (optioneel)</label><input type="text" id="vk-notitie" placeholder="Bijv. kleinere eieren..."></div>
         <button class="btn btn-s" onclick="saveVk()">💰 Verkoop opslaan</button>
+        </div>
       </div>
       <div class="card">
+        <div class="card-title">&#x1F504; Abonnementen (${abonnementen.filter(a=>a.status==="actief").length} actief)</div>
+        ${(()=>{
+          const actief  = abonnementen.filter(a=>a.status==="actief");
+          const gestopt = abonnementen.filter(a=>a.status!=="actief");
+          const dagNamen = ["Zondag","Maandag","Dinsdag","Woensdag","Donderdag","Vrijdag","Zaterdag"];
+          const freqLabel = f => f==="week"?"Wekelijks":f==="2week"?"Twee-wekelijks":"Maandelijks";
+          if(!actief.length && !gestopt.length) return '<div class="empty"><div class="em">&#x1F504;</div><p>Nog geen abonnementen</p></div>';
+          const actiefHtml = actief.map(a=>{
+            const volgende = getVolgendeAboDatum(a, today());
+            return `<div class="li">
+              <div class="li-l">
+                <div class="li-t">${esc(a.naam)} &middot; &#x1F95A; doosje ${a.doosje}${a.bezorging?' &middot; &#x1F6B2; Bezorgen':''}  </div>
+                <div class="li-s">${freqLabel(a.frequentie)} &middot; ${dagNamen[a.dag]} &middot; volgende: <strong>${volgende?fmtD(volgende):"&#x2014;"}</strong>${a.einddatum?" &middot; t/m "+fmtD(a.einddatum):""}</div>
+              </div>
+              <div class="li-r">
+                <button class="ebtn" onclick='openModal("abo",${JSON.stringify(a)})'>&#x270F;&#xFE0F;</button>
+                <button class="stopbtn" onclick="stopAbonnement('${a._key}')" title="Abonnement stoppen">&#x1F6D1;</button>
+              </div>
+            </div>`;
+          }).join("");
+          const gestoptHtml = gestopt.length ? `<div style="margin-top:10px;border-top:1px solid var(--gd);padding-top:8px"><div style="font-size:11px;font-weight:800;color:var(--txl);margin-bottom:6px">Gestopt</div>${gestopt.map(a=>`<div class="li"><div class="li-l"><div class="li-t" style="color:var(--txl)">${esc(a.naam)} &middot; doosje ${a.doosje}</div><div class="li-s">${freqLabel(a.frequentie)}</div></div><div class="li-r"><button class="dbtn" onclick="deleteAbonnement('${a._key}')">&#x1F5D1;</button></div></div>`).join("")}</div>` : "";
+          return actiefHtml + gestoptHtml;
+        })()}
+      </div>
+      <div class="card">
+        <div class="sec-hdr-acc${beheerOpen.has('vk-overzicht')?" open":""}" onclick="toggleBeheer('vk-overzicht')">📊 Verkoop overzicht <span>${beheerOpen.has('vk-overzicht')?'▲':'▼'}</span></div>
+        <div class="acc-body${beheerOpen.has('vk-overzicht')?" open":""}">
         ${(()=>{
           const vkMaandenBW = [...new Set(vk.map(r=>r.datum.slice(0,7)))].sort().reverse();
           const curBW = (vkChartM && vkMaandenBW.includes(vkChartM)) ? vkChartM : vkMaandenBW[0];
@@ -1106,8 +1135,8 @@ function render() {
             bwData[bw]={n:vkBW.filter(r=>r.betaal===bw).reduce((s,r)=>s+(r.aantal||0),0),
                         e:vkBW.filter(r=>r.betaal===bw).reduce((s,r)=>s+(r.totaal||0),0)};
           });
-          return `<div class="card-title">📊 Per betaalwijze <span style="font-size:11px;color:var(--txl);font-weight:400">${bwLabel}</span></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+          return `<div style="font-size:11px;font-weight:800;color:var(--txl);margin-bottom:8px">Per betaalwijze — ${bwLabel}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
             ${["Cash","Tikkie","Overboeking"].map(bw=>`
             <div style="background:var(--gl);border-radius:10px;border:1.5px solid var(--gd);padding:10px;text-align:center">
               <div style="font-size:18px">${bw==="Cash"?"💵":bw==="Tikkie"?"📱":"🏦"}</div>
@@ -1117,9 +1146,8 @@ function render() {
             </div>`).join("")}
           </div>`;
         })()}
-      </div>
-      <div class="card">
-        <div class="card-title">🧾 Verkoophistorie</div>
+        <div style="height:1px;background:var(--gd);margin-bottom:12px"></div>
+        <div style="font-size:11px;font-weight:800;color:var(--txl);margin-bottom:8px">🧾 Verkoophistorie</div>
         ${(()=>{
           if(vk.length===0) return '<div class="empty"><div class="em">🛒</div><p>Nog geen verkopen</p></div>';
           const vkMaandenHist = [...new Set(vk.map(r=>r.datum.slice(0,7)))].sort().reverse();
@@ -1136,57 +1164,15 @@ function render() {
             vkGefilterd.map(r=>`<div class="li">
               <div class="li-l">
                 <div class="li-t">${fmtD(r.datum)}${r.koper?" · "+esc(r.koper):""}</div>
-                <div class="li-s">🥚 ${r.aantal} · <span class="badge ${BB[r.betaal]||"bo"}">${r.betaal}</span>${r.notitie?" · "+esc(r.notitie):""}</div>
+                <div class="li-s">🥚 ${r.aantal} · <span class="badge ${BB[r.betaal]||"bo"}">${r.betaal}</span>${r.bezorging?' · 🚲 Bezorgen':''} ${r.notitie?" · "+esc(r.notitie):""}</div>
               </div>
               <div class="li-r"><span class="fw text-gn">${fmt(r.totaal)}</span>
                 <button class="ebtn" onclick='openModal("vk",${JSON.stringify(r)})'>✏️</button>
                 <button class="dbtn" onclick="deleteVk('${r._key}')">🗑</button></div>
             </div>`).join("")}`;
         })()}
-      </div>
-      <div class="card">
-        <div class="card-title">&#x1F504; Abonnementen (${abonnementen.filter(a=>a.status==="actief").length} actief)</div>
+        <div style="height:1px;background:var(--gd);margin:12px 0"></div>
         ${(()=>{
-          const actief  = abonnementen.filter(a=>a.status==="actief");
-          const gestopt = abonnementen.filter(a=>a.status!=="actief");
-          const dagNamen = ["Zondag","Maandag","Dinsdag","Woensdag","Donderdag","Vrijdag","Zaterdag"];
-          const freqLabel = f => f==="week"?"Wekelijks":f==="2week"?"Twee-wekelijks":"Maandelijks";
-          if(!actief.length && !gestopt.length) return '<div class="empty"><div class="em">&#x1F504;</div><p>Nog geen abonnementen</p></div>';
-          const actiefHtml = actief.map(a=>{
-            const volgende = getVolgendeAboDatum(a, today());
-            return `<div class="li">
-              <div class="li-l">
-                <div class="li-t">${esc(a.naam)} &middot; &#x1F95A; doosje ${a.doosje}</div>
-                <div class="li-s">${freqLabel(a.frequentie)} &middot; ${dagNamen[a.dag]} &middot; volgende: <strong>${volgende?fmtD(volgende):"&#x2014;"}</strong>${a.einddatum?" &middot; t/m "+fmtD(a.einddatum):""}</div>
-              </div>
-              <div class="li-r">
-                <button class="ebtn" onclick='openModal("abo",${JSON.stringify(a)})'>&#x270F;&#xFE0F;</button>
-                <button class="dbtn" onclick="stopAbonnement('${a._key}')">&#x1F6D1;</button>
-              </div>
-            </div>`;
-          }).join("");
-          const gestoptHtml = gestopt.length ? `<div style="margin-top:10px;border-top:1px solid var(--gd);padding-top:8px"><div style="font-size:11px;font-weight:800;color:var(--txl);margin-bottom:6px">Gestopt</div>${gestopt.map(a=>`<div class="li"><div class="li-l"><div class="li-t" style="color:var(--txl)">${esc(a.naam)} &middot; doosje ${a.doosje}</div><div class="li-s">${freqLabel(a.frequentie)}</div></div><div class="li-r"><button class="dbtn" onclick="deleteAbonnement('${a._key}')">&#x1F5D1;</button></div></div>`).join("")}</div>` : "";
-          return actiefHtml + gestoptHtml;
-        })()}
-      </div>
-      ${(()=>{
-        const oudeRes = reserveringen.filter(r=>r.status!=="nieuw").sort((a,b)=>b.datum.localeCompare(a.datum));
-        if(!oudeRes.length) return "";
-        return `<div class="card">`+
-          `<div class="card-title">📋 Reserveringshistorie</div>`+
-          oudeRes.map(r=>`<div class="li">`+
-            `<div class="li-l">`+
-            `<div class="li-t">${esc(r.naam)} · 🥚 ${r.aantal} · ${fmtD(r.datum)}</div>`+
-            `<div class="li-s">Aangemeld: ${fmtD(r.aangemeld||r.datum)}</div>`+
-            `</div>`+
-            `<div class="li-r">`+
-            `<span class="res-badge ${r.status==="geaccepteerd"?"acc":"den"}">${r.status==="geaccepteerd"?"✅ Geaccepteerd":"❌ Geweigerd"}</span>`+
-            `<button class="dbtn" onclick="deleteRes('${r._key}')">🗑</button>`+
-            `</div></div>`
-          ).join("")+
-          `</div>`;
-      })()}
-      ${(()=>{
         // Omzetgrafiek per dag
         const vkMaanden = [...new Set(vk.map(r=>r.datum.slice(0,7)))].sort().reverse();
         if(!vkMaanden.length) return "";
@@ -1226,75 +1212,30 @@ function render() {
           <line x1="${padL}" y1="${padT+chartH}" x2="${W-padR}" y2="${padT+chartH}" stroke="#27ae60" stroke-width="1"/>
         </svg>`;
         const maandTabs=vkMaanden.map(m=>{const[y2,mo2]=m.split("-");return`<div class="tab${m===curVM?" active":""}" onclick="setVkChartM('${m}')" style="flex-shrink:0;padding:5px 12px;font-size:11px">${MNAMEN[parseInt(mo2)-1].slice(0,3)} ${y2}</div>`;}).join("");
-        return `<div class="card">
-          <div class="card-title">💰 Omzet per dag — ${MNAMEN[parseInt(vmo)-1]} ${vy}</div>
-          <div class="tabs" style="margin-bottom:8px">${maandTabs}</div>
+        return `<div style="font-size:11px;font-weight:800;color:var(--txl);margin-bottom:8px">💰 Omzet per dag — ${MNAMEN[parseInt(vmo)-1]} ${vy}</div>
+          <div class="tabs" style="overflow-x:auto;flex-wrap:nowrap">${maandTabs}</div>
           <div style="overflow-x:auto">${svg}</div>
-          <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12px;background:var(--gl);border-radius:8px;padding:8px 12px">
-            <span style="color:var(--txl)">Totale omzet</span>
-            <span style="font-weight:800;color:var(--gn)">${fmt(totMaand)}</span>
-          </div>
-        </div>`;
-      })()}
-    </div>
-
-    <!-- KLANTEN -->
-    <div class="page${activePage==="klanten"?" active":""}" id="page-klanten">
-      <div class="card">
-        <div class="sec-hdr">👤 Klant toevoegen</div>
-        <div class="fg"><label class="fl">Naam</label><input type="text" id="klant-naam" placeholder="Naam klant..."></div>
-        <div class="fg"><label class="fl">Notities (optioneel)</label><input type="text" id="klant-notitie" placeholder="bijv. buurvrouw, collega..."></div>
-        <button class="btn btn-p" onclick="saveKlant()">👤 Klant opslaan</button>
-      </div>
-      <div class="card">
-        <div class="card-title">👥 Alle klanten (${klanten.length})</div>
-        ${klanten.length===0?'<div class="empty"><div class="em">👤</div><p>Nog geen klanten</p></div>':`
-        <div class="fg" style="margin-bottom:10px">
-          <input type="text" id="klant-zoek" placeholder="🔍 Zoek klant..." value="${esc(zoekKlant)}" oninput="setZoekKlant()" style="background:#f9f5e8">
-        </div>
+          <div style="text-align:right;font-size:12px;color:var(--txl);margin-top:4px">Maandtotaal: <strong style="color:var(--gn)">${fmt(totMaand)}</strong></div>`;
+        })()}
         ${(()=>{
-          const gefilterd = klanten.filter(k=>!zoekKlant||k.naam.toLowerCase().includes(zoekKlant));
-          if(gefilterd.length===0) return '<div class="empty"><div class="em">🔍</div><p>Geen klanten gevonden</p></div>';
-          return gefilterd.map(k=>{
-            const kvk = vk.filter(r=>r.klantId===k._key||r.koper===k.naam);
-            const totEieren = kvk.reduce((s,r)=>s+(r.aantal||0),0);
-            const totBedrag = kvk.reduce((s,r)=>s+(r.totaal||0),0);
-            const isOpen = activeKlant===k._key;
-            return `<div style="border-bottom:1px solid var(--gd)">
-              <div class="li" style="border:none;cursor:pointer" onclick="setActiveKlant('${k._key}')">
-                <div class="li-l">
-                  <div class="li-t">👤 ${esc(k.naam)}</div>
-                  <div class="li-s">${kvk.length} aankopen · 🥚 ${totEieren} eieren · ${fmt(totBedrag)}</div>
-                  ${(()=>{ const freq=getKlantFrequentie(k.naam,k._key); if(!freq||freq.aantalBezoeken===0) return '<div class="li-s" style="color:var(--txl);font-weight:700">⚫ Nog nooit gekocht</div>'; const d=freq.dagenGeleden; const tGroen=instellingen.klantGroen??7; const tOranje=instellingen.klantOranje??14; const kleur=d>tOranje?"color:var(--rd)":d>tGroen?"color:var(--or)":"color:var(--gn)"; const dot=d>tOranje?"🔴":d>tGroen?"🟡":"🟢"; const lbl=d===0?"Vandaag gekocht":d===1?"Gisteren gekocht":d<=tOranje?"Laatste aankoop "+d+" dagen geleden":"Niet gekocht in "+d+" dagen"; return `<div class="li-s" style="${kleur};font-weight:700">${dot} ${lbl}</div>`; })()}
-                  ${k.notitie?`<div class="li-s" style="font-style:italic">${esc(k.notitie)}</div>`:""}
-                </div>
-                <div class="li-r">
-                  <span style="font-size:12px;color:var(--txl)">${isOpen?"▲":"▼"}</span>
-                  <button class="ebtn" onclick='event.stopPropagation();openModal("klant",${JSON.stringify(k)})'>✏️</button>
-                  <button class="dbtn" onclick="event.stopPropagation();deleteKlant('${k._key}')">🗑</button>
-                </div>
-              </div>
-              ${isOpen && kvk.length>0?`
-              <div style="background:var(--gl);border-radius:10px;padding:8px 12px;margin-bottom:8px">
-                <div style="font-size:11px;font-weight:800;color:var(--bl);margin-bottom:6px">Aankoophistorie</div>
-                ${kvk.sort((a,b)=>b.datum.localeCompare(a.datum)).map(r=>`
-                <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--gd);font-size:12px">
-                  <span style="color:var(--tx)">${fmtD(r.datum)}</span>
-                  <span style="color:var(--txl)">🥚 ${r.aantal} · <span class="badge ${BB[r.betaal]||"bo"}" style="font-size:10px">${r.betaal}</span></span>
-                  <span style="font-weight:800;color:var(--gn)">${fmt(r.totaal)}</span>
-                </div>`).join("")}
-                <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:12px;font-weight:800">
-                  <span style="color:var(--bd)">Totaal</span>
-                  <span style="color:var(--bd)">🥚 ${totEieren}</span>
-                  <span style="color:var(--gn)">${fmt(totBedrag)}</span>
-                </div>
-              </div>`:isOpen?`<div style="font-size:12px;color:var(--txl);padding:6px 12px 10px;font-style:italic">Nog geen aankopen</div>`:""}
-            </div>`;
-          }).join("");
-        })()}`}
+          const oudeRes = reserveringen.filter(r=>r.status!=="nieuw").sort((a,b)=>b.datum.localeCompare(a.datum));
+          if(!oudeRes.length) return "";
+          return `<div style="height:1px;background:var(--gd);margin:12px 0"></div>
+            <div style="font-size:11px;font-weight:800;color:var(--txl);margin-bottom:8px">📋 Reserveringshistorie</div>`+
+            oudeRes.map(r=>`<div class="li">`+
+              `<div class="li-l">`+
+              `<div class="li-t">${esc(r.naam)} · 🥚 ${r.aantal} · ${fmtD(r.datum)}</div>`+
+              `<div class="li-s">Aangemeld: ${fmtD(r.aangemeld||r.datum)}${r.bezorging?' · 🚲 Bezorgen':''}</div>`+
+              `</div>`+
+              `<div class="li-r">`+
+              `<span class="res-badge ${r.status==="geaccepteerd"?"acc":"den"}">${r.status==="geaccepteerd"?"✅ Geaccepteerd":"❌ Geweigerd"}</span>`+
+              `<button class="dbtn" onclick="deleteRes('${r._key}')">🗑</button>`+
+              `</div></div>`
+            ).join("")+``;
+        })()}
+        </div>
       </div>
-    </div>
-
+    
     <!-- KOSTEN -->
     <div class="page${activePage==="kosten"?" active":""}" id="page-kosten">
       <div style="display:flex;gap:8px;margin-bottom:14px">
@@ -1986,17 +1927,22 @@ async function saveReservering() {
   const doosjeKeuze = parseInt(val("res-doosje")) || 6;
   const aantal = doosjeKeuze;
   const doosPrijs = doosjeKeuze === 10 ? (instellingen.prijsDoosje10 || window._pubPrijsDoosje10 || 4.00) : (instellingen.prijsDoosje6 || window._pubPrijsDoosje6 || 2.50);
-  const tel   = val("res-tel").trim();
-  if(!naam) return showResError("⚠️ Vul je naam in");
-  if(datum < today()) return showResError("⚠️ Kies een datum vanaf vandaag");
+  const tel       = val("res-tel").trim();
+  const bezorging = document.getElementById("opt-bezorgen")?.style.background?.includes("e07b00") ||
+                    document.getElementById("opt-bezorgen")?.style.background?.includes("var(--or)") || false;
+  const adres     = bezorging ? ((document.getElementById("res-adres")||{}).value||"").trim() : "";
+  const bezorgKosten = bezorging ? 1.00 : 0;
+  if(!naam) return showResError("\u26A0\uFE0F Vul je naam in");
+  if(datum < today()) return showResError("\u26A0\uFE0F Kies een datum vanaf vandaag");
+  if(bezorging && !adres) return showResError("\u26A0\uFE0F Vul een bezorgadres in");
   const key = uid();
   try {
-    await dbSave("reserveringen/"+key, {naam, datum, aantal, tel, doosPrijs, status:"nieuw", aangemeld: today()});
+    await dbSave("reserveringen/"+key, {naam, datum, aantal, tel, doosPrijs: doosPrijs + bezorgKosten, bezorging, adres: adres||null, status:"nieuw", aangemeld: today()});
     // Update local counters immediately (Firebase /publiek updated by Ben on next login)
     window._pubGereserveerd = (window._pubGereserveerd || 0) + aantal;
     window._pubVoorraad = (window._pubVoorraad !== null) ? window._pubVoorraad - aantal : null;
     // Write updated gereserveerd to /publiek so refresh shows correct value
-    set(ref(db,"publiek/gereserveerd"), window._pubGereserveerd).catch(()=>{});
+    // publiek/gereserveerd wordt bijgewerkt door syncPubliekeData na inlog
     showResBevestiging(naam, datum, aantal, doosPrijs);
   } catch(e) {
     showResError("❌ Kon niet opslaan. Controleer je internetverbinding.");
@@ -2621,7 +2567,8 @@ async function updateAbonnement() {
   const tel    = val("abo-edit-tel").trim();
   if(!naam) return toast("\u26A0\uFE0F Vul een naam in");
   const bestaand = abonnementen.find(a=>a._key===key)||{};
-  await dbSave("abonnementen/"+key, { ...bestaand, _key:undefined, naam, doosje, frequentie:freq, dag, startdatum:start, einddatum:eind, tel, status:bestaand.status||"actief" });
+  const { _key: _k2, ...bestaandData } = bestaand;
+  await dbSave("abonnementen/"+key, { ...bestaandData, naam, doosje, frequentie:freq, dag, startdatum:start, einddatum:eind, tel, status:bestaand.status||"actief" });
   closeModal(); toast("\u2705 Abonnement bijgewerkt!");
 }
 
@@ -2629,7 +2576,8 @@ async function stopAbonnement(key) {
   if(!await bevestig("Abonnement stoppen?", "\uD83D\uDED1 Ja, stoppen", "btn-d")) return;
   const abo = abonnementen.find(a=>a._key===key);
   if(!abo) return;
-  await dbSave("abonnementen/"+key, { ...abo, _key:undefined, status:"gestopt", gestoptOp:today() });
+  const { _key: _k, ...aboData } = abo;
+  await dbSave("abonnementen/"+key, { ...aboData, status:"gestopt", gestoptOp:today() });
   toast("\uD83D\uDED1 Abonnement gestopt");
 }
 
@@ -2637,6 +2585,28 @@ async function deleteAbonnement(key) {
   if(!await bevestig("Abonnement verwijderen?")) return;
   await dbRemove("abonnementen/"+key);
   toast("\uD83D\uDDD1 Verwijderd");
+}
+
+function setLeverwijze(keuze) {
+  const ophalen  = document.getElementById("opt-ophalen");
+  const bezorgen = document.getElementById("opt-bezorgen");
+  const adresDiv = document.getElementById("res-adres-div");
+  const actief = {background:"var(--or)",color:"#fff",borderColor:"var(--or)"};
+  const inactief = {background:"var(--gl)",color:"var(--bd)",borderColor:"var(--gd)"};
+  if(ophalen)  Object.assign(ophalen.style,  keuze==="ophalen"  ? actief : inactief);
+  if(bezorgen) Object.assign(bezorgen.style, keuze==="bezorgen" ? actief : inactief);
+  if(adresDiv) adresDiv.style.display = keuze==="bezorgen" ? "block" : "none";
+}
+
+function setAboLeverwijze(keuze) {
+  const ophalen  = document.getElementById("abo-opt-ophalen");
+  const bezorgen = document.getElementById("abo-opt-bezorgen");
+  const adresDiv = document.getElementById("abo-adres-div");
+  const actief = {background:"var(--or)",color:"#fff",borderColor:"var(--or)"};
+  const inactief = {background:"var(--gl)",color:"var(--bd)",borderColor:"var(--gd)"};
+  if(ophalen)  Object.assign(ophalen.style,  keuze==="ophalen"  ? actief : inactief);
+  if(bezorgen) Object.assign(bezorgen.style, keuze==="bezorgen" ? actief : inactief);
+  if(adresDiv) adresDiv.style.display = keuze==="bezorgen" ? "block" : "none";
 }
 
 function switchBestelTab(tab) {
@@ -2657,20 +2627,51 @@ function switchBestelTab(tab) {
 }
 
 async function savePeriodiekBestelling() {
-  const naam   = (document.getElementById("abo-naam")||{}).value?.trim();
-  const doosje = parseInt((document.getElementById("abo-doosje")||{}).value)||6;
-  const freq   = (document.getElementById("abo-freq")||{}).value||"week";
-  const dag    = parseInt((document.getElementById("abo-dag")||{}).value);
-  const start  = (document.getElementById("abo-start")||{}).value||today();
-  const eind   = (document.getElementById("abo-eind")||{}).value||null;
-  const tel    = (document.getElementById("abo-tel")||{}).value?.trim()||"";
+  const naam     = (document.getElementById("abo-naam")||{}).value?.trim();
+  const doosje   = parseInt((document.getElementById("abo-doosje")||{}).value)||6;
+  const freq     = (document.getElementById("abo-freq")||{}).value||"week";
+  const dag      = parseInt((document.getElementById("abo-dag")||{}).value);
+  const start    = (document.getElementById("abo-start")||{}).value||today();
+  const eind     = (document.getElementById("abo-eind")||{}).value||null;
+  const tel      = (document.getElementById("abo-tel")||{}).value?.trim()||"";
+  const bezorging = document.getElementById("abo-opt-bezorgen")?.style.background?.includes("e07b00") ||
+                    document.getElementById("abo-opt-bezorgen")?.style.background?.includes("var(--or)") || false;
+  const adres    = bezorging ? ((document.getElementById("abo-adres")||{}).value||"").trim() : "";
   if(!naam) { const el=document.getElementById("res-error"); if(el){el.textContent="\u26A0\uFE0F Vul je naam in";el.classList.add("show");} return; }
+  if(bezorging && !adres) { const el=document.getElementById("res-error"); if(el){el.textContent="\u26A0\uFE0F Vul een bezorgadres in";el.classList.add("show");} return; }
   try {
-    await dbSave("abonnementen/"+uid(), { naam, tel, doosje, frequentie:freq, dag, startdatum:start, einddatum:eind||null, status:"actief", aangemeld:today() });
+    await dbSave("abonnementen/"+uid(), { naam, tel, doosje, frequentie:freq, dag, startdatum:start, einddatum:eind||null, bezorging, adres:adres||null, status:"actief", aangemeld:today() });
     const dagNamen=["Zondag","Maandag","Dinsdag","Woensdag","Donderdag","Vrijdag","Zaterdag"];
     const freqLabel=freq==="week"?"wekelijks":freq==="2week"?"twee-wekelijks":"maandelijks";
     const app=document.getElementById("app");
-    if(app) app.innerHTML=`<div style="background:linear-gradient(160deg,var(--gl),var(--gm),var(--gd));min-height:100vh;padding:24px 16px;display:flex;align-items:center;justify-content:center"><div style="background:#fff;border-radius:20px;border:1.5px solid var(--gd);padding:28px 24px;max-width:340px;text-align:center"><div style="font-size:48px;margin-bottom:12px">&#x1F504;&#x2705;</div><div style="font-family:'Fredoka One',cursive;font-size:22px;color:var(--gn);margin-bottom:8px">Ingesteld!</div><div style="font-size:14px;color:var(--bd);margin-bottom:16px"><strong>${doosje} eieren</strong> &middot; ${freqLabel} op <strong>${dagNamen[dag]}</strong></div><div style="font-size:12px;color:var(--txl);margin-bottom:20px">Ben zorgt dat jouw eieren klaarstaan! &#x1F413;</div><button class="btn btn-p" onclick="window.renderLogin()">&#x2190; Terug</button></div></div>`;
+    if(app) app.innerHTML=`<div style="background:linear-gradient(160deg,var(--gl),var(--gm),var(--gd));min-height:100vh;padding:24px 16px;display:flex;align-items:center;justify-content:center">
+      <div style="background:#fff;border-radius:24px;border:2px solid var(--gd);padding:32px 24px;max-width:360px;text-align:center;box-shadow:0 8px 32px rgba(200,134,10,.2)">
+        <svg width="80" height="80" viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:16px">
+          <rect width="192" height="192" rx="40" fill="#e07b00"/>
+          <rect width="192" height="64" rx="40" fill="#f5a623"/>
+          <rect x="0" y="40" width="192" height="24" fill="#f5a623"/>
+          <ellipse cx="96" cy="74" rx="30" ry="28" fill="#f4c18e"/>
+          <ellipse cx="96" cy="44" rx="32" ry="8" fill="#e07b00"/>
+          <rect x="64" y="38" width="64" height="14" rx="7" fill="#c8860a"/>
+          <text x="96" y="49" font-family="'Fredoka One',cursive" font-size="10" fill="#fff" text-anchor="middle">BEN</text>
+          <circle cx="84" cy="70" r="5.5" fill="#3d2000"/><circle cx="108" cy="70" r="5.5" fill="#3d2000"/>
+          <circle cx="86" cy="68" r="2" fill="#fff"/><circle cx="110" cy="68" r="2" fill="#fff"/>
+          <path d="M84 82 Q96 92 108 82" stroke="#c0604a" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <ellipse cx="96" cy="130" rx="38" ry="34" fill="#5b9bd5"/>
+          <rect x="76" y="104" width="40" height="44" rx="8" fill="#4a7fc1"/>
+          <ellipse cx="148" cy="148" rx="10" ry="13" fill="#fffbe8" stroke="#e8d070" stroke-width="2"/>
+        </svg>
+        <div style="font-family:'Fredoka One',cursive;font-size:24px;color:var(--bd);margin-bottom:6px">Welkom als vaste klant!</div>
+        <div style="font-size:15px;color:var(--or);font-weight:800;margin-bottom:16px">${naam} — dat waardeer ik enorm! 🙏</div>
+        <div style="background:var(--gl);border-radius:12px;border:1.5px solid var(--gd);padding:12px 16px;margin-bottom:16px;text-align:left">
+          <div style="font-size:12px;color:var(--txl);font-weight:700;margin-bottom:6px">Jouw vaste bestelling:</div>
+          <div style="font-size:14px;color:var(--bd)">&#x1F95A; <strong>${doosje} eieren</strong> &middot; ${freqLabel} op <strong>${dagNamen[dag]}</strong></div>
+          ${eind?`<div style="font-size:11px;color:var(--txl);margin-top:4px">t/m ${eind}</div>`:""}
+          ${bezorging?`<div style="font-size:12px;color:var(--bl);margin-top:6px">&#x1F6B2; Bezorging naar <strong>${adres}</strong> (+&#x20AC;1,00)</div>`:`<div style="font-size:12px;color:var(--txl);margin-top:6px">&#x1F3E0; Ophalen bij Ben</div>`}
+        </div>
+        <div style="font-size:13px;color:var(--txl);margin-bottom:20px;line-height:1.5">Jouw verse eieren liggen elke ${dagNamen[dag]} klaar —<br>vers van het nest! &#x1F413;&#x1F95A;</div>
+        <button class="btn btn-p" onclick="window.renderLogin()" style="max-width:280px">&#x2190; Nog een bestelling plaatsen</button>
+      </div></div>`;
   } catch(e) {
     const el=document.getElementById("res-error"); if(el){el.textContent="\u274C Kon niet opslaan.";el.classList.add("show");}
   }
@@ -2925,6 +2926,8 @@ Object.assign(window, {
   updateOfflineBanner,
   saveReservering, accepteerRes, weigerRes, deleteRes, showResBevestiging,
   switchBestelTab, savePeriodiekBestelling,
+  setLeverwijze, setAboLeverwijze,
+  setLeverwijze, setAboLeverwijze,
   stopAbonnement, deleteAbonnement, updateAbonnement,
   setKstMaand,
   bevestigSchoonmaak, uitstellenSchoonmaak, deleteSchoonmaak,
@@ -3038,6 +3041,17 @@ function renderLogin(errorMsg) {
           '</select></div>' +
         '<div style="text-align:center;margin:0 0 10px;font-family:\'Fredoka One\',cursive;font-size:18px;color:var(--gn)" id="res-bedrag">💰 € ' + ((window._pubPrijsDoosje6||2.50).toFixed(2).replace('.',',')) + '</div>' +
         '<div class="fg"><label class="fl">Telefoonnummer (optioneel)</label><input type="tel" id="res-tel" placeholder="06-12345678" inputmode="tel" autocomplete="tel"></div>' +
+        '<div class="fg"><label class="fl">Afhalen of bezorgen?</label>' +
+          '<div style="display:flex;gap:8px">' +
+            '<div id="opt-ophalen" onclick="window.setLeverwijze(\'ophalen\')" style="flex:1;border:1.5px solid var(--or);border-radius:10px;padding:10px;text-align:center;cursor:pointer;background:var(--or);color:#fff">' +
+              '<div style="font-size:18px">🏠</div><div style="font-family:\'Fredoka One\',cursive;font-size:13px">Ophalen</div><div style="font-size:10px">Gratis</div>' +
+            '</div>' +
+            '<div id="opt-bezorgen" onclick="window.setLeverwijze(\'bezorgen\')" style="flex:1;border:1.5px solid var(--gd);border-radius:10px;padding:10px;text-align:center;cursor:pointer;background:var(--gl);color:var(--bd)">' +
+              '<div style="font-size:18px">🚲</div><div style="font-family:\'Fredoka One\',cursive;font-size:13px">Bezorgen</div><div style="font-size:10px">+€1,00 · Ulestraten</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div id="res-adres-div" style="display:none" class="fg"><label class="fl">Bezorgadres</label><input type="text" id="res-adres" placeholder="Straat en huisnummer..."></div>' +
         '<button class="btn btn-s" onclick="window.saveReservering()" style="margin-top:4px">🥚 Reservering plaatsen</button>' +
       '</div>' +
       '<div id="form-periodiek" style="display:none">' +
@@ -3053,6 +3067,17 @@ function renderLogin(errorMsg) {
           '<div class="fg"><label class="fl">Einddatum (optioneel)</label><input type="date" id="abo-eind" min="' + today2 + '"></div>' +
         '</div>' +
         '<div class="fg"><label class="fl">Telefoonnummer (optioneel)</label><input type="tel" id="abo-tel" placeholder="06-12345678" inputmode="tel" autocomplete="tel"></div>' +
+        '<div class="fg"><label class="fl">Afhalen of bezorgen?</label>' +
+          '<div style="display:flex;gap:8px">' +
+            '<div id="abo-opt-ophalen" onclick="window.setAboLeverwijze(\'ophalen\')" style="flex:1;border:1.5px solid var(--or);border-radius:10px;padding:10px;text-align:center;cursor:pointer;background:var(--or);color:#fff">' +
+              '<div style="font-size:18px">🏠</div><div style="font-family:\'Fredoka One\',cursive;font-size:13px">Ophalen</div><div style="font-size:10px">Gratis</div>' +
+            '</div>' +
+            '<div id="abo-opt-bezorgen" onclick="window.setAboLeverwijze(\'bezorgen\')" style="flex:1;border:1.5px solid var(--gd);border-radius:10px;padding:10px;text-align:center;cursor:pointer;background:var(--gl);color:var(--bd)">' +
+              '<div style="font-size:18px">🚲</div><div style="font-family:\'Fredoka One\',cursive;font-size:13px">Bezorgen</div><div style="font-size:10px">+€1,00 · Ulestraten</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div id="abo-adres-div" style="display:none" class="fg"><label class="fl">Bezorgadres</label><input type="text" id="abo-adres" placeholder="Straat en huisnummer..."></div>' +
         '<button class="btn btn-s" onclick="window.savePeriodiekBestelling()" style="margin-top:4px;background:linear-gradient(90deg,#27ae60,#2ecc71)">🔄 Periodieke bestelling instellen</button>' +
       '</div>' +
     '</div>' +
