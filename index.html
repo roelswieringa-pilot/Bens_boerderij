@@ -2408,6 +2408,12 @@ async function saveInstellingen() {
   const weerNaam = val("inst-weer-naam").trim() || "Ulestraten";
   const bezorgkosten = parseFloat((document.getElementById('inst-bezorgkosten')||{}).value) || 1.00;
   await dbSave("instellingen", { prijsPerEi: p, prijsDoosje6: p6, prijsDoosje10: p10, bezorgkosten, klantGroen, klantOranje, hokFrequentie, weerLat, weerLon, weerNaam });
+  // Update publiek direct zodat bestelpage meteen de juiste waarde toont
+  try {
+    await set(ref(db,"publiek/bezorgkosten"), bezorgkosten);
+    await set(ref(db,"publiek/prijsDoosje6"), p6);
+    await set(ref(db,"publiek/prijsDoosje10"), p10);
+  } catch(e) { /* silently fail */ }
   toast("✅ Instellingen opgeslagen!");
 }
 
