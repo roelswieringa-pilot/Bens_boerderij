@@ -178,7 +178,7 @@ const BB    = {Cash:"bg",Tikkie:"bb",Overboeking:"bo"};
 
 // ── State ──────────────────────────────────────────────────────────────────
 let leg=[], vk=[], kst=[], inv=[], klanten=[], kippen=[], reserveringen=[], abonnementen=[], schoonmaak=[], notities=[], activePage="dashboard", activeM=null, activeKlant=null, modalState=null;
-let instellingen = { prijsPerEi: 0.40, doosjeGrootte: 6, prijsDoosje6: 2.50, prijsDoosje10: 4.00, bezorgkosten: 1.00, boerderijNaam: "Ben's Boerderij", klantGroen: 7, klantOranje: 14, hokFrequentie: 14, weerLat: 50.9057, weerLon: 5.7815, weerNaam: "Ulestraten" };
+let instellingen = { prijsPerEi: 0.40, doosjeGrootte: 6, prijsDoosje6: 2.50, prijsDoosje10: 4.00, bezorgkosten: 1.00, boerderijNaam: "Ben's Boerderij", klantGroen: 7, klantOranje: 14, loyaliteitDrempel: 10, hokFrequentie: 14, weerLat: 50.9057, weerLon: 5.7815, weerNaam: "Ulestraten", seizoensNieuws: "", seizoensVanaf: "", seizoensTm: "" };
 let zoekKlant = "";
 let currentUser = null;
 let kstTab = "kosten";
@@ -338,7 +338,7 @@ function startListeners() {
   });
   onValue(ref(db,"instellingen"), snap => {
     const val = snap.val() || {};
-    instellingen = { prijsPerEi: val.prijsPerEi ?? 0.40, doosjeGrootte: val.doosjeGrootte ?? 6, prijsDoosje6: val.prijsDoosje6 ?? 2.50, prijsDoosje10: val.prijsDoosje10 ?? 4.00, bezorgkosten: val.bezorgkosten ?? 1.00, boerderijNaam: val.boerderijNaam ?? "Ben's Boerderij", klantGroen: val.klantGroen ?? 7, klantOranje: val.klantOranje ?? 14, hokFrequentie: val.hokFrequentie ?? 14, weerLat: val.weerLat ?? 50.9057, weerLon: val.weerLon ?? 5.7815, weerNaam: val.weerNaam ?? "Ulestraten" };
+    instellingen = { prijsPerEi: val.prijsPerEi ?? 0.40, doosjeGrootte: val.doosjeGrootte ?? 6, prijsDoosje6: val.prijsDoosje6 ?? 2.50, prijsDoosje10: val.prijsDoosje10 ?? 4.00, bezorgkosten: val.bezorgkosten ?? 1.00, boerderijNaam: val.boerderijNaam ?? "Ben's Boerderij", klantGroen: val.klantGroen ?? 7, klantOranje: val.klantOranje ?? 14, loyaliteitDrempel: val.loyaliteitDrempel ?? 10, hokFrequentie: val.hokFrequentie ?? 14, weerLat: val.weerLat ?? 50.9057, weerLon: val.weerLon ?? 5.7815, weerNaam: val.weerNaam ?? "Ulestraten", seizoensNieuws: val.seizoensNieuws ?? "", seizoensVanaf: val.seizoensVanaf ?? "", seizoensTm: val.seizoensTm ?? "" };
     render(); setSyncBadge("ok");
   });
 }
@@ -959,6 +959,133 @@ function render() {
         <div class="stat"><div class="em">🗃️</div><div class="vl" style="${voorraad<0?"color:var(--rd)":""}">${voorraad}</div><div class="lb">VOORRAAD</div></div>
         <div class="stat"><div class="em">${streak>=7?"🔥":streak>=3?"⭐":"📆"}</div><div class="vl" style="${streak>=7?"color:var(--rd)":streak>=3?"color:var(--or)":""}">${streak}</div><div class="lb">STREAK</div></div>
       </div>
+      ${(()=>{
+        // Break-even berekening
+        const maandKosten = kst.filter(r=>r.datum.startsWith(today().slice(0,7))).reduce((s,r)=>s+(r.bedrag||0),0) ||
+                            kst.slice(0,30).reduce((s,r)=>s+(r.bedrag||0),0) / Math.max(1,[...new Set(kst.map(r=>r.datum.slice(0,7)))].length);
+        const prijsEi = instellingen.prijsPerEi || 0.40;
+        const breakEvenEieren = maandKosten > 0 ? Math.ceil(maandKosten / prijsEi) : 0;
+        const breakEvenWeek = Math.ceil(breakEvenEieren / 4.3);
+        const maandVerkopen = vk.filter(r=>r.datum.startsWith(today().slice(0,7))).reduce((s,r)=>s+(r.totaal||0),0);
+        const isWinstgevend = maandVerkopen >= maandKosten;
+        return breakEvenEieren > 0 ? `<div style="background:${isWinstgevend?"linear-gradient(90deg,#1e8449,#27ae60)":"linear-gradient(90deg,#922b21,#c0392b)"};border-radius:14px;padding:10px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-family:'Fredoka One',cursive;font-size:13px;color:#fff">&#x2696;&#xFE0F; Break-even</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.85)">${breakEvenWeek} eieren/week · ${breakEvenEieren} eieren/maand</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-family:'Fredoka One',cursive;font-size:16px;color:#fff">${isWinstgevend?"✅ Winstgevend":"⚠️ Nog niet"}</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.8)">deze maand</div>
+          </div>
+        </div>` : "";
+      })()}
+      ${(()=>{
+        const maandKosten = kst.filter(r=>r.datum.startsWith(today().slice(0,7))).reduce((s,r)=>s+(r.bedrag||0),0);
+        if(!maandKosten) return "";
+        const prijsEi = instellingen.prijsPerEi || 0.40;
+        const breakEvenWeek = Math.ceil(maandKosten / prijsEi / 4.3);
+        const maandOmzet = vk.filter(r=>r.datum.startsWith(today().slice(0,7))).reduce((s,r)=>s+(r.totaal||0),0);
+        const isWinstgevend = maandOmzet >= maandKosten;
+        return `<div style="background:${isWinstgevend?"linear-gradient(90deg,#1e8449,#27ae60)":"linear-gradient(90deg,#922b21,#c0392b)"};border-radius:14px;padding:10px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-family:'Fredoka One',cursive;font-size:13px;color:#fff">&#x2696;&#xFE0F; Break-even</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.85)">${breakEvenWeek} eieren/week nodig</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-family:'Fredoka One',cursive;font-size:15px;color:#fff">${isWinstgevend?"&#x2705; Winstgevend":"&#x26A0;&#xFE0F; Nog niet"}</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.8)">${fmt(maandOmzet)} / ${fmt(maandKosten)} kosten</div>
+          </div>
+        </div>`;
+      })()}
+      ${(()=>{
+        const sn = instellingen.seizoensNieuws;
+        if(!sn) return "";
+        const vandaag = today();
+        const vanaf = instellingen.seizoensVanaf;
+        const tm = instellingen.seizoensTm;
+        if(vanaf && vandaag < vanaf) return "";
+        if(tm && vandaag > tm) return "";
+        return `<div style="background:linear-gradient(90deg,#1a5276,#2980b9);border-radius:14px;padding:12px 16px;margin-bottom:14px;display:flex;gap:10px;align-items:center">
+          <span style="font-size:22px">&#x1F4E2;</span>
+          <div>
+            <div style="font-family:'Fredoka One',cursive;font-size:13px;color:#fff;margin-bottom:2px">Bericht van Ben</div>
+            <div style="font-size:12px;color:rgba(255,255,255,.9)">${esc(sn)}</div>
+            ${(vanaf||tm)?`<div style="font-size:10px;color:rgba(255,255,255,.6);margin-top:3px">${vanaf?fmtD(vanaf):""}${vanaf&&tm?" t/m ":""}${tm?fmtD(tm):""}</div>`:""}
+          </div>
+        </div>`;
+      })()}
+      ${(()=>{
+        // Break-even berekening
+        const maandKosten = kst.filter(r=>r.datum.startsWith(today().slice(0,7))).reduce((s,r)=>s+(r.bedrag||0),0) ||
+                            kst.slice(0,30).reduce((s,r)=>s+(r.bedrag||0),0) / Math.max(1,[...new Set(kst.map(r=>r.datum.slice(0,7)))].length);
+        const prijsEi = instellingen.prijsPerEi || 0.40;
+        const breakEvenEieren = maandKosten > 0 ? Math.ceil(maandKosten / prijsEi) : 0;
+        const breakEvenWeek = Math.ceil(breakEvenEieren / 4.3);
+        const maandVerkopen = vk.filter(r=>r.datum.startsWith(today().slice(0,7))).reduce((s,r)=>s+(r.totaal||0),0);
+        const isWinstgevend = maandVerkopen >= maandKosten;
+        return breakEvenEieren > 0 ? `<div style="background:${isWinstgevend?"linear-gradient(90deg,#1e8449,#27ae60)":"linear-gradient(90deg,#922b21,#c0392b)"};border-radius:14px;padding:10px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-family:'Fredoka One',cursive;font-size:13px;color:#fff">&#x2696;&#xFE0F; Break-even</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.85)">${breakEvenWeek} eieren/week · ${breakEvenEieren} eieren/maand</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-family:'Fredoka One',cursive;font-size:16px;color:#fff">${isWinstgevend?"✅ Winstgevend":"⚠️ Nog niet"}</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.8)">deze maand</div>
+          </div>
+        </div>` : "";
+      })()}
+      ${(()=>{
+        const sn = instellingen.seizoensNieuws;
+        if(!sn) return "";
+        const vandaag = today();
+        const vanaf = instellingen.seizoensVanaf;
+        const tm = instellingen.seizoensTm;
+        if(vanaf && vandaag < vanaf) return "";
+        if(tm && vandaag > tm) return "";
+        return `<div style="background:linear-gradient(90deg,#1a5276,#2980b9);border-radius:14px;padding:12px 16px;margin-bottom:14px;display:flex;gap:10px;align-items:center">
+          <span style="font-size:22px">&#x1F4E2;</span>
+          <div>
+            <div style="font-family:'Fredoka One',cursive;font-size:13px;color:#fff;margin-bottom:2px">Bericht van Ben</div>
+            <div style="font-size:12px;color:rgba(255,255,255,.9)">${esc(sn)}</div>
+            ${(vanaf||tm)?`<div style="font-size:10px;color:rgba(255,255,255,.6);margin-top:3px">${vanaf?fmtD(vanaf):""}${vanaf&&tm?" t/m ":""}${tm?fmtD(tm):""}</div>`:""}
+          </div>
+        </div>`;
+      })()}
+      ${(()=>{
+        const maandKosten = kst.filter(r=>r.datum.startsWith(today().slice(0,7))).reduce((s,r)=>s+(r.bedrag||0),0);
+        const prijsEi = instellingen.prijsPerEi || 0.40;
+        const breakEvenWeek = maandKosten > 0 ? Math.ceil(maandKosten / prijsEi / 4.3) : 0;
+        const maandOmzet = vk.filter(r=>r.datum.startsWith(today().slice(0,7))).reduce((s,r)=>s+(r.totaal||0),0);
+        const isWinstgevend = maandKosten > 0 && maandOmzet >= maandKosten;
+        if(!maandKosten) return "";
+        return `<div style="background:${isWinstgevend?"linear-gradient(90deg,#1e8449,#27ae60)":"linear-gradient(90deg,#922b21,#c0392b)"};border-radius:14px;padding:10px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-family:'Fredoka One',cursive;font-size:13px;color:#fff">&#x2696;&#xFE0F; Break-even</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.85)">${breakEvenWeek} eieren/week nodig</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-family:'Fredoka One',cursive;font-size:15px;color:#fff">${isWinstgevend?"&#x2705; Winstgevend":"&#x26A0;&#xFE0F; Nog niet"}</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.8)">${fmt(maandOmzet)} / ${fmt(maandKosten)} kosten</div>
+          </div>
+        </div>`;
+      })()}
+      ${(()=>{
+        const sn = instellingen.seizoensNieuws;
+        if(!sn) return "";
+        const vandaag = today();
+        const vanaf = instellingen.seizoensVanaf;
+        const tm = instellingen.seizoensTm;
+        if(vanaf && vandaag < vanaf) return "";
+        if(tm && vandaag > tm) return "";
+        return `<div style="background:linear-gradient(90deg,#1a5276,#2980b9);border-radius:14px;padding:12px 16px;margin-bottom:14px;display:flex;gap:10px;align-items:center">
+          <span style="font-size:22px">&#x1F4E2;</span>
+          <div>
+            <div style="font-family:'Fredoka One',cursive;font-size:13px;color:#fff;margin-bottom:2px">Bericht van Ben</div>
+            <div style="font-size:12px;color:rgba(255,255,255,.9)">${esc(sn)}</div>
+            ${(vanaf||tm)?`<div style="font-size:10px;color:rgba(255,255,255,.6);margin-top:3px">${vanaf?fmtD(vanaf):""}${vanaf&&tm?" t/m ":""}${tm?fmtD(tm):""}</div>`:""}
+          </div>
+        </div>`;
+      })()}
       <div class="card">
         <div class="card-title">⚡ Snel invullen</div>
         <div class="fg"><label class="fl">Datum</label><input type="date" id="quick-datum" value="${t}"></div>
@@ -1032,6 +1159,62 @@ function render() {
           <button class="btn btn-p" onclick="openChart('${curM}','maand')">📈 Bekijk grafiek</button>
         </div>`}
       </div>
+      <div class="card">
+        <div class="card-title">📈 Seizoenspatroon</div>
+        ${(()=>{
+          if(leg.length === 0) return '<div class="empty"><div class="em">📈</div><p>Nog niet genoeg data</p></div>';
+          // Bereken gem. eieren per dag per maand over alle jaren
+          const maandData = {};
+          for(let m=1;m<=12;m++) maandData[m] = {totaal:0, dagen:0};
+          const jaren = [...new Set(leg.map(r=>r.datum.slice(0,4)))];
+          jaren.forEach(jaar=>{
+            for(let m=1;m<=12;m++){
+              const mo = String(m).padStart(2,"0");
+              const prefix = jaar+"-"+mo;
+              const rijen = leg.filter(r=>r.datum.startsWith(prefix));
+              if(rijen.length===0) return;
+              const dagenInMaand = new Date(parseInt(jaar),m,0).getDate();
+              const isHuidigeMaand = prefix===today().slice(0,7);
+              const dagen = isHuidigeMaand ? parseInt(today().slice(8,10)) : dagenInMaand;
+              const totaal = rijen.reduce((s,r)=>s+(r.aantal||0),0);
+              maandData[m].totaal += totaal;
+              maandData[m].dagen += dagen;
+            }
+          });
+          const gemPerMaand = Object.entries(maandData).map(([m,d])=>({
+            m:parseInt(m),
+            gem: d.dagen>0 ? Math.round((d.totaal/d.dagen)*10)/10 : 0
+          }));
+          const maxGem = Math.max(...gemPerMaand.map(x=>x.gem),1);
+          const W=380, H=140, padL=28, padB=28, padT=10, padR=8;
+          const chartW=W-padL-padR, chartH=H-padB-padT;
+          const barW=Math.floor(chartW/12)-3;
+          const zomerKleur = m => m>=4&&m<=9 ? "#27ae60" : "#3498db";
+          const bars = gemPerMaand.map((x,i)=>{
+            const bh=x.gem===0?0:Math.max(2,Math.round((x.gem/maxGem)*chartH));
+            const bx=padL+i*(barW+3)+2;
+            const by=padT+chartH-bh;
+            return `<rect x="${bx}" y="${by}" width="${barW}" height="${bh}" fill="${zomerKleur(x.m)}" rx="2"/>
+              <text x="${bx+barW/2}" y="${H-10}" text-anchor="middle" font-size="8" fill="#5a3200">${MNAMEN[x.m-1].slice(0,1)}</text>
+              ${x.gem>0?`<text x="${bx+barW/2}" y="${by-2}" text-anchor="middle" font-size="7" fill="#1a3200">${x.gem}</text>`:""}`;
+          }).join("");
+          const yLines=[0,Math.round(maxGem/2),maxGem].map(v=>{
+            const y2=padT+chartH-(v/maxGem)*chartH;
+            return `<line x1="${padL}" y1="${y2}" x2="${W-padR}" y2="${y2}" stroke="#e8d5a0" stroke-dasharray="2,3"/>
+              <text x="${padL-3}" y="${y2+4}" text-anchor="end" font-size="8" fill="#a06020">${v}</text>`;
+          }).join("");
+          return `<div style="font-size:11px;color:var(--txl);margin-bottom:8px">Gemiddeld aantal eieren per dag per maand · ${jaren.length} jaar${jaren.length>1?"en":""} data</div>
+            <div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px;display:block">
+              ${yLines}${bars}
+              <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT+chartH}" stroke="#c8860a" stroke-width="1"/>
+              <line x1="${padL}" y1="${padT+chartH}" x2="${W-padR}" y2="${padT+chartH}" stroke="#c8860a" stroke-width="1"/>
+            </svg></div>
+            <div style="display:flex;gap:12px;font-size:10px;color:var(--txl);margin-top:6px">
+              <span style="display:inline-flex;align-items:center;gap:4px"><span style="display:inline-block;width:10px;height:10px;background:#27ae60;border-radius:2px"></span>Zomer (apr–sep)</span>
+              <span style="display:inline-flex;align-items:center;gap:4px"><span style="display:inline-block;width:10px;height:10px;background:#3498db;border-radius:2px"></span>Winter (okt–mrt)</span>
+            </div>`;
+        })()}
+      </div>
     </div>
 
     <!-- VERKOPEN -->
@@ -1048,7 +1231,7 @@ function render() {
             `<div class="li-s">🥚 ${r.aantal} eieren · 📅 ${fmtD(r.datum)}${r.tel?" · 📱 "+esc(r.tel):""}${r.bezorging?' · 🚲 Bezorgen: '+esc(r.adres||""):" · 🏠 Ophalen"} · ${fmt(r.doosPrijs||(r.aantal===10?(instellingen.prijsDoosje10||4.00):(instellingen.prijsDoosje6||2.50)))}</div>`+
             `</div>`+
             `<div class="li-r" style="gap:4px">`+
-            `<button class="btn btn-s" style="padding:5px 8px;font-size:11px;width:auto;box-shadow:none" onclick='accepteerRes("${r._key}",${JSON.stringify(r)})'>✅ OK</button>`+
+            `<button class="btn btn-s" style="padding:5px 8px;font-size:11px;width:auto;box-shadow:none" onclick='accepteerRes("${r._key}",${JSON.stringify(r)})'>✅ OK</button>`+`${r.tel?`<a href="https://wa.me/31${r.tel.replace(/^0/,"").replace(/[^0-9]/g,"")}" target="_blank" class="btn btn-g" style="padding:5px 8px;font-size:11px;width:auto;box-shadow:none;text-decoration:none;display:inline-flex;align-items:center">📱 WhatsApp</a>`:""}`+
             `<button class="btn btn-d" style="padding:5px 8px;font-size:11px;width:auto;box-shadow:none" onclick='weigerRes("${r._key}",${JSON.stringify(r)})'>❌ Nee</button>`+
             `<button class="dbtn" onclick="deleteRes('${r._key}')">🗑</button>`+
             `</div></div>`
@@ -1106,6 +1289,31 @@ function render() {
         </div>
         <div class="fg"><label class="fl">Notities (optioneel)</label><input type="text" id="vk-notitie" placeholder="Bijv. kleinere eieren..."></div>
         <button class="btn btn-s" onclick="saveVk()">💰 Verkoop opslaan</button>
+        ${(()=>{
+          const betaal = (document.getElementById("vk-betaal")||{}).value;
+          const klantKey = (document.getElementById("vk-klant-select")||{}).value;
+          const klantObj = klanten.find(k=>k._key===klantKey);
+          const tel = klantObj?.tel||"";
+          const waNum = tel ? "31"+tel.replace(/^0/,"").replace(/[^0-9]/g,"") : "";
+          const totStr = (document.getElementById("vk-totaal")||{}).value||"";
+          const tot = parseFloat(totStr.replace(",",".").replace(/[^0-9.]/g,""))||0;
+          const knoppen = [];
+          if(betaal==="Tikkie"&&tot>0) knoppen.push(`<a href="https://tikkie.me/pay/request?amount=${tot.toFixed(2)}" target="_blank" class="btn btn-g" style="text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;flex:1">&#x1F4F2; Tikkie &#x20AC;${tot.toFixed(2).replace(".",",")}</a>`);
+          if(waNum) knoppen.push(`<a href="https://wa.me/${waNum}?text=${encodeURIComponent("Hi! 🥚 Bedankt voor je aankoop bij Ben's Boerderij! 🐔")}" target="_blank" class="btn btn-g" style="text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;flex:1">&#x1F4F1; WhatsApp</a>`);
+          return knoppen.length ? `<div class="brow" style="margin-top:8px">${knoppen.join("")}</div>` : "";
+        })()}
+        ${(()=>{
+          const tot = parseFloat((document.getElementById("vk-totaal")||{}).value?.replace(",",".").replace("€","").trim())||0;
+          const betaal = (document.getElementById("vk-betaal")||{}).value;
+          const klantKey = (document.getElementById("vk-klant-select")||{}).value;
+          const klantObj = klanten.find(k=>k._key===klantKey);
+          const tel = klantObj?.tel || "";
+          const waNum = tel ? "31"+tel.replace(/^0/,"").replace(/[^0-9]/g,"") : "";
+          return `<div class="brow" style="margin-top:8px">
+            ${betaal==="Tikkie"&&tot>0?`<a href="https://tikkie.me/pay/request?amount=${tot.toFixed(2)}" target="_blank" class="btn btn-g" style="text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">📲 Tikkie €${tot.toFixed(2).replace(".",",")}</a>`:""}
+            ${waNum?`<a href="https://wa.me/${waNum}?text=${encodeURIComponent("Hi! 🥚 Je eieren zijn klaar. Bedankt voor je aankoop bij Ben's Boerderij! 🐔")}" target="_blank" class="btn btn-g" style="text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">📱 WhatsApp</a>`:""}
+          </div>`;
+        })()}
         </div>
       </div>
       <div class="card">
@@ -1304,7 +1512,7 @@ function render() {
             return `<div style="border-bottom:1px solid var(--gd)">
               <div class="li" style="border:none;cursor:pointer" onclick="setActiveKlant('${k._key}')">
                 <div class="li-l">
-                  <div class="li-t">👤 ${esc(k.naam)}</div>
+                  <div class="li-t">👤 ${esc(k.naam)}${kvk.length>=(instellingen.loyaliteitDrempel??10)?` <span style="font-size:14px" title="Vaste klant — ${kvk.length} aankopen">🏅</span>`:""}</div>
                   <div class="li-s">${kvk.length} aankopen · 🥚 ${totEieren} eieren · ${fmt(totBedrag)}</div>
                   ${(()=>{ const freq=getKlantFrequentie(k.naam,k._key); if(!freq||freq.aantalBezoeken===0) return '<div class="li-s" style="color:var(--txl);font-weight:700">⚫ Nog nooit gekocht</div>'; const d=freq.dagenGeleden; const tGroen=instellingen.klantGroen??7; const tOranje=instellingen.klantOranje??14; const kleur=d>tOranje?"color:var(--rd)":d>tGroen?"color:var(--or)":"color:var(--gn)"; const dot=d>tOranje?"🔴":d>tGroen?"🟡":"🟢"; const lbl=d===0?"Vandaag gekocht":d===1?"Gisteren gekocht":d<=tOranje?"Laatste aankoop "+d+" dagen geleden":"Niet gekocht in "+d+" dagen"; return `<div class="li-s" style="${kleur};font-weight:700">${dot} ${lbl}</div>`; })()}
                   ${k.notitie?`<div class="li-s" style="font-style:italic">${esc(k.notitie)}</div>`:""}
@@ -1684,6 +1892,16 @@ function render() {
             <div style="font-size:11px;color:var(--txl);margin-top:4px">Huidig: <strong>${instellingen.klantOranje??14} dagen</strong></div>
           </div>
         </div>
+        <div class="fg" style="margin-top:14px">
+          <label class="fl">&#x1F3C5; Loyaliteitssticker na (aankopen)</label>
+          <input type="number" id="inst-loyaliteit" value="${instellingen.loyaliteitDrempel??10}" min="1" max="100" inputmode="numeric">
+          <div style="font-size:11px;color:var(--txl);margin-top:4px">Klant krijgt een &#x1F3C5; sticker na dit aantal aankopen · huidig: <strong>${instellingen.loyaliteitDrempel??10} aankopen</strong></div>
+        </div>
+        <div class="fg" style="margin-top:14px">
+          <label class="fl">&#x1F3C5; Loyaliteitssticker na (aankopen)</label>
+          <input type="number" id="inst-loyaliteit" value="${instellingen.loyaliteitDrempel??10}" min="1" max="100" inputmode="numeric">
+          <div style="font-size:11px;color:var(--txl);margin-top:4px">Klant krijgt een &#x1F3C5; sticker na dit aantal aankopen · huidig: <strong>${instellingen.loyaliteitDrempel??10} aankopen</strong></div>
+        </div>
         <button class="btn btn-p" onclick="saveInstellingen()">&#x1F4BE; Drempelwaarden opslaan</button>
         </div>
       </div>
@@ -1757,6 +1975,42 @@ function render() {
             ? '<div style="font-size:11px;color:var(--rd);background:#fadbd8;border-radius:8px;padding:8px 12px">Notificaties zijn geblokkeerd in je browser. Ga naar browserinstellingen → Site-instellingen om dit te herstellen.</div>'
             : '<div class="brow"><button class="btn btn-s" onclick="registreerPushNotificaties()">🔔 Inschakelen op dit apparaat</button><button class="btn btn-g" onclick="uitschakelenPushNotificaties()" style="flex:0.5">🔕 Uit</button></div>'}`;
         })()}
+        </div>
+      </div>
+      <div class="card">
+        <div class="sec-hdr-acc${beheerOpen.has('inst-seizoens')?" open":""}" onclick="toggleBeheer('inst-seizoens')">📢 Seizoensnieuws <span>${beheerOpen.has('inst-seizoens')?'▲':'▼'}</span></div>
+        <div class="acc-body${beheerOpen.has('inst-seizoens')?" open":""}">
+        <div style="font-size:11px;color:var(--txl);margin-bottom:12px">Toon een bericht op de bestelpage en het dashboard — handig voor vakantie of extra aanbod.</div>
+        <div class="fg">
+          <label class="fl">Bericht</label>
+          <textarea id="inst-seizoens-nieuws" rows="2" placeholder="bijv. 2 weken met vakantie, terug op 15 juni..." style="width:100%;padding:11px 14px;border:1.5px solid var(--gd);border-radius:10px;font-size:14px;font-family:'Nunito',sans-serif;color:var(--tx);background:var(--gl);outline:none;resize:vertical;box-sizing:border-box">${esc(instellingen.seizoensNieuws||'')}</textarea>
+        </div>
+        <div class="frow">
+          <div class="fg">
+            <label class="fl">Geldig vanaf</label>
+            <input type="date" id="inst-seizoens-vanaf" value="${instellingen.seizoensVanaf||''}">
+          </div>
+          <div class="fg">
+            <label class="fl">Geldig t/m</label>
+            <input type="date" id="inst-seizoens-tm" value="${instellingen.seizoensTm||''}">
+          </div>
+        </div>
+        <button class="btn btn-p" onclick="saveInstellingen()">📢 Seizoensnieuws opslaan</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="sec-hdr-acc${beheerOpen.has('inst-seizoens')?" open":""}" onclick="toggleBeheer('inst-seizoens')">&#x1F4E2; Seizoensnieuws <span>${beheerOpen.has('inst-seizoens')?'▲':'▼'}</span></div>
+        <div class="acc-body${beheerOpen.has('inst-seizoens')?" open":""}">
+        <div style="font-size:11px;color:var(--txl);margin-bottom:12px">Toon een bericht op de bestelpage en het dashboard — handig voor vakantie of extra aanbod.</div>
+        <div class="fg">
+          <label class="fl">Bericht</label>
+          <textarea id="inst-seizoens-nieuws" rows="2" placeholder="bijv. 2 weken met vakantie, terug op 15 juni..." style="width:100%;padding:11px 14px;border:1.5px solid var(--gd);border-radius:10px;font-size:14px;font-family:'Nunito',sans-serif;color:var(--tx);background:var(--gl);outline:none;resize:vertical;box-sizing:border-box">${esc(instellingen.seizoensNieuws||'')} </textarea>
+        </div>
+        <div class="frow">
+          <div class="fg"><label class="fl">Geldig vanaf</label><input type="date" id="inst-seizoens-vanaf" value="${instellingen.seizoensVanaf||''}"></div>
+          <div class="fg"><label class="fl">Geldig t/m</label><input type="date" id="inst-seizoens-tm" value="${instellingen.seizoensTm||''}"></div>
+        </div>
+        <button class="btn btn-p" onclick="saveInstellingen()">&#x1F4E2; Opslaan</button>
         </div>
       </div>
       <div class="card">
@@ -2464,13 +2718,20 @@ async function saveInstellingen() {
   const weerLon = parseFloat(val("inst-weer-lon")) || 5.7815;
   const weerNaam = val("inst-weer-naam").trim() || "Ulestraten";
   const bezorgkosten   = parseFloat((document.getElementById('inst-bezorgkosten')||{}).value) || 1.00;
-  const boerderijNaam  = (document.getElementById('inst-boerderij-naam')||{}).value?.trim() || "Ben's Boerderij";
-  await dbSave("instellingen", { prijsPerEi: p, prijsDoosje6: p6, prijsDoosje10: p10, bezorgkosten, boerderijNaam, klantGroen, klantOranje, hokFrequentie, weerLat, weerLon, weerNaam });
+  const boerderijNaam    = (document.getElementById('inst-boerderij-naam')||{}).value?.trim() || "Ben's Boerderij";
+  const loyaliteitDrempel = parseInt((document.getElementById('inst-loyaliteit')||{}).value) || 10;
+  const seizoensNieuws   = (document.getElementById('inst-seizoens-nieuws')||{}).value?.trim() || "";
+  const seizoensVanaf    = (document.getElementById('inst-seizoens-vanaf')||{}).value || "";
+  const seizoensTm       = (document.getElementById('inst-seizoens-tm')||{}).value || "";
+  await dbSave("instellingen", { prijsPerEi: p, prijsDoosje6: p6, prijsDoosje10: p10, bezorgkosten, boerderijNaam, klantGroen, klantOranje, loyaliteitDrempel, hokFrequentie, weerLat, weerLon, weerNaam, seizoensNieuws, seizoensVanaf, seizoensTm });
   // Update publiek direct zodat bestelpage meteen de juiste waarde toont
   try {
     await set(ref(db,"publiek/bezorgkosten"), bezorgkosten);
     await set(ref(db,"publiek/prijsDoosje6"), p6);
     await set(ref(db,"publiek/prijsDoosje10"), p10);
+    await set(ref(db,"publiek/seizoensNieuws"), seizoensNieuws);
+    await set(ref(db,"publiek/seizoensVanaf"), seizoensVanaf);
+    await set(ref(db,"publiek/seizoensTm"), seizoensTm);
   } catch(e) { /* silently fail */ }
   toast("✅ Instellingen opgeslagen!");
 }
@@ -3171,7 +3432,7 @@ async function syncPubliekeData() {
   const gereserveerd = reserveringen.filter(r=>r.status==="nieuw").reduce((s,r)=>s+(r.aantal||0),0);
   try {
     const prijsPerEi2 = instellingen.prijsPerEi || 0.40;
-    await set(ref(db,"publiek"), { voorraad, gemDag, doosjeGrootte, gereserveerd, prijsPerEi: prijsPerEi2, prijsDoosje6: instellingen.prijsDoosje6 ?? 2.50, prijsDoosje10: instellingen.prijsDoosje10 ?? 4.00, bezorgkosten: instellingen.bezorgkosten ?? 1.00, bijgewerkt: today() });
+    await set(ref(db,"publiek"), { voorraad, gemDag, doosjeGrootte, gereserveerd, prijsPerEi: prijsPerEi2, prijsDoosje6: instellingen.prijsDoosje6 ?? 2.50, prijsDoosje10: instellingen.prijsDoosje10 ?? 4.00, bezorgkosten: instellingen.bezorgkosten ?? 1.00, seizoensNieuws: instellingen.seizoensNieuws || "", seizoensVanaf: instellingen.seizoensVanaf || "", seizoensTm: instellingen.seizoensTm || "", bijgewerkt: today() });
   } catch(e) { /* silently fail */ }
 }
 
@@ -3380,7 +3641,10 @@ document.addEventListener("DOMContentLoaded", () => {
         window._pubDoosje        = inst.doosjeGrootte || 6;
         window._pubPrijsDoosje6  = inst.prijsDoosje6 || 2.50;
         window._pubPrijsDoosje10 = inst.prijsDoosje10 || 4.00;
-        window._pubBezorgkosten = inst.bezorgkosten || 1.00;
+        window._pubBezorgkosten    = inst.bezorgkosten || 1.00;
+        window._pubSeizoensNieuws  = inst.seizoensNieuws || "";
+        window._pubSeizoensVanaf   = inst.seizoensVanaf || "";
+        window._pubSeizoenssTm     = inst.seizoensTm || "";
         window._pubGereserveerd  = totGereserveerd;
         window._pubPrijs         = inst.prijsPerEi || 0.40;
         renderLogin();
@@ -3396,6 +3660,12 @@ document.addEventListener("DOMContentLoaded", () => {
             window._pubPrijsDoosje6  = p.prijsDoosje6 || 2.50;
             window._pubPrijsDoosje10 = p.prijsDoosje10 || 4.00;
             window._pubBezorgkosten  = p.bezorgkosten || 1.00;
+            window._pubSeizoensNieuws = p.seizoensNieuws || "";
+            window._pubSeizoensVanaf  = p.seizoensVanaf || "";
+            window._pubSeizoenssTm    = p.seizoensTm || "";
+            window._pubSeizoensNieuws = p.seizoensNieuws || "";
+            window._pubSeizoensVanaf  = p.seizoensVanaf || "";
+            window._pubSeizoenssTm    = p.seizoensTm || "";
             window._pubGereserveerd  = typeof p.gereserveerd==="number" ? p.gereserveerd : 0;
             window._pubPrijs         = p.prijsPerEi || 0.40;
           }
