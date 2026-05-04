@@ -1231,11 +1231,12 @@ function render() {
               `<span class="res-badge ${r.status==="geaccepteerd"?"acc":"den"}">${r.status==="geaccepteerd"?"✅ Geaccepteerd":"❌ Geweigerd"}</span>`+
               `<button class="dbtn" onclick="deleteRes('${r._key}')">🗑</button>`+
               `</div></div>`
-            ).join("")+``;
+            ).join("");
         })()}
         </div>
       </div>
     
+    </div>
 
     <!-- KLANTEN -->
     <div class="page${activePage==="klanten"?" active":""}" id="page-klanten">
