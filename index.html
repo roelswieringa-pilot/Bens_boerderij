@@ -703,9 +703,7 @@ function renderModal() {
         <div class="fg"><label class="fl">Startdatum</label><input type="date" id="abo-edit-start" value="${esc(data.startdatum||'')}"></div>
         <div class="fg"><label class="fl">Einddatum (optioneel)</label><input type="date" id="abo-edit-eind" value="${esc(data.einddatum||'')}"></div>
       </div>
-      <div class="frow">
-        <div class="fg"><label class="fl">Telefoonnummer</label><input type="tel" id="abo-edit-tel" value="${esc(data.tel||'')}" placeholder="06-12345678"></div>
-      </div>
+      <div class="fg"><label class="fl">Telefoonnummer</label><input type="tel" id="abo-edit-tel" value="${esc(data.tel||'')}" placeholder="06-12345678" autocomplete="tel" inputmode="tel"></div>
       <div class="fg"><label class="fl">Afhalen of bezorgen?</label>
         <div style="display:flex;gap:8px">
           <div id="abo-edit-opt-ophalen" onclick="setAboEditLeverwijze('ophalen')"
@@ -746,9 +744,7 @@ function renderModal() {
         <div class="fg"><label class="fl">Startdatum</label><input type="date" id="abo-edit-start" value="${esc(data.startdatum||'')}"></div>
         <div class="fg"><label class="fl">Einddatum (optioneel)</label><input type="date" id="abo-edit-eind" value="${esc(data.einddatum||'')}"></div>
       </div>
-      <div class="frow">
-        <div class="fg"><label class="fl">Telefoonnummer</label><input type="tel" id="abo-edit-tel" value="${esc(data.tel||'')}" placeholder="06-12345678"></div>
-      </div>
+      <div class="fg"><label class="fl">Telefoonnummer</label><input type="tel" id="abo-edit-tel" value="${esc(data.tel||'')}" placeholder="06-12345678" autocomplete="tel" inputmode="tel"></div>
       <div class="fg"><label class="fl">Afhalen of bezorgen?</label>
         <div style="display:flex;gap:8px">
           <div id="abo-edit-opt-ophalen" onclick="setAboEditLeverwijze('ophalen')"
