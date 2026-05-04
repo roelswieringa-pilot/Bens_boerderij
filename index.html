@@ -1122,7 +1122,8 @@ function render() {
             `<div class="li-s">🥚 ${r.aantal} eieren · 📅 ${fmtD(r.datum)}${r.tel?" · 📱 "+esc(r.tel):""}${r.bezorging?' · 🚲 Bezorgen: '+esc(r.adres||""):" · 🏠 Ophalen"} · ${fmt(r.doosPrijs||(r.aantal===10?(instellingen.prijsDoosje10||4.00):(instellingen.prijsDoosje6||2.50)))}</div>`+
             `</div>`+
             `<div class="li-r" style="gap:4px">`+
-            `<button class="btn btn-s" style="padding:5px 8px;font-size:11px;width:auto;box-shadow:none" onclick='accepteerRes("${r._key}",${JSON.stringify(r)})'>✅ OK</button>`+`${r.tel?`<a href="https://wa.me/${"31"+r.tel.replace(/^(\+?0{0,2}31|0)/,"").replace(/[^0-9]/g,"")}" target="_blank" class="ebtn" style="font-size:18px;text-decoration:none" title="WhatsApp ${esc(r.tel)}">📱</a>`:""}`+
+            `${r.tel?`<a href="https://wa.me/${"31"+r.tel.replace(/^(\+?0{0,2}31|0)/,"").replace(/[^0-9]/g,"")}" target="_blank" class="ebtn" style="font-size:18px;text-decoration:none" title="WhatsApp ${esc(r.tel)}">📱</a>`:""}`+
+            `<button class="btn btn-s" style="padding:5px 8px;font-size:11px;width:auto;box-shadow:none" onclick='accepteerRes("${r._key}",${JSON.stringify(r)})'>✅ OK</button>`+
             `<button class="btn btn-d" style="padding:5px 8px;font-size:11px;width:auto;box-shadow:none" onclick='weigerRes("${r._key}",${JSON.stringify(r)})'>❌ Nee</button>`+
             `<button class="dbtn" onclick="deleteRes('${r._key}')">🗑</button>`+
             `</div></div>`
@@ -3157,6 +3158,18 @@ function startVuurwerk() {
   shots.forEach(s => setTimeout(()=>_fwLaunch(canvas,s.x,s.y), s.d));
   setTimeout(()=>{ if(_fwAnimId){cancelAnimationFrame(_fwAnimId);_fwAnimId=null;} canvas.style.display='none'; canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height); }, 5000);
 }
+async function wisSeizoensBericht() {
+  if(!await bevestig("Seizoensnieuws wissen?", "Ja, wissen", "btn-d")) return;
+  const el = document.getElementById("inst-seizoens-nieuws");
+  const ev = document.getElementById("inst-seizoens-vanaf");
+  const tm = document.getElementById("inst-seizoens-tm");
+  if(el) el.value = "";
+  if(ev) ev.value = "";
+  if(tm) tm.value = "";
+  await saveInstellingen();
+  toast("\u2705 Seizoensnieuws gewist");
+}
+
 function toggleBeheer(id) {
   if(beheerOpen.has(id)) beheerOpen.delete(id);
   else beheerOpen.add(id);
@@ -3258,7 +3271,7 @@ Object.assign(window, {
   saveVk, deleteVk, updateVk, calcVkTot, calcNieuweKlantVeld, setVkType,
   saveKst, deleteKst, updateKst,
   saveKlant, deleteKlant, updateKlant,
-  saveInstellingen, setZoekKlant, toggleBeheer,
+  saveInstellingen, setZoekKlant, toggleBeheer, wisSeizoensBericht,
   saveNotitie, deleteNotitie,
   startVuurwerk,
   startVuurwerk,
@@ -3370,8 +3383,7 @@ function renderLogin(errorMsg) {
       '</div>' +
     '</div>' +
     '<div class="res-card">' +
-      (window._pubSeizoensNieuws && (!window._pubSeizoensVanaf || today2>=window._pubSeizoensVanaf) && (!window._pubSeizoenssTm || today2<=window._pubSeizoenssTm) ? '<div style="background:linear-gradient(90deg,#1a5276,#2980b9);border-radius:14px;padding:12px 16px;margin-bottom:14px;display:flex;gap:10px;align-items:flex-start"><span style="font-size:22px;flex-shrink:0">📢</span><div><div style="font-family:\'Fredoka One\',cursive;font-size:13px;color:#fff;margin-bottom:2px">Bericht van Ben</div><div style="font-size:12px;color:rgba(255,255,255,.9)">' + (window._pubSeizoensNieuws||'') + '</div></div></div>' : '') +
-      (window._pubSeizoensNieuws && (!window._pubSeizoensVanaf || today2>=window._pubSeizoensVanaf) && (!window._pubSeizoenssTm || today2<=window._pubSeizoenssTm) ? '<div style="background:linear-gradient(90deg,#1a5276,#2980b9);border-radius:14px;padding:12px 16px;margin-bottom:14px;display:flex;gap:10px;align-items:flex-start"><span style="font-size:20px;flex-shrink:0">&#x1F4E2;</span><div><div style="font-family:\'Fredoka One\',cursive;font-size:13px;color:#fff;margin-bottom:2px">Bericht van Ben</div><div style="font-size:12px;color:rgba(255,255,255,.9)">' + (window._pubSeizoensNieuws||'') + '</div></div></div>' : '') +
+      (window._pubSeizoensNieuws && (!window._pubSeizoensVanaf || today2>=window._pubSeizoensVanaf) && (!window._pubSeizoenssTm || today2<=window._pubSeizoenssTm) ? '<div style="background:#f0f7ff;border:1.5px solid #aed6f1;border-radius:10px;padding:8px 12px;margin-bottom:12px;display:flex;gap:8px;align-items:center"><span style="font-size:16px;flex-shrink:0">&#x1F4E2;</span><div style="font-size:12px;color:#1a5276">' + (window._pubSeizoensNieuws||'') + '</div></div>' : '') +
       '<h2 style="font-family:\'Fredoka One\',cursive;font-size:18px;color:var(--bd);margin-bottom:12px">🥚 Eieren bestellen</h2>' +
       '<div style="display:flex;gap:0;margin-bottom:16px;border-radius:10px;overflow:hidden;border:1.5px solid var(--gd)">' +
         '<div id="tab-eenmalig" onclick="window.switchBestelTab(\'eenmalig\')" style="flex:1;text-align:center;padding:8px;font-family:\'Fredoka One\',cursive;font-size:14px;cursor:pointer;background:var(--or);color:#fff">📅 Eenmalig</div>' +
