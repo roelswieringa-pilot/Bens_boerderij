@@ -3027,7 +3027,7 @@ function renderLogin(errorMsg) {
         '<div id="tab-eenmalig" onclick="window.switchBestelTab(\'eenmalig\')" style="flex:1;text-align:center;padding:8px;font-family:\'Fredoka One\',cursive;font-size:14px;cursor:pointer;background:var(--or);color:#fff">📅 Eenmalig</div>' +
         '<div id="tab-periodiek" onclick="window.switchBestelTab(\'periodiek\')" style="flex:1;text-align:center;padding:8px;font-family:\'Fredoka One\',cursive;font-size:14px;cursor:pointer;background:var(--gl);color:var(--bd)">🔄 Periodiek</div>' +
       '</div>' +
-      '<div class="login-error' + err + '</div>' +
+      '<div class="login-error' + (errorMsg ? ' show' : '') + '" id="res-error">' + (errorMsg||'') + '</div>' +
       '<div id="form-eenmalig">' +
         '<div class="fg"><label class="fl">Jouw naam</label><input type="text" id="res-naam" placeholder="Bijv. Familie Janssen..." autocomplete="name"></div>' +
         '<div class="fg"><label class="fl">Gewenste datum</label><input type="date" id="res-datum" value="' + today2 + '" min="' + today2 + '"></div>' +
