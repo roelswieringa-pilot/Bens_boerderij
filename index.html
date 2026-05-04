@@ -721,48 +721,6 @@ function renderModal() {
         <input type="text" id="abo-edit-adres" value="${esc(data.adres||'')}" placeholder="Straat en huisnummer...">
       </div>
       <div class="brow"><button class="btn btn-g" onclick="closeModal()">Annuleren</button><button class="btn btn-p" onclick="updateAbonnement()">&#x2705; Opslaan</button></div>`;
-  } else if(type==="abo") {
-    const dagNamen = ["Zondag","Maandag","Dinsdag","Woensdag","Donderdag","Vrijdag","Zaterdag"];
-    const dagOpts  = dagNamen.map((d,i)=>`<option value="${i}"${data.dag===i?" selected":""}>${d}</option>`).join("");
-    const freqOpts = [["week","Wekelijks"],["2week","Twee-wekelijks"],["maand","Maandelijks"]]
-      .map(([v,l])=>`<option value="${v}"${data.frequentie===v?" selected":""}>${l}</option>`).join("");
-    el.innerHTML = `
-      <div class="modal-title">&#x270F;&#xFE0F; Abonnement aanpassen <button onclick="closeModal()">&#x2715;</button></div>
-      <input type="hidden" id="abo-edit-key" value="${esc(data._key)}">
-      <div class="fg"><label class="fl">Naam</label><input type="text" id="abo-edit-naam" value="${esc(data.naam||'')}"></div>
-      <div class="frow">
-        <div class="fg"><label class="fl">Doosje</label>
-          <select id="abo-edit-doosje">
-            <option value="6"${data.doosje===6?" selected":""}>6 eieren</option>
-            <option value="10"${data.doosje===10?" selected":""}>10 eieren</option>
-          </select>
-        </div>
-        <div class="fg"><label class="fl">Frequentie</label><select id="abo-edit-freq">${freqOpts}</select></div>
-      </div>
-      <div class="fg"><label class="fl">Dag van de week</label><select id="abo-edit-dag">${dagOpts}</select></div>
-      <div class="frow">
-        <div class="fg"><label class="fl">Startdatum</label><input type="date" id="abo-edit-start" value="${esc(data.startdatum||'')}"></div>
-        <div class="fg"><label class="fl">Einddatum (optioneel)</label><input type="date" id="abo-edit-eind" value="${esc(data.einddatum||'')}"></div>
-      </div>
-      <div class="fg"><label class="fl">Telefoonnummer</label><input type="tel" id="abo-edit-tel" value="${esc(data.tel||'')}" placeholder="06-12345678" autocomplete="tel" inputmode="tel"></div>
-      <div class="fg"><label class="fl">Afhalen of bezorgen?</label>
-        <div style="display:flex;gap:8px">
-          <div id="abo-edit-opt-ophalen" onclick="setAboEditLeverwijze('ophalen')"
-            style="flex:1;border:1.5px solid ${!data.bezorging?'var(--or)':'var(--gd)'};border-radius:10px;padding:10px;text-align:center;cursor:pointer;background:${!data.bezorging?'var(--or)':'var(--gl)'};color:${!data.bezorging?'#fff':'var(--bd)'}">
-            <div style="font-size:18px">🏠</div><div style="font-family:'Fredoka One',cursive;font-size:13px">Ophalen</div><div style="font-size:10px">Gratis</div>
-          </div>
-          <div id="abo-edit-opt-bezorgen" onclick="setAboEditLeverwijze('bezorgen')"
-            style="flex:1;border:1.5px solid ${data.bezorging?'var(--or)':'var(--gd)'};border-radius:10px;padding:10px;text-align:center;cursor:pointer;background:${data.bezorging?'var(--or)':'var(--gl)'};color:${data.bezorging?'#fff':'var(--bd)'}">
-            <div style="font-size:18px">🚲</div><div style="font-family:'Fredoka One',cursive;font-size:13px">Bezorgen</div><div style="font-size:10px">+€1,00 · Ulestraten</div>
-          </div>
-        </div>
-      </div>
-      <div id="abo-edit-adres-div" class="fg" style="display:${data.bezorging?'block':'none'}">
-        <label class="fl">Bezorgadres</label>
-        <input type="text" id="abo-edit-adres" value="${esc(data.adres||'')}" placeholder="Straat en huisnummer...">
-      </div>
-      <div class="brow"><button class="btn btn-g" onclick="closeModal()">Annuleren</button><button class="btn btn-p" onclick="updateAbonnement()">&#x2705; Opslaan</button></div>`;
-  } else if(type==="schoonmaakHistorie") {
     const echt = schoonmaak.filter(r=>!r.type||r.type!=="uitstel").sort((a,b)=>b.datum.localeCompare(a.datum));
     // Beschikbare jaren
     const jaren = [...new Set(echt.map(r=>r.datum.slice(0,4)))].sort().reverse();
@@ -3101,13 +3059,9 @@ async function syncPubliekeData() {
   const totKapotSync   = leg.reduce((s,r)=>s+(r.kapot||0),0);
   const totVerkocht    = vk.reduce((s,r)=>s+(r.aantal||0),0);
   const totGereserveerd= reserveringen.filter(r=>r.status==="nieuw").reduce((s,r)=>s+(r.aantal||0),0);
-  // Tel abonnementen komende 14 dagen mee in voorraad
-  const _over14 = new Date(); _over14.setDate(_over14.getDate()+14);
-  const totAbonnement = abonnementen.filter(a=>a.status==="actief").reduce((s,a)=>{
-    const v = getVolgendeAboDatum(a, today());
-    return (v && v <= _over14.toISOString().slice(0,10)) ? s+(a.doosje||6) : s;
-  },0);
-  const voorraad = totGelegd - totKapotSync - totVerkocht - totGereserveerd - totAbonnement;
+  // Voorraad = gelegd - kapot - verkocht - gereserveerd
+  // Abonnements-reserveringen tellen al mee via totGereserveerd (Cloud Function maakt ze aan)
+  const voorraad = totGelegd - totKapotSync - totVerkocht - totGereserveerd;
   const recent7     = [...leg].reverse().slice(0,7).filter(r=>r.aantal>0);
   const gemDag      = recent7.length
     ? Math.round(recent7.reduce((s,r)=>s+(r.aantal||0),0)/recent7.length)
