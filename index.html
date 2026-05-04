@@ -968,12 +968,12 @@ function render() {
         const tm = instellingen.seizoensTm;
         if(vanaf && vandaag < vanaf) return "";
         if(tm && vandaag > tm) return "";
-        return `<div style="background:linear-gradient(90deg,#1a5276,#2980b9);border-radius:14px;padding:12px 16px;margin-bottom:14px;display:flex;gap:10px;align-items:center">
-          <span style="font-size:22px">&#x1F4E2;</span>
+        return `<div style="background:#f0f7ff;border:1.5px solid #aed6f1;border-radius:10px;padding:8px 12px;margin-bottom:14px;display:flex;gap:8px;align-items:flex-start">
+          <span style="font-size:16px;flex-shrink:0">&#x1F4E2;</span>
           <div>
-            <div style="font-family:'Fredoka One',cursive;font-size:13px;color:#fff;margin-bottom:2px">Bericht van Ben</div>
-            <div style="font-size:12px;color:rgba(255,255,255,.9)">${esc(sn)}</div>
-            ${(vanaf||tm)?`<div style="font-size:10px;color:rgba(255,255,255,.6);margin-top:3px">${vanaf?fmtD(vanaf):""}${vanaf&&tm?" t/m ":""}${tm?fmtD(tm):""}</div>`:""}
+            <div style="font-family:'Fredoka One',cursive;font-size:12px;color:#1a5276;margin-bottom:2px">Bericht van Ben</div>
+            <div style="font-size:12px;color:#1a5276">${esc(sn)}</div>
+            ${(vanaf||tm)?`<div style="font-size:10px;color:#5d8aa8;margin-top:2px">${vanaf?fmtD(vanaf):""}${vanaf&&tm?" t/m ":""}${tm?fmtD(tm):""}</div>`:""}
           </div>
         </div>`;
       })()}
@@ -1885,7 +1885,10 @@ function render() {
             <input type="date" id="inst-seizoens-tm" value="${instellingen.seizoensTm||''}">
           </div>
         </div>
-        <button class="btn btn-p" onclick="saveInstellingen()">📢 Seizoensnieuws opslaan</button>
+        <div class="brow">
+          <button class="btn btn-p" onclick="saveInstellingen()" style="flex:2">&#x1F4E2; Opslaan</button>
+          <button class="btn btn-d" onclick="wisSeizoensBericht()" style="flex:1">&#x1F5D1; Wissen</button>
+        </div>
         </div>
       </div>
       <div class="card">
@@ -3383,7 +3386,7 @@ function renderLogin(errorMsg) {
       '</div>' +
     '</div>' +
     '<div class="res-card">' +
-      (window._pubSeizoensNieuws && (!window._pubSeizoensVanaf || today2>=window._pubSeizoensVanaf) && (!window._pubSeizoenssTm || today2<=window._pubSeizoenssTm) ? '<div style="background:#f0f7ff;border:1.5px solid #aed6f1;border-radius:10px;padding:8px 12px;margin-bottom:12px;display:flex;gap:8px;align-items:center"><span style="font-size:16px;flex-shrink:0">&#x1F4E2;</span><div style="font-size:12px;color:#1a5276">' + (window._pubSeizoensNieuws||'') + '</div></div>' : '') +
+      (window._pubSeizoensNieuws && (!window._pubSeizoensVanaf || today2>=window._pubSeizoensVanaf) && (!window._pubSeizoenssTm || today2<=window._pubSeizoenssTm) ? '<div style="background:#f0f7ff;border:1.5px solid #aed6f1;border-radius:10px;padding:8px 12px;margin-bottom:12px;display:flex;gap:8px;align-items:flex-start"><span style="font-size:16px;flex-shrink:0">&#x1F4E2;</span><div><div style="font-family:\'Fredoka One\',cursive;font-size:12px;color:#1a5276;margin-bottom:2px">Bericht van Ben</div><div style="font-size:12px;color:#1a5276">' + (window._pubSeizoensNieuws||'') + '</div></div></div>' : '') +
       '<h2 style="font-family:\'Fredoka One\',cursive;font-size:18px;color:var(--bd);margin-bottom:12px">🥚 Eieren bestellen</h2>' +
       '<div style="display:flex;gap:0;margin-bottom:16px;border-radius:10px;overflow:hidden;border:1.5px solid var(--gd)">' +
         '<div id="tab-eenmalig" onclick="window.switchBestelTab(\'eenmalig\')" style="flex:1;text-align:center;padding:8px;font-family:\'Fredoka One\',cursive;font-size:14px;cursor:pointer;background:var(--or);color:#fff">📅 Eenmalig</div>' +
