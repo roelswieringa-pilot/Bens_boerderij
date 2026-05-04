@@ -2729,34 +2729,62 @@ async function savePeriodiekBestelling() {
     const dagNamen=["Zondag","Maandag","Dinsdag","Woensdag","Donderdag","Vrijdag","Zaterdag"];
     const freqLabel=freq==="week"?"wekelijks":freq==="2week"?"twee-wekelijks":"maandelijks";
     const app=document.getElementById("app");
-    if(app) app.innerHTML=`<div style="background:linear-gradient(160deg,var(--gl),var(--gm),var(--gd));min-height:100vh;padding:24px 16px;display:flex;align-items:center;justify-content:center">
-      <div style="background:#fff;border-radius:24px;border:2px solid var(--gd);padding:32px 24px;max-width:360px;text-align:center;box-shadow:0 8px 32px rgba(200,134,10,.2)">
-        <svg width="80" height="80" viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:16px">
-          <rect width="192" height="192" rx="40" fill="#e07b00"/>
-          <rect width="192" height="64" rx="40" fill="#f5a623"/>
-          <rect x="0" y="40" width="192" height="24" fill="#f5a623"/>
-          <ellipse cx="96" cy="74" rx="30" ry="28" fill="#f4c18e"/>
-          <ellipse cx="96" cy="44" rx="32" ry="8" fill="#e07b00"/>
-          <rect x="64" y="38" width="64" height="14" rx="7" fill="#c8860a"/>
-          <text x="96" y="49" font-family="'Fredoka One',cursive" font-size="10" fill="#fff" text-anchor="middle">BEN</text>
-          <circle cx="84" cy="70" r="5.5" fill="#3d2000"/><circle cx="108" cy="70" r="5.5" fill="#3d2000"/>
-          <circle cx="86" cy="68" r="2" fill="#fff"/><circle cx="110" cy="68" r="2" fill="#fff"/>
-          <path d="M84 82 Q96 92 108 82" stroke="#c0604a" stroke-width="3" fill="none" stroke-linecap="round"/>
-          <ellipse cx="96" cy="130" rx="38" ry="34" fill="#5b9bd5"/>
-          <rect x="76" y="104" width="40" height="44" rx="8" fill="#4a7fc1"/>
-          <ellipse cx="148" cy="148" rx="10" ry="13" fill="#fffbe8" stroke="#e8d070" stroke-width="2"/>
-        </svg>
-        <div style="font-family:'Fredoka One',cursive;font-size:24px;color:var(--bd);margin-bottom:6px">Welkom als vaste klant!</div>
-        <div style="font-size:15px;color:var(--or);font-weight:800;margin-bottom:16px">${naam} — dat waardeer ik enorm! 🙏</div>
-        <div style="background:var(--gl);border-radius:12px;border:1.5px solid var(--gd);padding:12px 16px;margin-bottom:16px;text-align:left">
-          <div style="font-size:12px;color:var(--txl);font-weight:700;margin-bottom:6px">Jouw vaste bestelling:</div>
-          <div style="font-size:14px;color:var(--bd)">&#x1F95A; <strong>${doosje} eieren</strong> &middot; ${freqLabel} op <strong>${dagNamen[dag]}</strong></div>
-          ${eind?`<div style="font-size:11px;color:var(--txl);margin-top:4px">t/m ${eind}</div>`:""}
-          ${bezorging?`<div style="font-size:12px;color:var(--bl);margin-top:6px">&#x1F6B2; Bezorging naar <strong>${adres}</strong> (+&#x20AC;1,00)</div>`:`<div style="font-size:12px;color:var(--txl);margin-top:6px">&#x1F3E0; Ophalen bij Ben</div>`}
+    const doosPrijs = doosje===10 ? (window._pubPrijsDoosje10||4.00) : (window._pubPrijsDoosje6||2.50);
+    const totaalNum = bezorging ? doosPrijs + 1.00 : doosPrijs;
+    const totaalStr = totaalNum.toFixed(2).replace(".",",");
+    const basisStr  = doosPrijs.toFixed(2).replace(".",",");
+    if(app) app.innerHTML=`
+  <div class="login-screen">
+    <div class="login-logo">🥚</div>
+    <div class="login-title">Welkom als vaste klant!</div>
+    <div class="login-sub">${naam} — dat waardeer ik enorm! 🙏</div>
+    <div class="login-card" style="text-align:left">
+      <div style="text-align:center;font-size:36px;margin-bottom:12px">🔄✅</div>
+      <div style="font-family:'Fredoka One',cursive;font-size:18px;color:var(--bd);margin-bottom:12px;text-align:center">${naam}</div>
+      <div style="background:var(--gl);border-radius:12px;border:1.5px solid var(--gd);padding:12px 14px;margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid var(--gd)">
+          <span style="color:var(--txl)">🥚 Eieren</span>
+          <span style="font-weight:800;color:var(--bd)">${doosje} stuks</span>
         </div>
-        <div style="font-size:13px;color:var(--txl);margin-bottom:20px;line-height:1.5">Jouw verse eieren liggen elke ${dagNamen[dag]} klaar —<br>vers van het nest! &#x1F413;&#x1F95A;</div>
-        <button class="btn btn-p" onclick="window.renderLogin()" style="max-width:280px">&#x2190; Nog een bestelling plaatsen</button>
-      </div></div>`;
+        <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid var(--gd)">
+          <span style="color:var(--txl)">🔄 Frequentie</span>
+          <span style="font-weight:800;color:var(--bd)">${freqLabel.charAt(0).toUpperCase()+freqLabel.slice(1)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid var(--gd)">
+          <span style="color:var(--txl)">📅 Dag</span>
+          <span style="font-weight:800;color:var(--bd)">${dagNamen[dag]}</span>
+        </div>
+        ${eind?`<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid var(--gd)">
+          <span style="color:var(--txl)">📆 Tot en met</span>
+          <span style="font-weight:800;color:var(--bd)">${eind}</span>
+        </div>`:""}
+        <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;${bezorging?'border-bottom:1px solid var(--gd)':''}">
+          <span style="color:var(--txl)">${bezorging?'🚲 Bezorgen':'🏠 Ophalen'}</span>
+          <span style="font-weight:800;color:var(--bd)">${bezorging?adres:'Bij Ben thuis'}</span>
+        </div>
+        ${bezorging?`<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid var(--gd)">
+          <span style="color:var(--txl)">🥚 Eieren</span><span style="color:var(--bd)">€ ${basisStr}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid var(--gd)">
+          <span style="color:var(--txl)">🚲 Bezorgkosten</span><span style="color:var(--bd)">€ 1,00</span>
+        </div>`:""}
+        <div style="display:flex;justify-content:space-between;font-size:15px;padding:6px 0;margin-top:2px">
+          <span style="font-family:'Fredoka One',cursive;color:var(--bd)">Per levering</span>
+          <span style="font-family:'Fredoka One',cursive;font-size:18px;color:var(--gn)">💰 € ${totaalStr}</span>
+        </div>
+      </div>
+      ${bezorging?`<div style="background:#e8f4fd;border-radius:10px;border:1.5px solid #aed6f1;padding:10px 12px;font-size:12px;color:#1a5276;margin-bottom:12px">
+        🚲 <strong>Bezorging</strong> — Indien niet thuis zet Ben de eieren op een veilige plek.
+      </div>`:""}
+      <div style="font-size:12px;color:var(--txl);margin-bottom:12px;line-height:1.5;text-align:center">
+        Jouw verse eieren liggen elke ${dagNamen[dag]} klaar —<br>vers van het nest! 🐔🥚
+      </div>
+      <div style="font-size:11px;color:var(--txl);background:var(--gl);border-radius:10px;padding:10px;text-align:center">
+        Ben's Boerderij · Vrije uitloop · 0 Biologisch · 🇳🇱 NL
+      </div>
+    </div>
+    <button class="btn btn-p" onclick="window.renderLogin()" style="max-width:360px;margin-top:16px">← Nog een bestelling plaatsen</button>
+  </div>`;
   } catch(e) {
     const el=document.getElementById("res-error"); if(el){el.textContent="\u274C Kon niet opslaan.";el.classList.add("show");}
   }
