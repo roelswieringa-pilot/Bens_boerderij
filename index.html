@@ -1112,9 +1112,11 @@ function render() {
         <div class="card-title">&#x1F504; Abonnementen (${abonnementen.filter(a=>a.status==="actief").length} actief)</div>
         ${(()=>{
           const actief  = abonnementen.filter(a=>a.status==="actief");
+          const gepauzeerd = abonnementen.filter(a=>a.status==="gepauzeerd");
+          const gestopt    = abonnementen.filter(a=>a.status==="gestopt");
           const dagNamen = ["Zondag","Maandag","Dinsdag","Woensdag","Donderdag","Vrijdag","Zaterdag"];
           const freqLabel = f => f==="week"?"Wekelijks":f==="2week"?"Twee-wekelijks":"Maandelijks";
-          if(!actief.length && !gestopt.length) return '<div class="empty"><div class="em">&#x1F504;</div><p>Nog geen abonnementen</p></div>';
+          if(!actief.length && !gestopt.length && !gepauzeerd.length) return '<div class="empty"><div class="em">&#x1F504;</div><p>Nog geen abonnementen</p></div>';
           const actiefHtml = actief.map(a=>{
             const volgende = getVolgendeAboDatum(a, today());
             return `<div class="li">
@@ -1128,8 +1130,6 @@ function render() {
               </div>
             </div>`;
           }).join("");
-          const gepauzeerd = abonnementen.filter(a=>a.status==="gepauzeerd");
-          const gestopt    = abonnementen.filter(a=>a.status==="gestopt");
 
           const gepauzHtml = gepauzeerd.length ? `<div style="margin-top:10px;border-top:1px solid var(--gd);padding-top:8px">
             <div style="font-size:11px;font-weight:800;color:var(--or);margin-bottom:6px">⏸ Gepauzeerd (${gepauzeerd.length})</div>
