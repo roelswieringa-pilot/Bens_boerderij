@@ -721,6 +721,7 @@ function renderModal() {
         <input type="text" id="abo-edit-adres" value="${esc(data.adres||'')}" placeholder="Straat en huisnummer...">
       </div>
       <div class="brow"><button class="btn btn-g" onclick="closeModal()">Annuleren</button><button class="btn btn-p" onclick="updateAbonnement()">&#x2705; Opslaan</button></div>`;
+  } else if(type==="schoonmaakHistorie") {
     const echt = schoonmaak.filter(r=>!r.type||r.type!=="uitstel").sort((a,b)=>b.datum.localeCompare(a.datum));
     // Beschikbare jaren
     const jaren = [...new Set(echt.map(r=>r.datum.slice(0,4)))].sort().reverse();
