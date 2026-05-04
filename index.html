@@ -40,8 +40,7 @@ body{font-family:'Nunito',sans-serif;background:var(--gl);color:var(--tx);min-he
 .sec-hdr-acc.open{border-radius:16px 16px 0 0;margin-bottom:14px}
 .acc-body{display:none}.acc-body.open{display:block}
 .stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;width:100%}
-.stat{background:linear-gradient(135deg,var(--gl),var(--gd));border-radius:14px;border:1.5px solid var(--gd);padding:14px 12px;text-align:center}
-.stat{display:flex!important;align-items:center;gap:8px;padding:9px 10px!important}.stat .em{font-size:22px;line-height:1;flex-shrink:0}.stat .vl{font-family:'Fredoka One',cursive;font-size:20px;color:var(--or);line-height:1.1}.stat .lb{font-size:9px;color:var(--txl);font-weight:700;margin-top:2px}
+.stat{background:linear-gradient(135deg,var(--gl),var(--gd));border-radius:14px;border:1.5px solid var(--gd);padding:10px 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:4px}.stat .em{font-size:22px;line-height:1}.stat .vl{font-family:'Fredoka One',cursive;font-size:20px;color:var(--or);line-height:1.1}.stat .lb{font-size:9px;color:var(--txl);font-weight:700}
 .fg{margin-bottom:12px}.fl{font-size:12px;font-weight:700;color:var(--bd);margin-bottom:4px;display:block}
 input[type=text],input[type=number],input[type=date],select,textarea{width:100%;padding:11px 14px;border:1.5px solid var(--gd);border-radius:10px;font-size:15px;font-family:'Nunito',sans-serif;color:var(--tx);background:var(--gl);outline:none;-webkit-appearance:none;appearance:none}
 input:focus,select:focus,textarea:focus{border-color:var(--or);background:#fff}
@@ -704,7 +703,25 @@ function renderModal() {
         <div class="fg"><label class="fl">Startdatum</label><input type="date" id="abo-edit-start" value="${esc(data.startdatum||'')}"></div>
         <div class="fg"><label class="fl">Einddatum (optioneel)</label><input type="date" id="abo-edit-eind" value="${esc(data.einddatum||'')}"></div>
       </div>
-      <div class="fg"><label class="fl">Telefoonnummer</label><input type="tel" id="abo-edit-tel" value="${esc(data.tel||'')}"></div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Telefoonnummer</label><input type="tel" id="abo-edit-tel" value="${esc(data.tel||'')}" placeholder="06-12345678"></div>
+      </div>
+      <div class="fg"><label class="fl">Afhalen of bezorgen?</label>
+        <div style="display:flex;gap:8px">
+          <div id="abo-edit-opt-ophalen" onclick="setAboEditLeverwijze('ophalen')"
+            style="flex:1;border:1.5px solid ${!data.bezorging?'var(--or)':'var(--gd)'};border-radius:10px;padding:10px;text-align:center;cursor:pointer;background:${!data.bezorging?'var(--or)':'var(--gl)'};color:${!data.bezorging?'#fff':'var(--bd)'}">
+            <div style="font-size:18px">🏠</div><div style="font-family:'Fredoka One',cursive;font-size:13px">Ophalen</div><div style="font-size:10px">Gratis</div>
+          </div>
+          <div id="abo-edit-opt-bezorgen" onclick="setAboEditLeverwijze('bezorgen')"
+            style="flex:1;border:1.5px solid ${data.bezorging?'var(--or)':'var(--gd)'};border-radius:10px;padding:10px;text-align:center;cursor:pointer;background:${data.bezorging?'var(--or)':'var(--gl)'};color:${data.bezorging?'#fff':'var(--bd)'}">
+            <div style="font-size:18px">🚲</div><div style="font-family:'Fredoka One',cursive;font-size:13px">Bezorgen</div><div style="font-size:10px">+€1,00 · Ulestraten</div>
+          </div>
+        </div>
+      </div>
+      <div id="abo-edit-adres-div" class="fg" style="display:${data.bezorging?'block':'none'}">
+        <label class="fl">Bezorgadres</label>
+        <input type="text" id="abo-edit-adres" value="${esc(data.adres||'')}" placeholder="Straat en huisnummer...">
+      </div>
       <div class="brow"><button class="btn btn-g" onclick="closeModal()">Annuleren</button><button class="btn btn-p" onclick="updateAbonnement()">&#x2705; Opslaan</button></div>`;
   } else if(type==="abo") {
     const dagNamen = ["Zondag","Maandag","Dinsdag","Woensdag","Donderdag","Vrijdag","Zaterdag"];
@@ -729,7 +746,25 @@ function renderModal() {
         <div class="fg"><label class="fl">Startdatum</label><input type="date" id="abo-edit-start" value="${esc(data.startdatum||'')}"></div>
         <div class="fg"><label class="fl">Einddatum (optioneel)</label><input type="date" id="abo-edit-eind" value="${esc(data.einddatum||'')}"></div>
       </div>
-      <div class="fg"><label class="fl">Telefoonnummer</label><input type="tel" id="abo-edit-tel" value="${esc(data.tel||'')}"></div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Telefoonnummer</label><input type="tel" id="abo-edit-tel" value="${esc(data.tel||'')}" placeholder="06-12345678"></div>
+      </div>
+      <div class="fg"><label class="fl">Afhalen of bezorgen?</label>
+        <div style="display:flex;gap:8px">
+          <div id="abo-edit-opt-ophalen" onclick="setAboEditLeverwijze('ophalen')"
+            style="flex:1;border:1.5px solid ${!data.bezorging?'var(--or)':'var(--gd)'};border-radius:10px;padding:10px;text-align:center;cursor:pointer;background:${!data.bezorging?'var(--or)':'var(--gl)'};color:${!data.bezorging?'#fff':'var(--bd)'}">
+            <div style="font-size:18px">🏠</div><div style="font-family:'Fredoka One',cursive;font-size:13px">Ophalen</div><div style="font-size:10px">Gratis</div>
+          </div>
+          <div id="abo-edit-opt-bezorgen" onclick="setAboEditLeverwijze('bezorgen')"
+            style="flex:1;border:1.5px solid ${data.bezorging?'var(--or)':'var(--gd)'};border-radius:10px;padding:10px;text-align:center;cursor:pointer;background:${data.bezorging?'var(--or)':'var(--gl)'};color:${data.bezorging?'#fff':'var(--bd)'}">
+            <div style="font-size:18px">🚲</div><div style="font-family:'Fredoka One',cursive;font-size:13px">Bezorgen</div><div style="font-size:10px">+€1,00 · Ulestraten</div>
+          </div>
+        </div>
+      </div>
+      <div id="abo-edit-adres-div" class="fg" style="display:${data.bezorging?'block':'none'}">
+        <label class="fl">Bezorgadres</label>
+        <input type="text" id="abo-edit-adres" value="${esc(data.adres||'')}" placeholder="Straat en huisnummer...">
+      </div>
       <div class="brow"><button class="btn btn-g" onclick="closeModal()">Annuleren</button><button class="btn btn-p" onclick="updateAbonnement()">&#x2705; Opslaan</button></div>`;
   } else if(type==="schoonmaakHistorie") {
     const echt = schoonmaak.filter(r=>!r.type||r.type!=="uitstel").sort((a,b)=>b.datum.localeCompare(a.datum));
@@ -940,12 +975,12 @@ function render() {
         </div>`;
       })()}
       <div class="stats">
-        <div class="stat"><div class="em">🥚</div><div><div class="vl">${vandaag}</div><div class="lb">VANDAAG</div></div></div>
-        <div class="stat"><div class="em">📅</div><div><div class="vl">${week}</div><div class="lb">DEZE WEEK</div></div></div>
-        <div class="stat"><div class="em">📦</div><div><div class="vl">${maand}</div><div class="lb">DEZE MAAND</div></div></div>
-        <div class="stat"><div class="em">💰</div><div><div class="vl">€${omzet.toFixed(0)}</div><div class="lb">OMZET</div></div></div>
-        <div class="stat"><div class="em">🗃️</div><div><div class="vl" style="${voorraad<0?"color:var(--rd)":""}">${voorraad}</div><div class="lb">VOORRAAD</div></div></div>
-        <div class="stat"><div class="em">${streak>=7?"🔥":streak>=3?"⭐":"📆"}</div><div><div class="vl" style="${streak>=7?"color:var(--rd)":streak>=3?"color:var(--or)":""}">${streak}</div><div class="lb">STREAK</div></div></div>
+        <div class="stat"><div class="em">🥚</div><div class="vl">${vandaag}</div><div class="lb">VANDAAG</div></div>
+        <div class="stat"><div class="em">📅</div><div class="vl">${week}</div><div class="lb">DEZE WEEK</div></div>
+        <div class="stat"><div class="em">📦</div><div class="vl">${maand}</div><div class="lb">DEZE MAAND</div></div>
+        <div class="stat"><div class="em">💰</div><div class="vl">€${omzet.toFixed(0)}</div><div class="lb">OMZET</div></div>
+        <div class="stat"><div class="em">🗃️</div><div class="vl" style="${voorraad<0?"color:var(--rd)":""}">${voorraad}</div><div class="lb">VOORRAAD</div></div>
+        <div class="stat"><div class="em">${streak>=7?"🔥":streak>=3?"⭐":"📆"}</div><div class="vl" style="${streak>=7?"color:var(--rd)":streak>=3?"color:var(--or)":""}">${streak}</div><div class="lb">STREAK</div></div>
       </div>
       <div class="card">
         <div class="card-title">⚡ Snel invullen</div>
@@ -2683,6 +2718,17 @@ function setLeverwijze(keuze) {
   if(adresDiv) adresDiv.style.display = keuze==="bezorgen" ? "block" : "none";
 }
 
+function setAboEditLeverwijze(keuze) {
+  const ophalen  = document.getElementById("abo-edit-opt-ophalen");
+  const bezorgen = document.getElementById("abo-edit-opt-bezorgen");
+  const adresDiv = document.getElementById("abo-edit-adres-div");
+  const actief   = {background:"var(--or)",color:"#fff",borderColor:"var(--or)"};
+  const inactief = {background:"var(--gl)",color:"var(--bd)",borderColor:"var(--gd)"};
+  if(ophalen)  Object.assign(ophalen.style,  keuze==="ophalen"  ? actief : inactief);
+  if(bezorgen) Object.assign(bezorgen.style, keuze==="bezorgen" ? actief : inactief);
+  if(adresDiv) adresDiv.style.display = keuze==="bezorgen" ? "block" : "none";
+}
+
 function setAboLeverwijze(keuze) {
   const ophalen  = document.getElementById("abo-opt-ophalen");
   const bezorgen = document.getElementById("abo-opt-bezorgen");
@@ -3039,8 +3085,8 @@ Object.assign(window, {
   updateOfflineBanner,
   saveReservering, accepteerRes, weigerRes, deleteRes, showResBevestiging,
   switchBestelTab, savePeriodiekBestelling,
-  setLeverwijze, setAboLeverwijze,
-  setLeverwijze, setAboLeverwijze,
+  setLeverwijze, setAboLeverwijze, setAboEditLeverwijze,
+  setLeverwijze, setAboLeverwijze, setAboEditLeverwijze,
   stopAbonnement, deleteAbonnement, updateAbonnement,
   setKstMaand,
   bevestigSchoonmaak, uitstellenSchoonmaak, deleteSchoonmaak,
