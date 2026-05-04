@@ -20,7 +20,7 @@ html{overflow-x:hidden;width:100%}
 body{font-family:'Nunito',sans-serif;background:var(--gl);color:var(--tx);min-height:100vh;min-height:-webkit-fill-available;overflow-x:hidden;width:100%;position:relative}
 .app{width:100%;max-width:480px;margin:0 auto;min-height:100vh;min-height:-webkit-fill-available;position:relative;overflow-x:hidden}
 .topbar{background:linear-gradient(90deg,var(--bd),var(--or),var(--bd));padding:calc(var(--safe-top) + 10px) 16px 10px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:50;box-shadow:0 2px 12px rgba(0,0,0,.2);width:100%;box-sizing:border-box}
-.topbar h1{font-family:'Fredoka One',cursive;font-size:20px;color:#fff;letter-spacing:1px;text-shadow:1px 2px 4px rgba(0,0,0,.3)}
+.topbar h1{font-family:'Fredoka One',cursive;font-size:20px;color:#fff;letter-spacing:.5px;text-shadow:1px 2px 4px rgba(0,0,0,.3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .topbar-right{display:flex;align-items:center;gap:6px}
 .topbar-date{font-size:11px;color:rgba(255,255,255,.8);font-weight:600}
 .sync-badge{font-size:9px;padding:2px 8px;border-radius:10px;font-weight:700}
@@ -178,7 +178,7 @@ const BB    = {Cash:"bg",Tikkie:"bb",Overboeking:"bo"};
 
 // ── State ──────────────────────────────────────────────────────────────────
 let leg=[], vk=[], kst=[], inv=[], klanten=[], kippen=[], reserveringen=[], abonnementen=[], schoonmaak=[], notities=[], activePage="dashboard", activeM=null, activeKlant=null, modalState=null;
-let instellingen = { prijsPerEi: 0.40, doosjeGrootte: 6, prijsDoosje6: 2.50, prijsDoosje10: 4.00, bezorgkosten: 1.00, klantGroen: 7, klantOranje: 14, hokFrequentie: 14, weerLat: 50.9057, weerLon: 5.7815, weerNaam: "Ulestraten" };
+let instellingen = { prijsPerEi: 0.40, doosjeGrootte: 6, prijsDoosje6: 2.50, prijsDoosje10: 4.00, bezorgkosten: 1.00, boerderijNaam: "Ben's Boerderij", klantGroen: 7, klantOranje: 14, hokFrequentie: 14, weerLat: 50.9057, weerLon: 5.7815, weerNaam: "Ulestraten" };
 let zoekKlant = "";
 let currentUser = null;
 let kstTab = "kosten";
@@ -338,7 +338,7 @@ function startListeners() {
   });
   onValue(ref(db,"instellingen"), snap => {
     const val = snap.val() || {};
-    instellingen = { prijsPerEi: val.prijsPerEi ?? 0.40, doosjeGrootte: val.doosjeGrootte ?? 6, prijsDoosje6: val.prijsDoosje6 ?? 2.50, prijsDoosje10: val.prijsDoosje10 ?? 4.00, bezorgkosten: val.bezorgkosten ?? 1.00, klantGroen: val.klantGroen ?? 7, klantOranje: val.klantOranje ?? 14, hokFrequentie: val.hokFrequentie ?? 14, weerLat: val.weerLat ?? 50.9057, weerLon: val.weerLon ?? 5.7815, weerNaam: val.weerNaam ?? "Ulestraten" };
+    instellingen = { prijsPerEi: val.prijsPerEi ?? 0.40, doosjeGrootte: val.doosjeGrootte ?? 6, prijsDoosje6: val.prijsDoosje6 ?? 2.50, prijsDoosje10: val.prijsDoosje10 ?? 4.00, bezorgkosten: val.bezorgkosten ?? 1.00, boerderijNaam: val.boerderijNaam ?? "Ben's Boerderij", klantGroen: val.klantGroen ?? 7, klantOranje: val.klantOranje ?? 14, hokFrequentie: val.hokFrequentie ?? 14, weerLat: val.weerLat ?? 50.9057, weerLon: val.weerLon ?? 5.7815, weerNaam: val.weerNaam ?? "Ulestraten" };
     render(); setSyncBadge("ok");
   });
 }
@@ -907,7 +907,7 @@ function render() {
   // Build HTML
   app.innerHTML = `
   <div class="topbar">
-    <h1>🐔 Ben's Boerderij</h1>
+    <h1 style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:55vw;font-size:clamp(14px,4vw,20px)">🐔 ${instellingen.boerderijNaam||"Ben's Boerderij"}</h1>
     <div class="topbar-right">
       <span class="topbar-date">${new Date().toLocaleDateString("nl-NL",{weekday:"short",day:"numeric",month:"short"})}</span>
       <span class="sync-badge sync-ok" id="sync-badge">☁️ Gesync</span>
@@ -2456,8 +2456,9 @@ async function saveInstellingen() {
   const weerLat = parseFloat(val("inst-weer-lat")) || 50.9057;
   const weerLon = parseFloat(val("inst-weer-lon")) || 5.7815;
   const weerNaam = val("inst-weer-naam").trim() || "Ulestraten";
-  const bezorgkosten = parseFloat((document.getElementById('inst-bezorgkosten')||{}).value) || 1.00;
-  await dbSave("instellingen", { prijsPerEi: p, prijsDoosje6: p6, prijsDoosje10: p10, bezorgkosten, klantGroen, klantOranje, hokFrequentie, weerLat, weerLon, weerNaam });
+  const bezorgkosten   = parseFloat((document.getElementById('inst-bezorgkosten')||{}).value) || 1.00;
+  const boerderijNaam  = (document.getElementById('inst-boerderij-naam')||{}).value?.trim() || "Ben's Boerderij";
+  await dbSave("instellingen", { prijsPerEi: p, prijsDoosje6: p6, prijsDoosje10: p10, bezorgkosten, boerderijNaam, klantGroen, klantOranje, hokFrequentie, weerLat, weerLon, weerNaam });
   // Update publiek direct zodat bestelpage meteen de juiste waarde toont
   try {
     await set(ref(db,"publiek/bezorgkosten"), bezorgkosten);
