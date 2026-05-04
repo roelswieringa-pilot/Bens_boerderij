@@ -3022,27 +3022,39 @@ function renderLogin(errorMsg) {
       '</div>' +
     '</div>' +
     '<div class="res-card">' +
-      '<h2 style="font-family:\'Fredoka One\',cursive;font-size:18px;color:var(--bd);margin-bottom:14px">🥚 Eieren reserveren</h2>' +
-      '<div class="login-error' + (errorMsg ? ' show' : '') + '" id="res-error">' + (errorMsg||'') + '</div>' +
-      '<div class="fg"><label class="fl">Jouw naam</label>' +
-        '<input type="text" id="res-naam" placeholder="Bijv. Ben..." autocomplete="name">' +
+      '<h2 style="font-family:\'Fredoka One\',cursive;font-size:18px;color:var(--bd);margin-bottom:12px">🥚 Eieren bestellen</h2>' +
+      '<div style="display:flex;gap:0;margin-bottom:16px;border-radius:10px;overflow:hidden;border:1.5px solid var(--gd)">' +
+        '<div id="tab-eenmalig" onclick="window.switchBestelTab(\'eenmalig\')" style="flex:1;text-align:center;padding:8px;font-family:\'Fredoka One\',cursive;font-size:14px;cursor:pointer;background:var(--or);color:#fff">📅 Eenmalig</div>' +
+        '<div id="tab-periodiek" onclick="window.switchBestelTab(\'periodiek\')" style="flex:1;text-align:center;padding:8px;font-family:\'Fredoka One\',cursive;font-size:14px;cursor:pointer;background:var(--gl);color:var(--bd)">🔄 Periodiek</div>' +
       '</div>' +
-      '<div class="fg"><label class="fl">Gewenste datum</label>' +
-        '<input type="date" id="res-datum" value="' + today2 + '" min="' + today2 + '">' +
-      '</div>' +
-      '<div class="fg"><label class="fl">Kies je doosje</label>' +
-        '<select id="res-doosje" onchange="var s=this;var p6=window._pubPrijsDoosje6||2.50;var p10=window._pubPrijsDoosje10||4.00;var p=s.value==\'10\'?p10:p6;var el=document.getElementById(\'res-bedrag\');if(el)el.textContent=\'💰 € \'+(p).toFixed(2).replace(\'.\',\',\');">' +
+      '<div class="login-error' + err + '</div>' +
+      '<div id="form-eenmalig">' +
+        '<div class="fg"><label class="fl">Jouw naam</label><input type="text" id="res-naam" placeholder="Bijv. Familie Janssen..." autocomplete="name"></div>' +
+        '<div class="fg"><label class="fl">Gewenste datum</label><input type="date" id="res-datum" value="' + today2 + '" min="' + today2 + '"></div>' +
+        '<div class="fg"><label class="fl">Kies je doosje</label>' +
+          '<select id="res-doosje" onchange="var s=this;var p6=window._pubPrijsDoosje6||2.50;var p10=window._pubPrijsDoosje10||4.00;var p=s.value==\'10\'?p10:p6;var el=document.getElementById(\'res-bedrag\');if(el)el.textContent=\'💰 € \'+(p).toFixed(2).replace(\'.\',\',\');">' +
           '<option value="6">Doosje 6 eieren — € ' + ((window._pubPrijsDoosje6||2.50).toFixed(2).replace('.',',')) + '</option>' +
           '<option value="10">Doosje 10 eieren — € ' + ((window._pubPrijsDoosje10||4.00).toFixed(2).replace('.',',')) + '</option>' +
-        '</select>' +
+          '</select></div>' +
+        '<div style="text-align:center;margin:0 0 10px;font-family:\'Fredoka One\',cursive;font-size:18px;color:var(--gn)" id="res-bedrag">💰 € ' + ((window._pubPrijsDoosje6||2.50).toFixed(2).replace('.',',')) + '</div>' +
+        '<div class="fg"><label class="fl">Telefoonnummer (optioneel)</label><input type="tel" id="res-tel" placeholder="06-12345678" inputmode="tel" autocomplete="tel"></div>' +
+        '<button class="btn btn-s" onclick="window.saveReservering()" style="margin-top:4px">🥚 Reservering plaatsen</button>' +
       '</div>' +
-      '<div style="text-align:center;margin:0 0 10px;font-family:\'Fredoka One\',cursive;font-size:18px;color:var(--gn)" id="res-bedrag">' +
-        '💰 € ' + ((window._pubPrijsDoosje6||2.50).toFixed(2).replace('.',',')) +
+      '<div id="form-periodiek" style="display:none">' +
+        '<div style="background:var(--gl);border-radius:10px;border:1.5px solid var(--gd);padding:10px 12px;font-size:11px;color:var(--txl);margin-bottom:12px">🔄 Stel een vaste bestelling in — Ben zorgt dat jouw eieren klaarstaan!</div>' +
+        '<div class="fg"><label class="fl">Jouw naam</label><input type="text" id="abo-naam" placeholder="Bijv. Familie Janssen..." autocomplete="name"></div>' +
+        '<div class="frow">' +
+          '<div class="fg"><label class="fl">Doosje</label><select id="abo-doosje"><option value="6">6 eieren — € ' + ((window._pubPrijsDoosje6||2.50).toFixed(2).replace('.',',')) + '</option><option value="10">10 eieren — € ' + ((window._pubPrijsDoosje10||4.00).toFixed(2).replace('.',',')) + '</option></select></div>' +
+          '<div class="fg"><label class="fl">Hoe vaak?</label><select id="abo-freq"><option value="week">Wekelijks</option><option value="2week">Twee-wekelijks</option><option value="maand">Maandelijks</option></select></div>' +
+        '</div>' +
+        '<div class="fg"><label class="fl">Dag van de week</label><select id="abo-dag"><option value="1">Maandag</option><option value="2">Dinsdag</option><option value="3">Woensdag</option><option value="4">Donderdag</option><option value="5" selected>Vrijdag</option><option value="6">Zaterdag</option><option value="0">Zondag</option></select></div>' +
+        '<div class="frow">' +
+          '<div class="fg"><label class="fl">Startdatum</label><input type="date" id="abo-start" value="' + today2 + '" min="' + today2 + '"></div>' +
+          '<div class="fg"><label class="fl">Einddatum (optioneel)</label><input type="date" id="abo-eind" min="' + today2 + '"></div>' +
+        '</div>' +
+        '<div class="fg"><label class="fl">Telefoonnummer (optioneel)</label><input type="tel" id="abo-tel" placeholder="06-12345678" inputmode="tel" autocomplete="tel"></div>' +
+        '<button class="btn btn-s" onclick="window.savePeriodiekBestelling()" style="margin-top:4px;background:linear-gradient(90deg,#27ae60,#2ecc71)">🔄 Periodieke bestelling instellen</button>' +
       '</div>' +
-      '<div class="fg"><label class="fl">Telefoonnummer (optioneel)</label>' +
-        '<input type="tel" id="res-tel" placeholder="06-12345678" inputmode="tel" autocomplete="tel">' +
-      '</div>' +
-      '<button class="btn btn-s" onclick="window.saveReservering()" style="margin-top:4px">🥚 Reservering plaatsen</button>' +
     '</div>' +
     '<div class="res-card">' +
       '<h2 style="font-family:\'Fredoka One\',cursive;font-size:16px;color:var(--bd);margin-bottom:4px">🔐 Ben\'s Boerderij login</h2>' +
