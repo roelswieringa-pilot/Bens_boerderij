@@ -713,7 +713,7 @@ function renderModal() {
           </div>
           <div id="abo-edit-opt-bezorgen" onclick="setAboEditLeverwijze('bezorgen')"
             style="flex:1;border:1.5px solid ${data.bezorging?'var(--or)':'var(--gd)'};border-radius:10px;padding:10px;text-align:center;cursor:pointer;background:${data.bezorging?'var(--or)':'var(--gl)'};color:${data.bezorging?'#fff':'var(--bd)'}">
-            <div style="font-size:18px">🚲</div><div style="font-family:'Fredoka One',cursive;font-size:13px">Bezorgen</div><div style="font-size:10px">+€1,00 · Ulestraten</div>
+            <div style="font-size:18px">🚲</div><div style="font-family:'Fredoka One',cursive;font-size:13px">Bezorgen</div><div style="font-size:10px">+€${(instellingen.bezorgkosten??1.00).toFixed(2).replace(".",",")} · ${instellingen.weerNaam||"Ulestraten"}</div>
           </div>
         </div>
       </div>
@@ -3165,7 +3165,7 @@ function renderLogin(errorMsg) {
               '<div style="font-size:18px">🏠</div><div style="font-family:\'Fredoka One\',cursive;font-size:13px">Ophalen</div><div style="font-size:10px">Gratis</div>' +
             '</div>' +
             '<div id="opt-bezorgen" onclick="window.setLeverwijze(\'bezorgen\')" style="flex:1;border:1.5px solid var(--gd);border-radius:10px;padding:10px;text-align:center;cursor:pointer;background:var(--gl);color:var(--bd)">' +
-              '<div style="font-size:18px">🚲</div><div style="font-family:\'Fredoka One\',cursive;font-size:13px">Bezorgen</div><div style="font-size:10px">+€1,00 · Ulestraten</div>' +
+              '<div style="font-size:18px">🚲</div><div style="font-family:\'Fredoka One\',cursive;font-size:13px">Bezorgen</div><div style="font-size:10px">+€' + (window._pubBezorgkosten||1.00).toFixed(2).replace(".",",") + ' · Ulestraten</div>' +
             '</div>' +
           '</div>' +
         '</div>' +
@@ -3191,7 +3191,7 @@ function renderLogin(errorMsg) {
               '<div style="font-size:18px">🏠</div><div style="font-family:\'Fredoka One\',cursive;font-size:13px">Ophalen</div><div style="font-size:10px">Gratis</div>' +
             '</div>' +
             '<div id="abo-opt-bezorgen" onclick="window.setAboLeverwijze(\'bezorgen\')" style="flex:1;border:1.5px solid var(--gd);border-radius:10px;padding:10px;text-align:center;cursor:pointer;background:var(--gl);color:var(--bd)">' +
-              '<div style="font-size:18px">🚲</div><div style="font-family:\'Fredoka One\',cursive;font-size:13px">Bezorgen</div><div style="font-size:10px">+€1,00 · Ulestraten</div>' +
+              '<div style="font-size:18px">🚲</div><div style="font-family:\'Fredoka One\',cursive;font-size:13px">Bezorgen</div><div style="font-size:10px">+€' + (window._pubBezorgkosten||1.00).toFixed(2).replace(".",",") + ' · Ulestraten</div>' +
             '</div>' +
           '</div>' +
         '</div>' +
