@@ -1537,6 +1537,13 @@ function render() {
       <div class="card">
         <div class="sec-hdr-acc${beheerOpen.has('inst-kippen')?" open":""}" onclick="toggleBeheer('inst-kippen')">🐓 Kippen <span>${beheerOpen.has('inst-kippen')?'▲':'▼'}</span></div>
         <div class="acc-body${beheerOpen.has('inst-kippen')?" open":""}">
+        <div class="fg">
+          <label class="fl">&#x1F3E1; Naam boerderij</label>
+          <input type="text" id="inst-boerderij-naam" value="${esc(instellingen.boerderijNaam||'Ben\'s Boerderij')}" placeholder="bijv. Ben's Boerderij">
+          <div style="font-size:11px;color:var(--txl);margin-top:4px">Wordt getoond in de header en op de bestelpage</div>
+        </div>
+        <button class="btn btn-p" onclick="saveInstellingen()" style="margin-bottom:14px">&#x1F4BE; Naam opslaan</button>
+        <div style="height:1px;background:var(--gd);margin-bottom:14px"></div>
         <div class="frow">
           <div class="fg"><label class="fl">Naam</label><input type="text" id="kip-naam" placeholder="bijv. Max..."></div>
           <div class="fg"><label class="fl">Ras</label>
