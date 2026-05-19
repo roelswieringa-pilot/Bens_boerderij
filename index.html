@@ -68,7 +68,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--or);background:#fff}
 .beheer-tile-sub{font-size:9px;color:var(--txl);font-weight:700;text-transform:uppercase;letter-spacing:.3px;line-height:1.2}
 .beheer-overlay-bg{position:fixed;inset:0;background:rgba(90,50,0,.45);z-index:200;display:none;align-items:flex-end}
 .beheer-overlay-bg.open{display:flex}
-.beheer-overlay-sheet{background:var(--gm);border-radius:22px 22px 0 0;width:100%;max-height:88vh;display:flex;flex-direction:column;padding-top:0;animation:slideUp .25s cubic-bezier(.25,.46,.45,.94);overflow:hidden}
+.beheer-overlay-sheet{background:var(--gm);border-radius:22px 22px 0 0;width:100%;max-height:88vh;display:flex;flex-direction:column;padding-top:0;padding-bottom:env(safe-area-inset-bottom,0px);animation:slideUp .25s cubic-bezier(.25,.46,.45,.94);overflow:hidden}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 .beheer-overlay-handle{width:40px;height:5px;background:var(--gd);border-radius:3px;margin:0 auto 14px}
 .beheer-overlay-header{display:flex;justify-content:space-between;align-items:center;padding:16px 16px 14px;border-bottom:2px solid var(--gd);flex-shrink:0;background:linear-gradient(90deg,var(--or),var(--orl));border-radius:22px 22px 0 0}
@@ -1645,7 +1645,7 @@ function render() {
         <div id="beheer-overlay-titel" style="font-family:'Fredoka One',cursive;font-size:17px;color:#fff"></div>
         <button class="beheer-overlay-close" onclick="window.closeBeheerOverlay()">&#x2715;</button>
       </div>
-      <div id="beheer-overlay-body" style="overflow-y:auto;flex:1;padding:14px 16px 32px;background:var(--gm)"></div>
+      <div id="beheer-overlay-body" style="overflow-y:auto;flex:1;padding:14px 16px calc(32px + env(safe-area-inset-bottom,0px));background:var(--gm)"></div>
     </div>
   </div>
 
@@ -2500,17 +2500,16 @@ async function registreerPushNotificaties() {
     if (!("serviceWorker" in navigator)) {
       return toast("⚠️ Service Workers worden niet ondersteund door deze browser");
     }
-    // FIX 1: Scope expliciet matchen met Firebase's default push scope
-    // Zonder trailing slash — voorkomt dubbele SW-registraties
-    const SW_SCOPE = "/firebase-cloud-messaging-push-scope";
+    // SW staat op /Bens_boerderij/ dus scope moet hetzelfde pad zijn
     const SW_URL   = "/Bens_boerderij/firebase-messaging-sw.js";
+    const SW_SCOPE = "/Bens_boerderij/";
 
     // Unregistreer eventuele stale registraties op verkeerde scope
     const bestaande = await navigator.serviceWorker.getRegistrations();
     for (const r of bestaande) {
-      if (r.scope.includes("Bens_boerderij") && !r.scope.includes("push-scope")) {
+      if (r.scope.includes("push-scope")) {
         await r.unregister();
-        console.log("[FCM] Stale SW unregistered:", r.scope);
+        console.log("[FCM] Stale SW (push-scope) unregistered:", r.scope);
       }
     }
 
@@ -3330,14 +3329,24 @@ function openBeheerOverlay(id) {
 
   body.innerHTML = html;
   overlay.classList.add("open");
-  document.body.style.overflow = "hidden";
+  // Voorkom body scroll zonder layout shift
+  const scrollY = window.scrollY;
+  document.body.style.position = "fixed";
+  document.body.style.top = `-${scrollY}px`;
+  document.body.style.width = "100%";
+  document.body.dataset.scrollY = scrollY;
 }
 
 function closeBeheerOverlay(e) {
   if(e && e.target !== document.getElementById("beheer-overlay")) return;
   const overlay = document.getElementById("beheer-overlay");
   if(overlay) overlay.classList.remove("open");
-  document.body.style.overflow = "";
+  // Herstel scroll positie zonder layout shift
+  const scrollY2 = parseInt(document.body.dataset.scrollY || "0");
+  document.body.style.position = "";
+  document.body.style.top = "";
+  document.body.style.width = "";
+  window.scrollTo(0, scrollY2);
   render(); // refresh tiles subtitles
 }
 
