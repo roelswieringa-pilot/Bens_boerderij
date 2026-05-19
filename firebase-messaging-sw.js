@@ -1,4 +1,6 @@
 // firebase-messaging-sw.js
+// Cache versie — verhoog bij elke deploy zodat browser de SW vernieuwt
+const SW_VERSION = "5.8";
 // Ben's Boerderij — Service Worker voor FCM push notificaties
 // FIX 1: Geregistreerd op scope /firebase-cloud-messaging-push-scope (geen trailing slash)
 // FIX 4: pushsubscriptionchange event voor stale token recovery
