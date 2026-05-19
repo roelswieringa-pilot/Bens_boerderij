@@ -16,9 +16,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap');
 :root{--or:#e07b00;--orl:#f5a623;--bd:#7a4500;--bl:#c8860a;--gl:#fffbe8;--gm:#fff8d6;--gd:#ffeeb0;--tx:#5a3200;--txl:#a06020;--rd:#c0392b;--gn:#27ae60;--bu:#4a6fa5;--safe-top:env(safe-area-inset-top,0px);--safe-bot:env(safe-area-inset-bottom,0px)}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html{overflow:hidden;width:100%;height:100%;background:var(--gm)}
-body{font-family:'Nunito',sans-serif;background:var(--gm);color:var(--tx);height:100vh;height:-webkit-fill-available;overflow:hidden;width:100%}
-.app{width:100%;max-width:480px;margin:0 auto;height:100vh;height:-webkit-fill-available;position:relative;overflow:hidden;display:flex;flex-direction:column}
+html{width:100%;height:100%;background:var(--gm)}
+body{font-family:'Nunito',sans-serif;background:var(--gm);color:var(--tx);min-height:100vh;min-height:-webkit-fill-available;width:100%;overflow-x:hidden}
+.app{width:100%;max-width:480px;margin:0 auto;min-height:100vh;min-height:-webkit-fill-available;position:relative;overflow-x:hidden}
 .topbar{background:linear-gradient(90deg,var(--bd),var(--or),var(--bd));padding:calc(var(--safe-top) + 10px) 16px 10px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:50;box-shadow:0 2px 12px rgba(0,0,0,.2);width:100%;box-sizing:border-box}
 .topbar h1{font-family:'Fredoka One',cursive;font-size:20px;color:#fff;letter-spacing:.5px;text-shadow:1px 2px 4px rgba(0,0,0,.3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .topbar-right{display:flex;align-items:center;gap:6px}
@@ -27,7 +27,7 @@ body{font-family:'Nunito',sans-serif;background:var(--gm);color:var(--tx);height
 .sync-ok{background:rgba(39,174,96,.3);color:#a8f0c6}
 .sync-busy{background:rgba(255,200,0,.3);color:#ffe066}
 .sync-err{background:rgba(192,57,43,.3);color:#f5b7b1}
-.pages{padding:14px 14px 14px;width:100%;box-sizing:border-box;overflow-x:hidden;overflow-y:auto;flex:1}
+.pages{padding:14px 14px calc(var(--safe-bot) + 72px);width:100%;box-sizing:border-box;overflow-x:hidden}
 .bottomnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:linear-gradient(90deg,var(--bd),var(--bl),var(--bd));display:flex;justify-content:space-around;padding:8px 0 calc(var(--safe-bot) + 8px);box-shadow:0 -2px 12px rgba(0,0,0,.15);z-index:50;box-sizing:border-box;overflow:hidden}
 .navbtn{display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 0;background:none;border:none;cursor:pointer;border-radius:8px;flex:1;min-width:0;transition:background .15s}
 .navbtn.active{background:rgba(255,255,255,.18)}
