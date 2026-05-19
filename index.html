@@ -59,7 +59,19 @@ input:focus,select:focus,textarea:focus{border-color:var(--or);background:#fff}
 .badge{display:inline-block;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700}
 .bg{background:#d5f5e3;color:#1e8449}.bo{background:#fef3cd;color:#b7770d}.br{background:#fadbd8;color:#922b21}.bb{background:#d6eaf8;color:#1a5276}
 .ebtn{background:none;border:none;font-size:15px;cursor:pointer;padding:3px;color:var(--bu);opacity:.75}
-.dbtn{background:none;border:none;font-size:15px;cursor:pointer;padding:3px;color:var(--rd);opacity:.65}.stopbtn{background:none;border:none;font-size:15px;cursor:pointer;padding:3px;color:var(--or);opacity:.8}
+.dbtn{background:none;border:none;font-size:15px;cursor:pointer;padding:3px;color:var(--rd);opacity:.65}
+.stopbtn{background:none;border:none;font-size:15px;cursor:pointer;padding:3px;color:var(--or);opacity:.8}
+.beheer-tile{background:#fff;border-radius:14px;border:1.5px solid var(--gd);padding:12px 8px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:transform .12s,box-shadow .12s;-webkit-tap-highlight-color:transparent;text-align:center}
+.beheer-tile:active{transform:scale(.96);box-shadow:0 2px 8px rgba(200,134,10,.15)}
+.beheer-tile-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.beheer-tile-titel{font-family:'Fredoka One',cursive;font-size:12px;color:var(--bd);line-height:1.2}
+.beheer-tile-sub{font-size:9px;color:var(--txl);font-weight:700;line-height:1.2}
+.beheer-overlay-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:none;align-items:flex-end}
+.beheer-overlay-bg.open{display:flex}
+.beheer-overlay-sheet{background:#fff;border-radius:22px 22px 0 0;width:100%;max-height:88vh;display:flex;flex-direction:column;padding-top:10px;animation:slideUp .28s cubic-bezier(.25,.46,.45,.94)}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.beheer-overlay-handle{width:36px;height:4px;background:var(--gd);border-radius:2px;margin:0 auto 12px}
+.beheer-overlay-header{display:flex;justify-content:space-between;align-items:center;padding:0 16px 12px;border-bottom:1px solid var(--gd);flex-shrink:0}.stopbtn{background:none;border:none;font-size:15px;cursor:pointer;padding:3px;color:var(--or);opacity:.8}
 .tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:12px;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
 .tab{flex-shrink:0;padding:6px 14px;border-radius:20px;border:1.5px solid var(--gd);background:var(--gl);font-size:12px;font-weight:700;color:var(--txl);cursor:pointer}
@@ -1517,398 +1529,121 @@ function render() {
 
     <!-- INSTELLINGEN -->
     <div class="page${activePage==="instellingen"?" active":""}" id="page-instellingen">
-      <div class="card">
-        <div class="sec-hdr-acc${beheerOpen.has('inst-prijzen')?" open":""}" onclick="toggleBeheer('inst-prijzen')">🥚 Eierprijzen <span>${beheerOpen.has('inst-prijzen')?'▲':'▼'}</span></div>
-        <div class="acc-body${beheerOpen.has('inst-prijzen')?" open":""}">
-        <div class="fg">
-          <label class="fl">Prijs per ei (€)</label>
-          <input type="number" id="inst-prijs" value="${instellingen.prijsPerEi.toFixed(2)}" step="0.01" min="0.01" inputmode="decimal">
-          <div style="font-size:11px;color:var(--txl);margin-top:4px">Huidige prijs: <strong>${fmt(instellingen.prijsPerEi)}</strong> per ei · wordt toegepast op nieuwe verkopen</div>
-        </div>
-        <div class="frow">
-          <div class="fg">
-            <label class="fl">Prijs doosje 6 eieren (€)</label>
-            <input type="number" id="inst-prijs6" value="${instellingen.prijsDoosje6.toFixed(2)}" step="0.01" min="0.01" inputmode="decimal">
-            <div style="font-size:11px;color:var(--txl);margin-top:4px">Huidig: <strong>${fmt(instellingen.prijsDoosje6)}</strong></div>
-          </div>
-          <div class="fg">
-            <label class="fl">Prijs doosje 10 eieren (€)</label>
-            <input type="number" id="inst-prijs10" value="${instellingen.prijsDoosje10.toFixed(2)}" step="0.01" min="0.01" inputmode="decimal">
-            <div style="font-size:11px;color:var(--txl);margin-top:4px">Huidig: <strong>${fmt(instellingen.prijsDoosje10)}</strong></div>
-          </div>
-        </div>
-        <div style="height:1px;background:var(--gd);margin:12px 0"></div>
-        <div class="fg">
-          <label class="fl">🚲 Bezorgkosten Ulestraten (€)</label>
-          <input type="number" id="inst-bezorgkosten" value="${(instellingen.bezorgkosten??1.00).toFixed(2)}" step="0.01" min="0" inputmode="decimal">
-          <div style="font-size:11px;color:var(--txl);margin-top:4px">Huidig: <strong>${fmt(instellingen.bezorgkosten??1.00)}</strong> per bezorging · wordt automatisch opgeteld bij reserveringen</div>
-        </div>
-        <button class="btn btn-p" onclick="saveInstellingen()">💾 Opslaan</button>
-        </div>
-      </div>
-      <div class="card">
-        <div class="sec-hdr-acc${beheerOpen.has('inst-seizoens')?" open":""}" onclick="toggleBeheer('inst-seizoens')">📢 Seizoensnieuws <span>${beheerOpen.has('inst-seizoens')?'▲':'▼'}</span></div>
-        <div class="acc-body${beheerOpen.has('inst-seizoens')?" open":""}">
-        <div style="font-size:11px;color:var(--txl);margin-bottom:12px">Toon een bericht op de bestelpage en het dashboard — handig voor vakantie of extra aanbod.</div>
-        ${(()=>{
-          const sn = instellingen.seizoensNieuws;
-          if(!sn) return "";
-          const vandaag = today();
-          const vanaf = instellingen.seizoensVanaf;
-          const tm = instellingen.seizoensTm;
-          const actief = (!vanaf || vandaag >= vanaf) && (!tm || vandaag <= tm);
-          const geweest = tm && vandaag > tm;
-          const kleur = actief ? "var(--gn)" : geweest ? "var(--txl)" : "var(--or)";
-          const label = actief ? "🟢 Nu actief" : geweest ? "⚫ Verlopen" : "🟡 Nog niet actief";
-          return `<div style="background:var(--gl);border-radius:10px;border:1.5px solid var(--gd);padding:10px 14px;margin-bottom:12px;font-size:12px">
-            <div style="font-weight:800;color:${kleur};margin-bottom:4px">${label}</div>
-            <div style="color:var(--tx)">${esc(sn)}</div>
-            ${(vanaf||tm)?`<div style="color:var(--txl);margin-top:4px">${vanaf?fmtD(vanaf):"altijd"}${tm?" t/m "+fmtD(tm):""}</div>`:""}
-          </div>`;
-        })()}
-        <div class="fg">
-          <label class="fl">Bericht</label>
-          <textarea id="inst-seizoens-nieuws" rows="2" placeholder="bijv. 2 weken met vakantie, terug op 15 juni..." style="width:100%;padding:11px 14px;border:1.5px solid var(--gd);border-radius:10px;font-size:14px;font-family:'Nunito',sans-serif;color:var(--tx);background:var(--gl);outline:none;resize:vertical;box-sizing:border-box">${esc(instellingen.seizoensNieuws||'')}</textarea>
-        </div>
-        <div class="frow">
-          <div class="fg">
-            <label class="fl">Geldig vanaf</label>
-            <input type="date" id="inst-seizoens-vanaf" value="${instellingen.seizoensVanaf||''}">
-          </div>
-          <div class="fg">
-            <label class="fl">Geldig t/m</label>
-            <input type="date" id="inst-seizoens-tm" value="${instellingen.seizoensTm||''}">
-          </div>
-        </div>
-        <div class="brow">
-          <button class="btn btn-p" onclick="saveInstellingen()" style="flex:2">&#x1F4E2; Opslaan</button>
-          <button class="btn btn-d" onclick="wisSeizoensBericht()" style="flex:1">&#x1F5D1; Wissen</button>
-        </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="sec-hdr-acc${beheerOpen.has('inst-notities')?" open":""}" onclick="toggleBeheer('inst-notities')">&#x1F4DD; Notities <span>${beheerOpen.has('inst-notities')?'▲':'▼'}</span></div>
-        <div class="acc-body${beheerOpen.has('inst-notities')?" open":""}">
-        <div class="fg">
-          <label class="fl">Categorie</label>
-          <select id="notitie-cat">${NOTITIE_CATS.map(c=>`<option>${c}</option>`).join("")}</select>
-        </div>
-        <div class="fg">
-          <label class="fl">Notitie</label>
-          <textarea id="notitie-tekst" rows="3" placeholder="Schrijf hier je notitie..." style="width:100%;padding:11px 14px;border:1.5px solid var(--gd);border-radius:10px;font-size:15px;font-family:'Nunito',sans-serif;color:var(--tx);background:var(--gl);outline:none;resize:vertical;box-sizing:border-box"></textarea>
-        </div>
-        <button class="btn btn-p" onclick="saveNotitie()" style="margin-bottom:14px">&#x1F4DD; Notitie opslaan</button>
-        ${(()=>{
-          if(notities.length===0) return '<div class="empty" style="padding:12px 0"><div class="em">&#x1F4DD;</div><p>Nog geen notities</p></div>';
-          const cats = [...new Set(notities.map(n=>n.cat))];
-          return cats.map(cat=>{
-            const rijen = notities.filter(n=>n.cat===cat);
-            return `<div style="margin-bottom:10px">
-              <div style="font-size:11px;font-weight:800;color:var(--bl);margin-bottom:6px">${cat}</div>
-              ${rijen.map((n,i)=>`<div class="li" ${i===rijen.length-1?'style="border:none"':""}>
-                <div class="li-l">
-                  <div class="li-t" style="white-space:normal;line-height:1.4">${esc(n.tekst)}</div>
-                  <div class="li-s">${fmtD(n.datum)}</div>
-                </div>
-                <div class="li-r"><button class="dbtn" onclick="deleteNotitie('${n._key}')">&#x1F5D1;</button></div>
-              </div>`).join("")}
-            </div>`;
-          }).join("");
-        })()}
-        </div>
-      </div>
-      <div class="card">
-        <div class="sec-hdr-acc${beheerOpen.has('inst-schoonmaak')?" open":""}" onclick="toggleBeheer('inst-schoonmaak')">🧹 Kippenhok schoonmaken <span>${beheerOpen.has('inst-schoonmaak')?'▲':'▼'}</span></div>
-        <div class="acc-body${beheerOpen.has('inst-schoonmaak')?" open":""}">
-        <div style="font-size:11px;color:var(--txl);margin-bottom:14px">Stel in hoe vaak het kippenhok schoongemaakt moet worden. Op het dashboard verschijnt een melding 3 dagen van tevoren.</div>
-        <div class="fg">
-          <label class="fl">&#x1F9F9; Schoonmaak frequentie (dagen)</label>
-          <input type="number" id="inst-hok-frequentie" value="${instellingen.hokFrequentie??14}" min="1" max="365" inputmode="numeric">
-          <div style="font-size:11px;color:var(--txl);margin-top:4px">Huidig: <strong>${instellingen.hokFrequentie??14} dagen</strong> &middot; Aanbeveling: 7&ndash;14 dagen voor vrije uitloop</div>
-        </div>
-        ${(()=>{
-          const volgende = getVolgendeSchoonmaak();
-          const laatste = schoonmaak.filter(r=>!r.type||r.type!=="uitstel")[0];
-          return `<div style="background:var(--gl);border-radius:10px;border:1.5px solid var(--gd);padding:10px 14px;margin-bottom:12px">
-            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
-              <span style="color:var(--txl);font-weight:700">Laatste schoonmaak</span>
-              <span style="font-weight:800;color:var(--bd)">${laatste?fmtD(laatste.datum):"Nog niet geregistreerd"}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;font-size:12px">
-              <span style="color:var(--txl);font-weight:700">Volgende gepland</span>
-              <span style="font-weight:800;color:var(--gn)">${fmtD(volgende)}</span>
-            </div>
-          </div>`;
-        })()}
-        <button class="btn btn-p" onclick="saveInstellingen()">&#x1F4BE; Frequentie opslaan</button>
-        <div style="height:1px;background:var(--gd);margin:14px 0"></div>
-        <div style="font-family:'Fredoka One',cursive;font-size:14px;color:var(--bd);margin-bottom:10px">&#x1F9F9; Schoonmaak registreren</div>
-        <div class="frow">
-          <div class="fg">
-            <label class="fl">Datum schoonmaak</label>
-            <input type="date" id="schoon-datum" value="${today()}">
-          </div>
-          <div class="fg">
-            <label class="fl">Notitie (optioneel)</label>
-            <input type="text" id="schoon-notitie" placeholder="bijv. grondig + ontsmetting">
-          </div>
-        </div>
-        <div class="brow">
-          <button class="btn btn-s" onclick="registreerSchoonmaak()">&#x2705; Opslaan</button>
-          <button class="btn btn-g" onclick="openSchoonmaakHistorie()" style="flex:0.7">&#x1F4CB; Historie</button>
-        </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="sec-hdr-acc${beheerOpen.has('inst-kippen')?" open":""}" onclick="toggleBeheer('inst-kippen')">🐓 Kippen <span>${beheerOpen.has('inst-kippen')?'▲':'▼'}</span></div>
-        <div class="acc-body${beheerOpen.has('inst-kippen')?" open":""}">
-        <div class="fg">
-          <label class="fl">&#x1F3E1; Naam boerderij</label>
-          <input type="text" id="inst-boerderij-naam" value="${esc(instellingen.boerderijNaam||'Ben\'s Boerderij')}" placeholder="bijv. Ben's Boerderij">
-          <div style="font-size:11px;color:var(--txl);margin-top:4px">Wordt getoond in de header en op de bestelpage</div>
-        </div>
-        <button class="btn btn-p" onclick="saveInstellingen()" style="margin-bottom:14px">&#x1F4BE; Naam opslaan</button>
-        <div style="height:1px;background:var(--gd);margin-bottom:14px"></div>
-        <div class="frow">
-          <div class="fg"><label class="fl">Naam</label><input type="text" id="kip-naam" placeholder="bijv. Max..."></div>
-          <div class="fg"><label class="fl">Ras</label>
-            <select id="kip-ras">${RASSEN.map(r=>`<option>${r}</option>`).join("")}</select>
-          </div>
-        </div>
-        <div class="frow">
-          <div class="fg"><label class="fl">Geslacht</label>
-            <select id="kip-geslacht"><option value="Hen">🐔 Hen</option><option value="Haan">🐓 Haan</option></select>
-          </div>
-          <div class="fg"><label class="fl">Geboortedatum</label>
-            <input type="date" id="kip-geboortedatum">
-          </div>
-        </div>
-        <div class="fg"><label class="fl">Aanschafdatum</label>
-          <input type="date" id="kip-aanschafdatum">
-        </div>
-        <button class="btn btn-p" onclick="saveKip()">🐣 Kip toevoegen</button>
-        <div style="height:1px;background:var(--gd);margin:14px 0"></div>
-        ${(()=>{
-          const actief    = kippen.filter(k=>!k.status||k.status==="actief");
-          const uitgevallen = kippen.filter(k=>k.status==="uitgevallen");
 
-          function leeftijdTekst(geboortedatum) {
-            if(!geboortedatum) return null;
-            const ms = new Date() - new Date(geboortedatum+"T12:00:00");
-            const mnd = Math.floor(ms / (1000*60*60*24*30.5));
-            if(mnd < 24) return mnd + " mnd";
-            return (mnd/12).toFixed(1).replace(".0","") + " jr";
-          }
-          function leeftijdKleur(geboortedatum) {
-            if(!geboortedatum) return "var(--txl)";
-            const jr = (new Date() - new Date(geboortedatum+"T12:00:00")) / (1000*60*60*24*365);
-            return jr > 3 ? "var(--rd)" : jr > 2.5 ? "var(--or)" : "var(--gn)";
-          }
-
-          function kipKaartje(k, isUit=false) {
-            const leeftijd = leeftijdTekst(k.geboortedatum);
-            const lKleur   = leeftijdKleur(k.geboortedatum);
-            const geslachtIcon = k.geslacht==="Haan" ? "🐓" : "🐔";
-            const kipData  = JSON.stringify(k).replace(/'/g,"&#39;");
-            return `<div class="kip" style="position:relative;padding-bottom:32px;${isUit?"opacity:0.6;background:#f5f5f5;":""}">` +
-              `<div class="ke">${RAS_ICONS[k.ras]||"🐔"}</div>` +
-              `<div class="kr">${geslachtIcon} ${esc(k.naam)}</div>` +
-              (leeftijd ? `<div class="kn" style="color:${lKleur};font-weight:700">${leeftijd}</div>` : "") +
-              (isUit && k.uitval ? `<div class="kn" style="color:var(--rd)">${k.uitval.reden}</div>` : "") +
-              `<div style="position:absolute;bottom:4px;left:0;right:0;display:flex;gap:2px;justify-content:center;flex-wrap:wrap">` +
-              (isUit
-                ? `<button class="ebtn" onclick="heractiveerKip('${k._key}')" style="font-size:11px" title="Heractiveren">↩️</button>`
-                : `<button class="ebtn" onclick="openKipGezondheid('${k._key}')" style="font-size:11px" title="Gezondheidslog">🏥</button>` +
-                  `<button class="ebtn" onclick="uitvallenKip('${k._key}')" style="font-size:11px;color:var(--rd)" title="Uitval">🪦</button>`) +
-              `<button class="ebtn" onclick='openModal("kip",${kipData})' style="font-size:11px">✏️</button>` +
-              `<button class="dbtn" onclick="deleteKip('${k._key}')" style="font-size:11px">🗑</button>` +
-              `</div></div>`;
-          }
-
-          const actiefByRas = {};
-          actief.forEach(k=>{ if(!actiefByRas[k.ras]) actiefByRas[k.ras]=[]; actiefByRas[k.ras].push(k); });
-
-          const actiefHtml = actief.length===0
-            ? '<div class="empty"><div class="em">🐣</div><p>Nog geen kippen toegevoegd</p></div>'
-            : Object.entries(actiefByRas).map(([ras,kips])=>
-                `<div style="margin-bottom:10px">` +
-                `<div style="font-size:11px;font-weight:800;color:var(--bl);margin-bottom:6px">${RAS_ICONS[ras]||"🐔"} ${ras}</div>` +
-                `<div class="kip-grid">${kips.map(k=>kipKaartje(k,false)).join("")}</div></div>`
-              ).join("");
-
-          const uitHtml = uitgevallen.length===0 ? "" :
-            `<div style="margin-top:12px;border-top:1px solid var(--gd);padding-top:10px">` +
-            `<div style="font-size:11px;font-weight:800;color:var(--txl);margin-bottom:8px">🪦 Niet meer actief (${uitgevallen.length})</div>` +
-            `<div class="kip-grid">${uitgevallen.map(k=>kipKaartje(k,true)).join("")}</div></div>`;
-
-          // Statistieken
-          const metGeb = actief.filter(k=>k.geboortedatum);
-          const gemLeeftijdMnd = metGeb.length
-            ? Math.round(metGeb.reduce((s,k)=>{
-                return s + (new Date()-new Date(k.geboortedatum+"T12:00:00"))/(1000*60*60*24*30.5);
-              },0)/metGeb.length)
-            : null;
-
-          const statsHtml = `<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-            <div style="background:var(--gl);border-radius:8px;border:1px solid var(--gd);padding:6px 12px;font-size:11px;text-align:center;flex:1">
-              <div style="font-family:'Fredoka One',cursive;font-size:18px;color:var(--or)">${actief.length}</div>
-              <div style="color:var(--txl);font-weight:700">Actief</div>
-            </div>
-            <div style="background:var(--gl);border-radius:8px;border:1px solid var(--gd);padding:6px 12px;font-size:11px;text-align:center;flex:1">
-              <div style="font-family:'Fredoka One',cursive;font-size:18px;color:var(--txl)">${uitgevallen.length}</div>
-              <div style="color:var(--txl);font-weight:700">Uitgevallen</div>
-            </div>
-            ${gemLeeftijdMnd!==null?`<div style="background:var(--gl);border-radius:8px;border:1px solid var(--gd);padding:6px 12px;font-size:11px;text-align:center;flex:1">
-              <div style="font-family:'Fredoka One',cursive;font-size:18px;color:var(--or)">${gemLeeftijdMnd<24?gemLeeftijdMnd+"m":(gemLeeftijdMnd/12).toFixed(1)+"j"}</div>
-              <div style="color:var(--txl);font-weight:700">Gem. leeftijd</div>
-            </div>`:""}
-          </div>`;
-
-          return `<div class="card-title">🐓 Onze kippen</div>${statsHtml}${actiefHtml}${uitHtml}`;
-        })()}
-        </div>
+      <!-- Header -->
+      <div style="padding:4px 0 16px">
+        <div style="font-family:'Fredoka One',cursive;font-size:24px;color:var(--bd)">&#x2699;&#xFE0F; Beheer</div>
+        <div style="font-size:12px;color:var(--txl);margin-top:2px">${esc(instellingen.boerderijNaam||"Ben's Boerderij")} &middot; Tik op een onderdeel</div>
       </div>
-      <div class="card">
-        <div class="sec-hdr-acc${beheerOpen.has('inst-klantstat')?" open":""}" onclick="toggleBeheer('inst-klantstat')">🟢 Klant status <span>${beheerOpen.has('inst-klantstat')?'▲':'▼'}</span></div>
-        <div class="acc-body${beheerOpen.has('inst-klantstat')?" open":""}">
-        <div style="font-size:11px;color:var(--txl);margin-bottom:14px">Stel in na hoeveel dagen een klant van status wisselt op de klantenpagina.</div>
-        <div style="background:var(--gl);border-radius:12px;border:1.5px solid var(--gd);overflow:hidden;margin-bottom:14px">
-          <div style="display:grid;grid-template-columns:2fr 3fr 3fr;background:var(--gd);padding:7px 12px;font-size:10px;font-weight:800;color:var(--bd)">
-            <span>Status</span><span>Betekenis</span><span>Drempel</span>
-          </div>
-          <div style="display:grid;grid-template-columns:2fr 3fr 3fr;padding:9px 12px;align-items:center;border-bottom:1px solid var(--gd)">
-            <span style="font-size:13px;font-weight:800;color:var(--gn)">&#x1F7E2; Groen</span>
-            <span style="font-size:11px;color:var(--txl)">Recent gekocht</span>
-            <span style="font-size:11px;color:var(--txl)">&le; <strong>${instellingen.klantGroen??7}</strong> dagen</span>
-          </div>
-          <div style="display:grid;grid-template-columns:2fr 3fr 3fr;padding:9px 12px;align-items:center;border-bottom:1px solid var(--gd)">
-            <span style="font-size:13px;font-weight:800;color:var(--or)">&#x1F7E1; Oranje</span>
-            <span style="font-size:11px;color:var(--txl)">Tijdje geleden</span>
-            <span style="font-size:11px;color:var(--txl)">> ${instellingen.klantGroen??7} en &le; <strong>${instellingen.klantOranje??14}</strong> dagen</span>
-          </div>
-          <div style="display:grid;grid-template-columns:2fr 3fr 3fr;padding:9px 12px;align-items:center;border-bottom:1px solid var(--gd)">
-            <span style="font-size:13px;font-weight:800;color:var(--rd)">&#x1F534; Rood</span>
-            <span style="font-size:11px;color:var(--txl)">Lang niet gezien</span>
-            <span style="font-size:11px;color:var(--txl)">> <strong>${instellingen.klantOranje??14}</strong> dagen</span>
-          </div>
-          <div style="display:grid;grid-template-columns:2fr 3fr 3fr;padding:9px 12px;align-items:center">
-            <span style="font-size:13px;font-weight:800;color:var(--txl)">&#x26AB; Grijs</span>
-            <span style="font-size:11px;color:var(--txl)">Nog nooit gekocht</span>
-            <span style="font-size:11px;color:var(--txl)">&#x2014;</span>
-          </div>
+
+      <!-- Tegels grid -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding-bottom:20px">
+
+        <!-- 1 Eierprijzen -->
+        <div class="beheer-tile" onclick="openBeheerOverlay('inst-prijzen')">
+          <div class="beheer-tile-icon" style="background:#fff3e0">&#x1F95A;</div>
+          <div class="beheer-tile-titel">Eierprijzen</div>
+          <div class="beheer-tile-sub">${fmt(instellingen.prijsPerEi)} p/ei</div>
         </div>
-        <div class="frow">
-          <div class="fg">
-            <label class="fl">&#x1F7E2; Groen t/m (dagen)</label>
-            <input type="number" id="inst-klant-groen" value="${instellingen.klantGroen??7}" min="1" max="365" inputmode="numeric">
-            <div style="font-size:11px;color:var(--txl);margin-top:4px">Huidig: <strong>${instellingen.klantGroen??7} dagen</strong></div>
-          </div>
-          <div class="fg">
-            <label class="fl">&#x1F7E1; Oranje t/m (dagen)</label>
-            <input type="number" id="inst-klant-oranje" value="${instellingen.klantOranje??14}" min="1" max="365" inputmode="numeric">
-            <div style="font-size:11px;color:var(--txl);margin-top:4px">Huidig: <strong>${instellingen.klantOranje??14} dagen</strong></div>
-          </div>
+
+        <!-- 2 Seizoensnieuws -->
+        <div class="beheer-tile" onclick="openBeheerOverlay('inst-seizoens')">
+          <div class="beheer-tile-icon" style="background:#e3f2fd">&#x1F4E2;</div>
+          <div class="beheer-tile-titel">Seizoensbericht</div>
+          <div class="beheer-tile-sub">${(()=>{
+            const sn=instellingen.seizoensNieuws; if(!sn) return "Geen bericht";
+            const v=today(),va=instellingen.seizoensVanaf,tm=instellingen.seizoensTm;
+            if(va&&v<va) return "&#x1F7E1; Gepland";
+            if(tm&&v>tm) return "&#x26AB; Verlopen";
+            return "&#x1F7E2; Actief";
+          })()}</div>
         </div>
-        <div class="fg" style="margin-top:14px">
-          <label class="fl">&#x1F3C5; Loyaliteitssticker na (aankopen)</label>
-          <input type="number" id="inst-loyaliteit" value="${instellingen.loyaliteitDrempel??10}" min="1" max="100" inputmode="numeric">
-          <div style="font-size:11px;color:var(--txl);margin-top:4px">Klant krijgt een &#x1F3C5; sticker na dit aantal aankopen · huidig: <strong>${instellingen.loyaliteitDrempel??10} aankopen</strong></div>
+
+        <!-- 3 Notities -->
+        <div class="beheer-tile" onclick="openBeheerOverlay('inst-notities')">
+          <div class="beheer-tile-icon" style="background:#f3e5f5">&#x1F4DD;</div>
+          <div class="beheer-tile-titel">Notities</div>
+          <div class="beheer-tile-sub">${notities.length} notitie${notities.length===1?"":"s"}</div>
         </div>
-        <div class="fg" style="margin-top:14px">
-          <label class="fl">&#x1F3C5; Loyaliteitssticker na (aankopen)</label>
+
+        <!-- 4 Kippenhok -->
+        <div class="beheer-tile" onclick="openBeheerOverlay('inst-schoonmaak')">
+          <div class="beheer-tile-icon" style="background:#e8f5e9">&#x1F9F9;</div>
+          <div class="beheer-tile-titel">Kippenhok</div>
+          <div class="beheer-tile-sub">${(()=>{
+            const s=schoonmaak.filter(r=>!r.type||r.type!=="uitstel").sort((a,b)=>b.datum.localeCompare(a.datum))[0];
+            if(!s) return "Nooit gedaan";
+            const freq=instellingen.hokFrequentie||14;
+            const d=new Date(s.datum+"T12:00:00");
+            d.setDate(d.getDate()+freq);
+            return "Volgende: "+fmtD(d.toISOString().slice(0,10));
+          })()}</div>
         </div>
-        <button class="btn btn-p" onclick="saveInstellingen()">&#x1F4BE; Drempelwaarden opslaan</button>
+
+        <!-- 5 Kippen -->
+        <div class="beheer-tile" onclick="openBeheerOverlay('inst-kippen')">
+          <div class="beheer-tile-icon" style="background:#fff8e1">&#x1F413;</div>
+          <div class="beheer-tile-titel">Kippen</div>
+          <div class="beheer-tile-sub">${kippen.filter(k=>!k.status||k.status==="actief").length} actief</div>
         </div>
+
+        <!-- 6 Klanten -->
+        <div class="beheer-tile" onclick="openBeheerOverlay('inst-klantstat')">
+          <div class="beheer-tile-icon" style="background:#e8f5e9">&#x1F465;</div>
+          <div class="beheer-tile-titel">Klant status</div>
+          <div class="beheer-tile-sub">&#x1F7E2; ${instellingen.klantGroen??7}d &middot; &#x1F7E1; ${instellingen.klantOranje??14}d</div>
+        </div>
+
+        <!-- 7 Statistieken -->
+        <div class="beheer-tile" onclick="openBeheerOverlay('inst-statistieken')">
+          <div class="beheer-tile-icon" style="background:#fce4ec">&#x1F4CA;</div>
+          <div class="beheer-tile-titel">Statistieken</div>
+          <div class="beheer-tile-sub">${totGelegd} eieren totaal</div>
+        </div>
+
+        <!-- 8 Weerlocatie -->
+        <div class="beheer-tile" onclick="openBeheerOverlay('inst-locatie')">
+          <div class="beheer-tile-icon" style="background:#e3f2fd">&#x1F4CD;</div>
+          <div class="beheer-tile-titel">Weerlocatie</div>
+          <div class="beheer-tile-sub">${esc(instellingen.weerNaam||"Ulestraten")}</div>
+        </div>
+
+        <!-- 9 Pushmeldingen -->
+        <div class="beheer-tile" onclick="openBeheerOverlay('inst-push')">
+          <div class="beheer-tile-icon" style="background:#fff3e0">&#x1F514;</div>
+          <div class="beheer-tile-titel">Pushmeldingen</div>
+          <div class="beheer-tile-sub">${typeof Notification!=="undefined"&&Notification.permission==="granted"?"&#x2705; Aan":"&#x26AA; Uit"}</div>
+        </div>
+
+        <!-- 10 Back-up -->
+        <div class="beheer-tile" onclick="openBeheerOverlay('inst-backup')">
+          <div class="beheer-tile-icon" style="background:#f3e5f5">&#x1F4BE;</div>
+          <div class="beheer-tile-titel">Back-up</div>
+          <div class="beheer-tile-sub">CSV exporteren</div>
+        </div>
+
       </div>
-      <div class="card">
-        <div class="sec-hdr-acc${beheerOpen.has('inst-statistieken')?" open":""}" onclick="toggleBeheer('inst-statistieken')">📊 Statistieken <span>${beheerOpen.has('inst-statistieken')?'▲':'▼'}</span></div>
-        <div class="acc-body${beheerOpen.has('inst-statistieken')?" open":""}">
-        <div class="li"><div class="li-l"><div class="li-t">Totaal gelegde eieren</div></div><div class="li-r"><span class="fw text-or">${totGelegd}</span></div></div>
-        <div class="li"><div class="li-l"><div class="li-t">💔 Waarvan kapot</div></div><div class="li-r"><span class="fw text-ro">${totKapot}</span></div></div>
-        <div class="li"><div class="li-l"><div class="li-t">Totaal verkochte eieren</div></div><div class="li-r"><span class="fw text-gn">${totVerkocht}</span></div></div>
-        <div class="li"><div class="li-l"><div class="li-t">Huidige voorraad</div></div><div class="li-r"><span class="fw" style="${voorraad<0?"color:var(--rd)":"color:var(--or)"}">${voorraad}</span></div></div>
-        <div class="li"><div class="li-l"><div class="li-t">Invul-streak</div></div><div class="li-r"><span class="fw text-or">${streak} dagen ${streak>=7?"🔥":streak>=3?"⭐":"📆"}</span></div></div>
-        <div class="li"><div class="li-l"><div class="li-t">Totaal klanten</div></div><div class="li-r"><span class="fw text-or">${klanten.length}</span></div></div>
-        <div class="li" style="border:none"><div class="li-l"><div class="li-t">Totaal omzet</div></div><div class="li-r"><span class="fw text-gn">${fmt(omzet)}</span></div></div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="sec-hdr-acc${beheerOpen.has('inst-locatie')?" open":""}" onclick="toggleBeheer('inst-locatie')">📍 Weerlocatie <span>${beheerOpen.has('inst-locatie')?'▲':'▼'}</span></div>
-        <div class="acc-body${beheerOpen.has('inst-locatie')?" open":""}">
-        <div style="font-size:11px;color:var(--txl);margin-bottom:14px">De locatie die gebruikt wordt voor het weerbericht op het dashboard.</div>
-        <div class="fg">
-          <label class="fl">Plaatsnaam (weergave)</label>
-          <input type="text" id="inst-weer-naam" value="${instellingen.weerNaam??'Ulestraten'}" placeholder="bijv. Ulestraten">
-        </div>
-        <div class="frow">
-          <div class="fg">
-            <label class="fl">Breedtegraad (lat)</label>
-            <input type="number" id="inst-weer-lat" value="${instellingen.weerLat??50.9057}" step="0.0001" inputmode="decimal">
-          </div>
-          <div class="fg">
-            <label class="fl">Lengtegraad (lon)</label>
-            <input type="number" id="inst-weer-lon" value="${instellingen.weerLon??5.7815}" step="0.0001" inputmode="decimal">
-          </div>
-        </div>
-        <div style="background:var(--gl);border-radius:10px;border:1.5px solid var(--gd);padding:10px 14px;margin-bottom:12px;font-size:11px;color:var(--txl)">
-          &#x1F4A1; Coördinaten vind je via <strong>maps.google.com</strong> — zoek je adres op en klik rechts op de locatie voor de coördinaten.
-        </div>
-        <button class="btn btn-p" onclick="saveInstellingen()">&#x1F4BE; Locatie opslaan</button>
-        </div>
-      </div>
-      <div class="card">
-        <div class="sec-hdr-acc${beheerOpen.has('inst-push')?" open":""}" onclick="toggleBeheer('inst-push')">🔔 Pushmeldingen <span>${beheerOpen.has('inst-push')?'▲':'▼'}</span></div>
-        <div class="acc-body${beheerOpen.has('inst-push')?" open":""}">
-        <div style="font-size:11px;color:var(--txl);margin-bottom:14px">Ontvang meldingen op dit apparaat voor legdagen, schoonmaak, reserveringen en voorraad.</div>
-        ${(()=>{
-          const supported = ("Notification" in window) && ("serviceWorker" in navigator);
-          if(!supported) return '<div style="font-size:12px;color:var(--txl);background:var(--gl);border-radius:10px;padding:10px 14px">' +
-            '⚠️ Pushmeldingen worden niet ondersteund in deze browser.<br><br>' +
-            '<strong>Op iPhone:</strong> open de app in Safari, tik op het deel-icoon (□↑) en kies <em>Zet op beginscherm</em>. ' +
-            'Start de app daarna vanaf je beginscherm en probeer opnieuw.<br><br>' +
-            '<strong>Op desktop:</strong> gebruik Google Chrome voor de beste ondersteuning.' +
-            '</div>';
-          const perm = Notification.permission;
-          const permLabel = perm==="granted"?"✅ Toestemming verleend":perm==="denied"?"❌ Geblokkeerd door browser":"⏳ Nog niet gevraagd";
-          const permKleur = perm==="granted"?"color:var(--gn)":perm==="denied"?"color:var(--rd)":"color:var(--or)";
-          return `<div style="background:var(--gl);border-radius:10px;border:1.5px solid var(--gd);padding:10px 14px;margin-bottom:12px">
-            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
-              <span style="color:var(--txl);font-weight:700">Status browser</span>
-              <span style="font-weight:800;${permKleur}">${permLabel}</span>
-            </div>
-          </div>
-          <div style="font-size:11px;color:var(--txl);margin-bottom:10px">
-            <div style="margin-bottom:3px">📋 Actieve meldingen:</div>
-            <div style="padding-left:8px;line-height:1.8">
-              🥚 Legdag herinnering — dagelijks 19:00 als niet ingevuld<br>
-              🧹 Schoonmaak herinnering — op geplande datum om 08:00<br>
-              🔔 Nieuwe reservering — direct bij binnenkomst<br>
-              📦 Voorraad waarschuwing — dagelijks als voorraad hoog is
-            </div>
-          </div>
-          ${perm==="denied"
-            ? '<div style="font-size:11px;color:var(--rd);background:#fadbd8;border-radius:8px;padding:8px 12px">Notificaties zijn geblokkeerd in je browser. Ga naar browserinstellingen → Site-instellingen om dit te herstellen.</div>'
-            : '<div class="brow"><button class="btn btn-s" onclick="registreerPushNotificaties()">🔔 Inschakelen op dit apparaat</button><button class="btn btn-g" onclick="uitschakelenPushNotificaties()" style="flex:0.5">🔕 Uit</button></div>'}`;
-        })()}
-        </div>
-      </div>
-      <div class="card">
-        <div class="sec-hdr-acc${beheerOpen.has('inst-backup')?" open":""}" onclick="toggleBeheer('inst-backup')">💾 Back-up (CSV) <span>${beheerOpen.has('inst-backup')?'▲':'▼'}</span></div>
-        <div class="acc-body${beheerOpen.has('inst-backup')?" open":""}">
-        <div class="data-box"><h4>📥 Downloaden</h4>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
-            <button class="btn btn-g" onclick="exportCSV('legdagen')">🥚 Legdagen</button>
-            <button class="btn btn-g" onclick="exportCSV('verkopen')">💰 Verkopen</button>
-            <button class="btn btn-g" onclick="exportCSV('investeringen')">📈 Investering</button>
-            <button class="btn btn-g" onclick="exportCSV('kosten')">📋 Kosten</button>
-          </div>
-        </div>
-        <p style="font-size:11px;color:var(--txl);text-align:center;margin-top:4px">☁️ Data wordt live gesynchroniseerd via Firebase op alle apparaten</p>
-        </div>
-      </div>
+
+      <!-- Uitloggen knop -->
+      <button class="btn btn-g" onclick="doLogout()" style="background:#fff;border:1.5px solid var(--gd);color:var(--bd);border-radius:14px;font-size:14px;padding:14px">Uitloggen</button>
+      <div style="text-align:center;font-size:10px;color:var(--txl);margin-top:12px;padding-bottom:20px">Ben's Boerderij &middot; Firebase Realtime Database</div>
+
     </div>
 
   </div><!-- pages -->
+
+  <!-- ═══ BEHEER OVERLAY ═══ -->
+  <div id="beheer-overlay" class="beheer-overlay-bg" onclick="closeBeheerOverlay(event)">
+    <div class="beheer-overlay-sheet" id="beheer-overlay-sheet">
+      <div class="beheer-overlay-handle"></div>
+      <div class="beheer-overlay-header">
+        <div id="beheer-overlay-titel" style="font-family:'Fredoka One',cursive;font-size:18px;color:var(--bd)"></div>
+        <button onclick="closeBeheerOverlay()" style="background:none;border:none;font-size:22px;color:var(--txl);cursor:pointer;line-height:1">&#x2715;</button>
+      </div>
+      <div id="beheer-overlay-body" style="overflow-y:auto;flex:1;padding:0 16px 24px"></div>
+    </div>
+  </div>
+
 
   <nav class="bottomnav">
     ${[["dashboard","🏠","Dashboard"],["legdagen","🥚","Legdagen"],["verkopen","💰","Verkopen"],["klanten","👤","Klanten"],["kosten","📋","Kosten"],["pl","📊","P&L"],["instellingen","⚙️","Beheer"]].map(([id,ni,nl])=>
@@ -3186,6 +2921,271 @@ async function wisSeizoensBericht() {
   if(tm) tm.value = "";
   await saveInstellingen();
   toast("\u2705 Seizoensnieuws gewist");
+}
+
+
+function openBeheerOverlay(id) {
+  const overlay = document.getElementById("beheer-overlay");
+  const body    = document.getElementById("beheer-overlay-body");
+  const titel   = document.getElementById("beheer-overlay-titel");
+  if(!overlay||!body||!titel) return;
+
+  const titels = {
+    "inst-prijzen":      "🥚 Eierprijzen",
+    "inst-seizoens":     "📢 Seizoensnieuws",
+    "inst-notities":     "📝 Notities",
+    "inst-schoonmaak":   "🧹 Kippenhok",
+    "inst-kippen":       "🐓 Kippen",
+    "inst-klantstat":    "👥 Klant status",
+    "inst-statistieken": "📊 Statistieken",
+    "inst-locatie":      "📍 Weerlocatie",
+    "inst-push":         "🔔 Pushmeldingen",
+    "inst-backup":       "💾 Back-up",
+  };
+  titel.textContent = titels[id] || "Beheer";
+
+  // Render content based on id
+  let html = "";
+  if(id==="inst-prijzen") {
+    html = `
+      <div class="fg"><label class="fl">Prijs per ei (€)</label>
+        <input type="number" id="inst-prijs" value="${instellingen.prijsPerEi.toFixed(2)}" step="0.01" min="0.01" inputmode="decimal">
+        <div style="font-size:11px;color:var(--txl);margin-top:4px">Huidig: <strong>${fmt(instellingen.prijsPerEi)}</strong> per ei</div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Doosje 6 eieren (€)</label>
+          <input type="number" id="inst-prijs6" value="${instellingen.prijsDoosje6.toFixed(2)}" step="0.01" inputmode="decimal">
+          <div style="font-size:11px;color:var(--txl);margin-top:4px">Huidig: <strong>${fmt(instellingen.prijsDoosje6)}</strong></div>
+        </div>
+        <div class="fg"><label class="fl">Doosje 10 eieren (€)</label>
+          <input type="number" id="inst-prijs10" value="${instellingen.prijsDoosje10.toFixed(2)}" step="0.01" inputmode="decimal">
+          <div style="font-size:11px;color:var(--txl);margin-top:4px">Huidig: <strong>${fmt(instellingen.prijsDoosje10)}</strong></div>
+        </div>
+      </div>
+      <div style="height:1px;background:var(--gd);margin:12px 0"></div>
+      <div class="fg"><label class="fl">🚲 Bezorgkosten (€)</label>
+        <input type="number" id="inst-bezorgkosten" value="${(instellingen.bezorgkosten??1.00).toFixed(2)}" step="0.01" min="0" inputmode="decimal">
+        <div style="font-size:11px;color:var(--txl);margin-top:4px">Huidig: <strong>${fmt(instellingen.bezorgkosten??1.00)}</strong> per bezorging</div>
+      </div>
+      <button class="btn btn-p" onclick="saveInstellingen();closeBeheerOverlay()">💾 Opslaan</button>`;
+  }
+  else if(id==="inst-seizoens") {
+    const sn=instellingen.seizoensNieuws||"";
+    const va=instellingen.seizoensVanaf||"";
+    const tm=instellingen.seizoensTm||"";
+    const vandaag=today();
+    const actief=(!va||vandaag>=va)&&(!tm||vandaag<=tm)&&sn;
+    const geweest=tm&&vandaag>tm&&sn;
+    const statusHtml=sn?`<div style="background:var(--gl);border-radius:10px;border:1.5px solid var(--gd);padding:10px 14px;margin-bottom:12px;font-size:12px">
+      <div style="font-weight:800;color:${actief?"var(--gn)":geweest?"var(--txl)":"var(--or)"};margin-bottom:4px">${actief?"🟢 Nu actief":geweest?"⚫ Verlopen":"🟡 Nog niet actief"}</div>
+      <div>${esc(sn)}</div>${(va||tm)?`<div style="color:var(--txl);margin-top:4px">${va?fmtD(va):"altijd"}${tm?" t/m "+fmtD(tm):""}</div>`:""}
+    </div>`:"";
+    html = `${statusHtml}
+      <div style="font-size:11px;color:var(--txl);margin-bottom:12px">Toon een bericht op de bestelpage en het dashboard.</div>
+      <div class="fg"><label class="fl">Bericht</label>
+        <textarea id="inst-seizoens-nieuws" rows="3" placeholder="bijv. 2 weken met vakantie, terug op 15 juni..." style="width:100%;padding:11px 14px;border:1.5px solid var(--gd);border-radius:10px;font-size:14px;font-family:'Nunito',sans-serif;color:var(--tx);background:var(--gl);outline:none;resize:vertical;box-sizing:border-box">${esc(sn)}</textarea>
+      </div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Geldig vanaf</label><input type="date" id="inst-seizoens-vanaf" value="${va}"></div>
+        <div class="fg"><label class="fl">Geldig t/m</label><input type="date" id="inst-seizoens-tm" value="${tm}"></div>
+      </div>
+      <div class="brow">
+        <button class="btn btn-p" onclick="saveInstellingen();closeBeheerOverlay()" style="flex:2">📢 Opslaan</button>
+        <button class="btn btn-d" onclick="wisSeizoensBericht()" style="flex:1">🗑 Wissen</button>
+      </div>`;
+  }
+  else if(id==="inst-notities") {
+    const cats=[...new Set(notities.map(n=>n.cat))];
+    const lijstHtml = notities.length===0
+      ? '<div class="empty" style="padding:12px 0"><div class="em">📝</div><p>Nog geen notities</p></div>'
+      : cats.map(cat=>{
+          const rijen=notities.filter(n=>n.cat===cat);
+          return `<div style="margin-bottom:10px">
+            <div style="font-size:11px;font-weight:800;color:var(--bl);margin-bottom:6px">${cat}</div>
+            ${rijen.map((n,i)=>`<div class="li" ${i===rijen.length-1?'style="border:none"':""}>
+              <div class="li-l"><div class="li-t" style="white-space:normal;line-height:1.4">${esc(n.tekst)}</div><div class="li-s">${fmtD(n.datum)}</div></div>
+              <div class="li-r"><button class="dbtn" onclick="deleteNotitie('${n._key}')">🗑</button></div>
+            </div>`).join("")}
+          </div>`;
+        }).join("");
+    html = `
+      <div class="fg"><label class="fl">Categorie</label>
+        <select id="notitie-cat">${NOTITIE_CATS.map(c=>`<option>${c}</option>`).join("")}</select>
+      </div>
+      <div class="fg"><label class="fl">Notitie</label>
+        <textarea id="notitie-tekst" rows="3" placeholder="Schrijf hier je notitie..." style="width:100%;padding:11px 14px;border:1.5px solid var(--gd);border-radius:10px;font-size:15px;font-family:'Nunito',sans-serif;color:var(--tx);background:var(--gl);outline:none;resize:vertical;box-sizing:border-box"></textarea>
+      </div>
+      <button class="btn btn-p" onclick="saveNotitie()" style="margin-bottom:14px">📝 Notitie opslaan</button>
+      <div style="height:1px;background:var(--gd);margin-bottom:12px"></div>
+      ${lijstHtml}`;
+  }
+  else if(id==="inst-schoonmaak") {
+    const sorted=schoonmaak.filter(r=>!r.type||r.type!=="uitstel").sort((a,b)=>b.datum.localeCompare(a.datum));
+    const laatste=sorted[0];
+    const freq=instellingen.hokFrequentie||14;
+    const volgende=laatste?new Date(new Date(laatste.datum+"T12:00:00").setDate(new Date(laatste.datum+"T12:00:00").getDate()+freq)).toISOString().slice(0,10):null;
+    html = `
+      <div style="font-size:11px;color:var(--txl);margin-bottom:14px">Stel in hoe vaak het kippenhok schoongemaakt moet worden. Op het dashboard verschijnt een melding 3 dagen van tevoren.</div>
+      <div class="fg"><label class="fl">🧹 Schoonmaak frequentie (dagen)</label>
+        <input type="number" id="inst-hok-freq" value="${freq}" min="1" max="365" inputmode="numeric">
+        <div style="font-size:11px;color:var(--txl);margin-top:4px">Huidig: <strong>${freq} dagen</strong> · Aanbeveling: 7–14 dagen voor vrije uitloop</div>
+      </div>
+      <button class="btn btn-p" onclick="saveInstellingen()" style="margin-bottom:14px">💾 Frequentie opslaan</button>
+      <div style="background:var(--gl);border-radius:10px;border:1.5px solid var(--gd);padding:10px 14px;margin-bottom:14px;font-size:12px">
+        <div class="li" style="border:none;padding:0"><div class="li-l"><div class="li-t">Laatste schoonmaak</div></div><div class="li-r"><span class="fw">${laatste?fmtD(laatste.datum):"Nog nooit"}</span></div></div>
+        <div class="li" style="border:none;padding:4px 0 0"><div class="li-l"><div class="li-t">Volgende gepland</div></div><div class="li-r"><span class="fw" style="${volgende&&volgende<=today()?"color:var(--rd)":""}">${volgende?fmtD(volgende):"—"}</span></div></div>
+      </div>
+      <div style="height:1px;background:var(--gd);margin-bottom:12px"></div>
+      <div style="font-size:11px;font-weight:800;color:var(--txl);margin-bottom:8px">📋 Historie</div>
+      ${(()=>{
+        if(schoonmaak.length===0) return '<div class="empty" style="padding:8px 0"><div class="em">🧹</div><p>Nog geen schoonmaak geregistreerd</p></div>';
+        return schoonmaak.slice(0,8).map(s=>`<div class="li">
+          <div class="li-l"><div class="li-t">${fmtD(s.datum)}</div><div class="li-s">${s.notitie?esc(s.notitie):s.type==="uitstel"?"Uitgesteld":"Schoongemaakt"}</div></div>
+          <div class="li-r"><button class="dbtn" onclick="deleteSchoonmaak('${s._key}')">🗑</button></div>
+        </div>`).join("");
+      })()}
+      <button class="btn btn-s" onclick="saveSchoonmaak()" style="margin-top:8px">🧹 Schoonmaak registreren</button>`;
+  }
+  else if(id==="inst-kippen") {
+    const actiefKippen=kippen.filter(k=>!k.status||k.status==="actief");
+    html = `
+      <div class="fg"><label class="fl">🏡 Naam boerderij</label>
+        <input type="text" id="inst-boerderij-naam" value="${esc(instellingen.boerderijNaam||"Ben's Boerderij")}" placeholder="bijv. Ben's Boerderij">
+        <div style="font-size:11px;color:var(--txl);margin-top:4px">Wordt getoond in de header en op de bestelpage</div>
+      </div>
+      <button class="btn btn-p" onclick="saveInstellingen()" style="margin-bottom:14px">💾 Naam opslaan</button>
+      <div style="height:1px;background:var(--gd);margin-bottom:14px"></div>
+      <div style="font-size:11px;font-weight:800;color:var(--txl);margin-bottom:10px">Kip toevoegen</div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Naam</label><input type="text" id="kip-naam" placeholder="bijv. Max..."></div>
+        <div class="fg"><label class="fl">Ras</label><select id="kip-ras">${RASSEN.map(r=>`<option>${r}</option>`).join("")}</select></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Geslacht</label><select id="kip-geslacht"><option value="Hen">🐔 Hen</option><option value="Haan">🐓 Haan</option></select></div>
+        <div class="fg"><label class="fl">Geboortedatum</label><input type="date" id="kip-geboortedatum"></div>
+      </div>
+      <div class="fg"><label class="fl">Aanschafdatum</label><input type="date" id="kip-aanschafdatum" value="${today()}"></div>
+      <button class="btn btn-p" onclick="saveKip()" style="margin-bottom:14px">🐓 Kip toevoegen</button>
+      <div style="height:1px;background:var(--gd);margin-bottom:10px"></div>
+      <div style="font-size:11px;font-weight:800;color:var(--txl);margin-bottom:8px">🐓 Kippen (${actiefKippen.length} actief)</div>
+      ${(()=>{
+        if(kippen.length===0) return '<div class="empty" style="padding:8px 0"><div class="em">🐓</div><p>Nog geen kippen</p></div>';
+        return kippen.map(k=>{
+          const leeftijd=k.geboortedatum?Math.floor((new Date()-new Date(k.geboortedatum+"T12:00:00"))/(365.25*24*3600*1000)*10)/10:null;
+          const dot=!leeftijd?"":leeftijd>3?"🔴":leeftijd>2.5?"🟡":"🟢";
+          return `<div class="li">
+            <div class="li-l">
+              <div class="li-t">${dot} ${esc(k.naam)} <span style="font-size:10px;color:var(--txl)">${k.ras||""}</span></div>
+              <div class="li-s">${leeftijd?leeftijd+" jr":""} ${k.status&&k.status!=="actief"?"· "+k.status:""}</div>
+            </div>
+            <div class="li-r">
+              <button class="ebtn" onclick='openModal("kip",${JSON.stringify(k)})'>✏️</button>
+              <button class="dbtn" onclick="deleteKip('${k._key}')">🗑</button>
+            </div>
+          </div>`;
+        }).join("");
+      })()}`;
+  }
+  else if(id==="inst-klantstat") {
+    html = `
+      <div style="font-size:11px;color:var(--txl);margin-bottom:14px">Stel in hoe lang een klant actief moet zijn geweest voor het statusbolletje op het klantprofiel.</div>
+      <div class="frow">
+        <div class="fg"><label class="fl">🟢 Groen t/m (dagen)</label>
+          <input type="number" id="inst-klant-groen" value="${instellingen.klantGroen??7}" min="1" max="365" inputmode="numeric">
+          <div style="font-size:11px;color:var(--txl);margin-top:4px">Huidig: <strong>${instellingen.klantGroen??7} dagen</strong></div>
+        </div>
+        <div class="fg"><label class="fl">🟡 Oranje t/m (dagen)</label>
+          <input type="number" id="inst-klant-oranje" value="${instellingen.klantOranje??14}" min="1" max="365" inputmode="numeric">
+          <div style="font-size:11px;color:var(--txl);margin-top:4px">Huidig: <strong>${instellingen.klantOranje??14} dagen</strong></div>
+        </div>
+      </div>
+      <div class="fg" style="margin-top:14px"><label class="fl">🏅 Loyaliteitssticker na (aankopen)</label>
+        <input type="number" id="inst-loyaliteit" value="${instellingen.loyaliteitDrempel??10}" min="1" max="100" inputmode="numeric">
+        <div style="font-size:11px;color:var(--txl);margin-top:4px">Huidig: <strong>${instellingen.loyaliteitDrempel??10} aankopen</strong></div>
+      </div>
+      <button class="btn btn-p" onclick="saveInstellingen();closeBeheerOverlay()">💾 Drempelwaarden opslaan</button>`;
+  }
+  else if(id==="inst-statistieken") {
+    html = `
+      <div class="li"><div class="li-l"><div class="li-t">Totaal gelegde eieren</div></div><div class="li-r"><span class="fw text-or">${totGelegd}</span></div></div>
+      <div class="li"><div class="li-l"><div class="li-t">💔 Waarvan kapot</div></div><div class="li-r"><span class="fw text-ro">${totKapot}</span></div></div>
+      <div class="li"><div class="li-l"><div class="li-t">Totaal verkochte eieren</div></div><div class="li-r"><span class="fw text-gn">${totVerkocht}</span></div></div>
+      <div class="li"><div class="li-l"><div class="li-t">Huidige voorraad</div></div><div class="li-r"><span class="fw" style="${voorraad<0?"color:var(--rd)":"color:var(--or)"}">${voorraad}</span></div></div>
+      <div class="li"><div class="li-l"><div class="li-t">Invul-streak</div></div><div class="li-r"><span class="fw text-or">${streak} dagen ${streak>=7?"🔥":streak>=3?"⭐":"📆"}</span></div></div>
+      <div class="li"><div class="li-l"><div class="li-t">Totaal klanten</div></div><div class="li-r"><span class="fw text-or">${klanten.length}</span></div></div>
+      <div class="li" style="border:none"><div class="li-l"><div class="li-t">Totaal omzet</div></div><div class="li-r"><span class="fw text-gn">${fmt(omzet)}</span></div></div>`;
+  }
+  else if(id==="inst-locatie") {
+    html = `
+      <div style="font-size:11px;color:var(--txl);margin-bottom:14px">De locatie die gebruikt wordt voor het weerbericht op het dashboard.</div>
+      <div class="fg"><label class="fl">Plaatsnaam (weergave)</label>
+        <input type="text" id="inst-weer-naam" value="${esc(instellingen.weerNaam??'Ulestraten')}" placeholder="bijv. Ulestraten">
+      </div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Breedtegraad (lat)</label>
+          <input type="number" id="inst-weer-lat" value="${instellingen.weerLat??50.9057}" step="0.0001" inputmode="decimal">
+        </div>
+        <div class="fg"><label class="fl">Lengtegraad (lon)</label>
+          <input type="number" id="inst-weer-lon" value="${instellingen.weerLon??5.7815}" step="0.0001" inputmode="decimal">
+        </div>
+      </div>
+      <div style="background:var(--gl);border-radius:10px;border:1.5px solid var(--gd);padding:10px 14px;margin-bottom:12px;font-size:11px;color:var(--txl)">
+        💡 Coördinaten vind je via <strong>maps.google.com</strong> — zoek je adres op en klik rechts op de locatie.
+      </div>
+      <button class="btn btn-p" onclick="saveInstellingen();closeBeheerOverlay()">💾 Locatie opslaan</button>`;
+  }
+  else if(id==="inst-push") {
+    const supported=("Notification" in window)&&("serviceWorker" in navigator);
+    if(!supported){
+      html='<div style="font-size:12px;color:var(--txl);background:var(--gl);border-radius:10px;padding:10px 14px">⚠️ Pushmeldingen worden niet ondersteund in deze browser.<br><br><strong>Op iPhone:</strong> open de app in Safari, tik op het deel-icoon (□↑) en kies <em>Zet op beginscherm</em>. Start de app daarna vanaf je beginscherm en probeer opnieuw.<br><br><strong>Op desktop:</strong> gebruik Google Chrome.</div>';
+    } else {
+      const perm=Notification.permission;
+      const permLabel=perm==="granted"?"✅ Toestemming verleend":perm==="denied"?"❌ Geblokkeerd door browser":"⏳ Nog niet gevraagd";
+      const permKleur=perm==="granted"?"color:var(--gn)":perm==="denied"?"color:var(--rd)":"color:var(--or)";
+      html=`<div style="background:var(--gl);border-radius:10px;border:1.5px solid var(--gd);padding:10px 14px;margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+          <span style="color:var(--txl);font-weight:700">Status browser</span>
+          <span style="font-weight:800;${permKleur}">${permLabel}</span>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--txl);margin-bottom:10px">
+        <div style="margin-bottom:3px">📋 Actieve meldingen:</div>
+        <div style="padding-left:8px;line-height:1.8">
+          🥚 Legdag herinnering — dagelijks 19:00 als niet ingevuld<br>
+          🧹 Schoonmaak herinnering — op geplande datum om 08:00<br>
+          🔔 Nieuwe reservering — direct bij binnenkomst<br>
+          📦 Voorraad waarschuwing — dagelijks als voorraad hoog is
+        </div>
+      </div>
+      ${perm==="denied"
+        ?'<div style="font-size:11px;color:var(--rd);background:#fadbd8;border-radius:8px;padding:8px 12px">Notificaties zijn geblokkeerd. Ga naar browserinstellingen → Site-instellingen om dit te herstellen.</div>'
+        :'<div class="brow"><button class="btn btn-s" onclick="registreerPushNotificaties()">🔔 Inschakelen op dit apparaat</button><button class="btn btn-g" onclick="uitschakelenPushNotificaties()" style="flex:0.5">🔕 Uit</button></div>'}`;
+    }
+  }
+  else if(id==="inst-backup") {
+    html=`
+      <div class="data-box"><h4>📥 Downloaden</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+          <button class="btn btn-g" onclick="exportCSV('legdagen')">🥚 Legdagen</button>
+          <button class="btn btn-g" onclick="exportCSV('verkopen')">💰 Verkopen</button>
+          <button class="btn btn-g" onclick="exportCSV('investeringen')">📈 Investering</button>
+          <button class="btn btn-g" onclick="exportCSV('kosten')">📋 Kosten</button>
+        </div>
+      </div>
+      <p style="font-size:11px;color:var(--txl);text-align:center;margin-top:12px">☁️ Data wordt live gesynchroniseerd via Firebase op alle apparaten</p>`;
+  }
+
+  body.innerHTML = html;
+  overlay.classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+function closeBeheerOverlay(e) {
+  if(e && e.target !== document.getElementById("beheer-overlay")) return;
+  const overlay = document.getElementById("beheer-overlay");
+  if(overlay) overlay.classList.remove("open");
+  document.body.style.overflow = "";
+  render(); // refresh tiles subtitles
 }
 
 function toggleBeheer(id) {
