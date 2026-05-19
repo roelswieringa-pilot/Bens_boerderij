@@ -1764,10 +1764,11 @@ function renderMonthChart(container) {
     days.push({ d, datum, n: rec ? (rec.aantal||0) : 0, hasData: !!rec });
   }
 
-  const maxN  = Math.max(...days.map(x=>x.n), 1);
-  const tot   = days.reduce((s,x)=>s+x.n, 0);
-  const gem   = tot / daysInMonth;
-  const maxDag= days.reduce((a,b)=>b.n>a.n?b:a, days[0]);
+  const maxN      = Math.max(...days.map(x=>x.n), 1);
+  const tot       = days.reduce((s,x)=>s+x.n, 0);
+  const raapdagenM = days.filter(x=>x.n>0).length;
+  const gem       = raapdagenM > 0 ? tot / raapdagenM : 0;
+  const maxDag    = days.reduce((a,b)=>b.n>a.n?b:a, days[0]);
 
   // SVG bar chart
   const W=420, H=160, padL=28, padB=24, padT=10, padR=8;
