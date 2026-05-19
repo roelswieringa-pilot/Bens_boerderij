@@ -27,7 +27,7 @@ body{font-family:'Nunito',sans-serif;background:var(--gm);color:var(--tx);min-he
 .sync-ok{background:rgba(39,174,96,.3);color:#a8f0c6}
 .sync-busy{background:rgba(255,200,0,.3);color:#ffe066}
 .sync-err{background:rgba(192,57,43,.3);color:#f5b7b1}
-.pages{padding:14px 14px calc(var(--safe-bot) + 80px);width:100%;box-sizing:border-box;overflow-x:hidden}
+.pages{padding:14px 14px calc(var(--safe-bot) + 72px);width:100%;box-sizing:border-box;overflow-x:hidden}
 .bottomnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:linear-gradient(90deg,var(--bd),var(--bl),var(--bd));display:flex;justify-content:space-around;padding:8px 0 calc(var(--safe-bot) + 8px);box-shadow:0 -2px 12px rgba(0,0,0,.15);z-index:50;box-sizing:border-box;overflow:hidden}
 .navbtn{display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 0;background:none;border:none;cursor:pointer;border-radius:8px;flex:1;min-width:0;transition:background .15s}
 .navbtn.active{background:rgba(255,255,255,.18)}
@@ -1042,10 +1042,8 @@ function render() {
         ${(()=>{
           const rows=leg.filter(r=>r.datum.startsWith(curM)).reverse();
           const tot=rows.reduce((s,r)=>s+(r.aantal||0),0);
-          const [gemJaar,gemMo]=curM.split("-");
-          const dagenInMaand=new Date(parseInt(gemJaar),parseInt(gemMo),0).getDate();
-          const vandaagInMaand=curM===t.slice(0,7)?parseInt(t.slice(8,10)):dagenInMaand;
-          const gem=(tot/vandaagInMaand).toFixed(1);
+          const raapdagen=rows.length;
+          const gem=raapdagen>0?(tot/raapdagen).toFixed(1):"0.0";
           return `<div class="li" style="border-bottom:2px solid var(--gd)">
             <span style="font-size:12px;font-weight:800;color:var(--bl)">Totaal maand</span>
             <div style="display:flex;gap:6px;align-items:center">
@@ -1536,7 +1534,7 @@ function render() {
     </div>
 
     <!-- INSTELLINGEN -->
-    <div class="page${activePage==="instellingen"?" active":""}" id="page-instellingen" style="min-height:calc(100vh - 120px)">
+    <div class="page${activePage==="instellingen"?" active":""}" id="page-instellingen">
 
       <!-- Header -->
       <div style="padding:4px 0 14px">
@@ -1843,7 +1841,8 @@ function renderYearChart(container) {
 
   const maxN = Math.max(...monthData.map(x=>x.n), 1);
   const tot  = monthData.reduce((s,x)=>s+x.n, 0);
-  const gem  = tot / 12;
+  const maandenMetData = monthData.filter(x=>x.n>0).length;
+  const gem  = maandenMetData>0 ? tot / maandenMetData : 0;
 
   const W=420, H=160, padL=32, padB=24, padT=10, padR=8;
   const chartW=W-padL-padR, chartH=H-padB-padT;
@@ -1900,7 +1899,7 @@ function renderYearChart(container) {
     <div class="chart-stats">
       <div class="chart-stat"><div class="csv">${tot}</div><div class="csl">JAAR TOTAAL</div></div>
       <div class="chart-stat"><div class="csv">${Math.round(gem)}</div><div class="csl">GEM/MAAND</div></div>
-      <div class="chart-stat"><div class="csv">${(tot/365).toFixed(1)}</div><div class="csl">GEM/DAG</div></div>
+      <div class="chart-stat"><div class="csv">${(()=>{ const rd=leg.filter(r=>r.datum.startsWith(year)).length; return rd>0?(tot/rd).toFixed(1):"0.0"; })()}</div><div class="csl">GEM/RAAPDAG</div></div>
       <div class="chart-stat"><div class="csv">${monthData.filter(x=>x.n>0).length}</div><div class="csl">ACTIEVE MNDN</div></div>
     </div>`;
 }
