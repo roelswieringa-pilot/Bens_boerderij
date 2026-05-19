@@ -40,7 +40,7 @@ body{font-family:'Nunito',sans-serif;background:var(--gm);color:var(--tx);min-he
 .sec-hdr-acc.open{border-radius:16px 16px 0 0;margin-bottom:14px}
 .acc-body{display:none}.acc-body.open{display:block}
 .stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;width:100%}
-.stat{background:linear-gradient(135deg,var(--gl),var(--gd));border-radius:14px;border:1.5px solid var(--gd);padding:10px 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:4px}.stat .em{font-size:22px;line-height:1}.stat .vl{font-family:'Fredoka One',cursive;font-size:20px;color:var(--or);line-height:1.1}.stat .lb{font-size:9px;color:var(--txl);font-weight:700}
+.stat{background:linear-gradient(135deg,var(--gl),var(--gd));border-radius:14px;border:1.5px solid var(--gd);padding:16px 8px 14px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px;min-height:90px}.stat .em{font-size:22px;line-height:1}.stat .vl{font-family:'Fredoka One',cursive;font-size:20px;color:var(--or);line-height:1.1}.stat .lb{font-size:9px;color:var(--txl);font-weight:700}
 .fg{margin-bottom:12px}.fl{font-size:12px;font-weight:700;color:var(--bd);margin-bottom:4px;display:block}
 input[type=text],input[type=number],input[type=date],input[type=tel],input[type=email],select,textarea{width:100%;padding:11px 14px;border:1.5px solid var(--gd);border-radius:10px;font-size:15px;font-family:'Nunito',sans-serif;color:var(--tx);background:var(--gl);outline:none;-webkit-appearance:none;appearance:none}
 input:focus,select:focus,textarea:focus{border-color:var(--or);background:#fff}
@@ -61,7 +61,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--or);background:#fff}
 .ebtn{background:none;border:none;font-size:15px;cursor:pointer;padding:3px;color:var(--bu);opacity:.75}
 .dbtn{background:none;border:none;font-size:15px;cursor:pointer;padding:3px;color:var(--rd);opacity:.65}
 .stopbtn{background:none;border:none;font-size:15px;cursor:pointer;padding:3px;color:var(--or);opacity:.8}
-.beheer-tile{background:linear-gradient(135deg,var(--gl),var(--gd));border-radius:14px;border:1.5px solid var(--gd);padding:14px 8px 12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;transition:transform .12s,box-shadow .12s;-webkit-tap-highlight-color:transparent;text-align:center}
+.beheer-tile{background:linear-gradient(135deg,var(--gl),var(--gd));border-radius:14px;border:1.5px solid var(--gd);padding:16px 8px 14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;transition:transform .12s,box-shadow .12s;-webkit-tap-highlight-color:transparent;text-align:center;min-height:90px}
 .beheer-tile:active{transform:scale(.95)}
 .beheer-tile-icon{font-size:26px;line-height:1;margin-bottom:2px}
 .beheer-tile-titel{font-family:'Fredoka One',cursive;font-size:13px;color:var(--or);line-height:1.1}
@@ -1543,7 +1543,7 @@ function render() {
       </div>
 
       <!-- Tegels grid -->
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding-bottom:20px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding-bottom:20px;grid-auto-rows:1fr">
 
         <!-- 1 Eierprijzen -->
         <div class="beheer-tile" onclick="window.openBeheerOverlay('inst-prijzen')">
@@ -2493,7 +2493,7 @@ function setKstMaand(m) {
 const FCM_VAPID_KEY = "BF9iBYmS_wvSZc1Pvq-TIs-F9i1jD6Yslzkf-9fzLvPv2E6gr8aSpMSt1WdnzhMe_6VVwHadqqeOzw_o_iL_zSc";
 
 // ── App versie voor SW lifecycle check
-const APP_VERSION = "6.0";
+const APP_VERSION = "6.1";
 
 async function registreerPushNotificaties() {
   try {
