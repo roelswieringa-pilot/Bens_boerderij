@@ -66,9 +66,9 @@ input:focus,select:focus,textarea:focus{border-color:var(--or);background:#fff}
 .beheer-tile-icon{font-size:26px;line-height:1;margin-bottom:2px}
 .beheer-tile-titel{font-family:'Fredoka One',cursive;font-size:13px;color:var(--or);line-height:1.1}
 .beheer-tile-sub{font-size:9px;color:var(--txl);font-weight:700;text-transform:uppercase;letter-spacing:.3px;line-height:1.2}
-.beheer-overlay-bg{position:fixed;inset:0;background:rgba(90,50,0,.45);z-index:200;display:none;align-items:flex-end}
+.beheer-overlay-bg{position:fixed;inset:0;background:rgba(90,50,0,.45);z-index:200;display:none;align-items:flex-end;padding-bottom:0}
 .beheer-overlay-bg.open{display:flex}
-.beheer-overlay-sheet{background:var(--gm);border-radius:22px 22px 0 0;width:100%;max-height:88vh;display:flex;flex-direction:column;padding-top:0;padding-bottom:env(safe-area-inset-bottom,0px);animation:slideUp .25s cubic-bezier(.25,.46,.45,.94);overflow:hidden}
+.beheer-overlay-sheet{background:var(--gm);border-radius:22px 22px 0 0;width:100%;max-height:90vh;display:flex;flex-direction:column;padding-top:0;animation:slideUp .25s cubic-bezier(.25,.46,.45,.94);overflow:hidden;margin-bottom:0}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 .beheer-overlay-handle{width:40px;height:5px;background:var(--gd);border-radius:3px;margin:0 auto 14px}
 .beheer-overlay-header{display:flex;justify-content:space-between;align-items:center;padding:16px 16px 14px;border-bottom:2px solid var(--gd);flex-shrink:0;background:linear-gradient(90deg,var(--or),var(--orl));border-radius:22px 22px 0 0}
@@ -1645,7 +1645,7 @@ function render() {
         <div id="beheer-overlay-titel" style="font-family:'Fredoka One',cursive;font-size:17px;color:#fff"></div>
         <button class="beheer-overlay-close" onclick="window.closeBeheerOverlay()">&#x2715;</button>
       </div>
-      <div id="beheer-overlay-body" style="overflow-y:auto;flex:1;padding:14px 16px calc(32px + env(safe-area-inset-bottom,0px));background:var(--gm)"></div>
+      <div id="beheer-overlay-body" style="overflow-y:auto;flex:1;padding:14px 16px 32px;background:var(--gm);padding-bottom:calc(32px + env(safe-area-inset-bottom,0px))"></div>
     </div>
   </div>
 
@@ -2490,7 +2490,7 @@ function setKstMaand(m) {
 // Stap 1: Haal je VAPID key op via Firebase Console → Project Settings
 //         → Cloud Messaging → Web Push certificates → Generate key pair
 // Stap 2: Vervang de waarde hieronder door jouw eigen key
-const FCM_VAPID_KEY = "JOUW_VAPID_KEY_HIER";
+const FCM_VAPID_KEY = "BF9iBYmS_wvSZc1Pvq-TIs-F9i1jD6Yslzkf-9fzLvPv2E6gr8aSpMSt1WdnzhMe_6VVwHadqqeOzw_o_iL_zSc";
 
 // ── App versie voor SW lifecycle check
 const APP_VERSION = "5.8";
@@ -3329,24 +3329,17 @@ function openBeheerOverlay(id) {
 
   body.innerHTML = html;
   overlay.classList.add("open");
-  // Voorkom body scroll zonder layout shift
-  const scrollY = window.scrollY;
-  document.body.style.position = "fixed";
-  document.body.style.top = `-${scrollY}px`;
-  document.body.style.width = "100%";
-  document.body.dataset.scrollY = scrollY;
+  // Voorkom body scroll — simpelste methode zonder layout shift
+  document.body.style.overflow = "hidden";
+  document.body.style.height = "100%";
 }
 
 function closeBeheerOverlay(e) {
   if(e && e.target !== document.getElementById("beheer-overlay")) return;
   const overlay = document.getElementById("beheer-overlay");
   if(overlay) overlay.classList.remove("open");
-  // Herstel scroll positie zonder layout shift
-  const scrollY2 = parseInt(document.body.dataset.scrollY || "0");
-  document.body.style.position = "";
-  document.body.style.top = "";
-  document.body.style.width = "";
-  window.scrollTo(0, scrollY2);
+  document.body.style.overflow = "";
+  document.body.style.height = "";
   render(); // refresh tiles subtitles
 }
 
