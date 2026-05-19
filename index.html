@@ -3183,22 +3183,38 @@ function openBeheerOverlay(id) {
       <div style="font-size:11px;font-weight:800;color:var(--txl);margin-bottom:8px">🐓 Actieve kippen (${actiefKippen.length})</div>
       ${(()=>{
         if(actiefKippen.length===0) return '<div class="empty" style="padding:8px 0"><div class="em">🐓</div><p>Nog geen kippen</p></div>';
-        return actiefKippen.map(k=>{
-          const leeftijd=k.geboortedatum?Math.floor((new Date()-new Date(k.geboortedatum+"T12:00:00"))/(365.25*24*3600*1000)*10)/10:null;
-          const dot=!leeftijd?"":leeftijd>3?"🔴":leeftijd>2.5?"🟡":"🟢";
-          return `<div class="li">
-            <div class="li-l">
-              <div class="li-t">${dot} ${esc(k.naam)} <span style="font-size:10px;color:var(--txl);font-weight:400">${k.ras||""} ${k.geslacht==="Haan"?"🐓":""}</span></div>
-              <div class="li-s">${leeftijd?leeftijd+" jr · ":""} ${k.geboortedatum?fmtD(k.geboortedatum):""}</div>
+        // Groepeer per ras — zelfde stijl als dashboard kippenkaart
+        const byRas = {};
+        actiefKippen.forEach(k=>{ if(!byRas[k.ras]) byRas[k.ras]=[]; byRas[k.ras].push(k); });
+        const rasGrid = Object.entries(byRas).map(([ras,kips])=>{
+          const kl = RAS_KLEUREN[ras] || {bg:"var(--gl)",border:"var(--gd)"};
+          const isHaan = ras==="Haan";
+          const namen = kips.map(k=>esc(k.naam)).join(", ");
+          // Knoppen per kip onderaan het kaartje
+          const knoppen = kips.map(k=>{
+            const leeftijd=k.geboortedatum?Math.floor((new Date()-new Date(k.geboortedatum+"T12:00:00"))/(365.25*24*3600*1000)*10)/10:null;
+            const dot=!leeftijd?"":leeftijd>3?"🔴":leeftijd>2.5?"🟡":"🟢";
+            return `<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-top:1px solid ${kl.border}40;margin-top:4px">
+              <span style="font-size:11px;color:var(--bd);font-weight:700">${dot} ${esc(k.naam)}</span>
+              <div style="display:flex;gap:2px">
+                <button class="ebtn" title="Gezondheid" onclick='openKipGezondheid("${k._key}")'>🏥</button>
+                <button class="ebtn" title="Uitval" onclick='uitvallenKip("${k._key}")'>🪦</button>
+                <button class="ebtn" title="Bewerken" onclick='openModal("kip",${JSON.stringify(k)})'>✏️</button>
+              </div>
+            </div>`;
+          }).join("");
+          return `<div style="background:${kl.bg};border:1.5px solid ${kl.border};border-radius:14px;padding:10px 12px;margin-bottom:8px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              <span style="font-size:22px">${RAS_ICONS[ras]||"🐔"}</span>
+              <div>
+                <div style="font-family:'Fredoka One',cursive;font-size:14px;color:${isHaan?"#a03000":"var(--bd)"}">${ras}</div>
+                <div style="font-size:10px;color:var(--txl)">${kips.length} kip${kips.length>1?"s":""}</div>
+              </div>
             </div>
-            <div class="li-r" style="gap:2px">
-              <button class="ebtn" title="Gezondheid" onclick='openKipGezondheid("${k._key}")'>🏥</button>
-              <button class="ebtn" title="Uitval" onclick='uitvallenKip("${k._key}")'>🪦</button>
-              <button class="ebtn" title="Bewerken" onclick='openModal("kip",${JSON.stringify(k)})'>✏️</button>
-              <button class="dbtn" title="Verwijderen" onclick="deleteKip('${k._key}')">🗑</button>
-            </div>
+            ${knoppen}
           </div>`;
         }).join("");
+        return rasGrid;
       })()}
       ${uitgevallen.length>0?`
       <div style="height:1px;background:var(--gd);margin:10px 0 8px"></div>
