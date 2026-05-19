@@ -61,17 +61,19 @@ input:focus,select:focus,textarea:focus{border-color:var(--or);background:#fff}
 .ebtn{background:none;border:none;font-size:15px;cursor:pointer;padding:3px;color:var(--bu);opacity:.75}
 .dbtn{background:none;border:none;font-size:15px;cursor:pointer;padding:3px;color:var(--rd);opacity:.65}
 .stopbtn{background:none;border:none;font-size:15px;cursor:pointer;padding:3px;color:var(--or);opacity:.8}
-.beheer-tile{background:#fff;border-radius:14px;border:1.5px solid var(--gd);padding:12px 8px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:transform .12s,box-shadow .12s;-webkit-tap-highlight-color:transparent;text-align:center}
-.beheer-tile:active{transform:scale(.96);box-shadow:0 2px 8px rgba(200,134,10,.15)}
-.beheer-tile-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.beheer-tile{background:linear-gradient(135deg,var(--gl),var(--gm));border-radius:14px;border:1.5px solid var(--gd);padding:14px 8px 12px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:transform .12s,box-shadow .12s;-webkit-tap-highlight-color:transparent;text-align:center;box-shadow:0 2px 6px rgba(200,134,10,.08)}
+.beheer-tile:active{transform:scale(.95);box-shadow:0 1px 3px rgba(200,134,10,.2)}
+.beheer-tile-icon{width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;border:1.5px solid var(--gd)}
 .beheer-tile-titel{font-family:'Fredoka One',cursive;font-size:12px;color:var(--bd);line-height:1.2}
-.beheer-tile-sub{font-size:9px;color:var(--txl);font-weight:700;line-height:1.2}
-.beheer-overlay-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:none;align-items:flex-end}
+.beheer-tile-sub{font-size:9px;color:var(--or);font-weight:800;line-height:1.2}
+.beheer-overlay-bg{position:fixed;inset:0;background:rgba(90,50,0,.45);z-index:200;display:none;align-items:flex-end}
 .beheer-overlay-bg.open{display:flex}
-.beheer-overlay-sheet{background:#fff;border-radius:22px 22px 0 0;width:100%;max-height:88vh;display:flex;flex-direction:column;padding-top:10px;animation:slideUp .28s cubic-bezier(.25,.46,.45,.94)}
+.beheer-overlay-sheet{background:var(--gm);border-radius:22px 22px 0 0;width:100%;max-height:88vh;display:flex;flex-direction:column;padding-top:10px;animation:slideUp .25s cubic-bezier(.25,.46,.45,.94)}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
-.beheer-overlay-handle{width:36px;height:4px;background:var(--gd);border-radius:2px;margin:0 auto 12px}
-.beheer-overlay-header{display:flex;justify-content:space-between;align-items:center;padding:0 16px 12px;border-bottom:1px solid var(--gd);flex-shrink:0}.stopbtn{background:none;border:none;font-size:15px;cursor:pointer;padding:3px;color:var(--or);opacity:.8}
+.beheer-overlay-handle{width:40px;height:5px;background:var(--gd);border-radius:3px;margin:0 auto 14px}
+.beheer-overlay-header{display:flex;justify-content:space-between;align-items:center;padding:0 16px 14px;border-bottom:2px solid var(--gd);flex-shrink:0;background:linear-gradient(90deg,var(--or),var(--orl));border-radius:0;margin:0 0 0}
+.beheer-overlay-header>div{color:#fff!important}
+.beheer-overlay-close{background:rgba(255,255,255,.25);border:none;width:30px;height:30px;border-radius:50%;font-size:16px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700}.stopbtn{background:none;border:none;font-size:15px;cursor:pointer;padding:3px;color:var(--or);opacity:.8}
 .tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:12px;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
 .tab{flex-shrink:0;padding:6px 14px;border-radius:20px;border:1.5px solid var(--gd);background:var(--gl);font-size:12px;font-weight:700;color:var(--txl);cursor:pointer}
@@ -1531,24 +1533,24 @@ function render() {
     <div class="page${activePage==="instellingen"?" active":""}" id="page-instellingen">
 
       <!-- Header -->
-      <div style="padding:4px 0 16px">
-        <div style="font-family:'Fredoka One',cursive;font-size:24px;color:var(--bd)">&#x2699;&#xFE0F; Beheer</div>
-        <div style="font-size:12px;color:var(--txl);margin-top:2px">${esc(instellingen.boerderijNaam||"Ben's Boerderij")} &middot; Tik op een onderdeel</div>
+      <div style="padding:4px 0 14px">
+        <div style="font-family:'Fredoka One',cursive;font-size:22px;color:var(--bd)">&#x2699;&#xFE0F; Beheer</div>
+        <div style="font-size:11px;color:var(--txl);margin-top:2px">${esc(instellingen.boerderijNaam||"Ben's Boerderij")} &middot; Tik op een onderdeel om aan te passen</div>
       </div>
 
       <!-- Tegels grid -->
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding-bottom:20px">
 
         <!-- 1 Eierprijzen -->
-        <div class="beheer-tile" onclick="openBeheerOverlay('inst-prijzen')">
-          <div class="beheer-tile-icon" style="background:#fff3e0">&#x1F95A;</div>
+        <div class="beheer-tile" onclick="window.openBeheerOverlay('inst-prijzen')">
+          <div class="beheer-tile-icon" style="background:var(--gl)">&#x1F95A;</div>
           <div class="beheer-tile-titel">Eierprijzen</div>
           <div class="beheer-tile-sub">${fmt(instellingen.prijsPerEi)} p/ei</div>
         </div>
 
         <!-- 2 Seizoensnieuws -->
-        <div class="beheer-tile" onclick="openBeheerOverlay('inst-seizoens')">
-          <div class="beheer-tile-icon" style="background:#e3f2fd">&#x1F4E2;</div>
+        <div class="beheer-tile" onclick="window.openBeheerOverlay('inst-seizoens')">
+          <div class="beheer-tile-icon" style="background:var(--gl)">&#x1F4E2;</div>
           <div class="beheer-tile-titel">Seizoensbericht</div>
           <div class="beheer-tile-sub">${(()=>{
             const sn=instellingen.seizoensNieuws; if(!sn) return "Geen bericht";
@@ -1560,15 +1562,15 @@ function render() {
         </div>
 
         <!-- 3 Notities -->
-        <div class="beheer-tile" onclick="openBeheerOverlay('inst-notities')">
-          <div class="beheer-tile-icon" style="background:#f3e5f5">&#x1F4DD;</div>
+        <div class="beheer-tile" onclick="window.openBeheerOverlay('inst-notities')">
+          <div class="beheer-tile-icon" style="background:var(--gl)">&#x1F4DD;</div>
           <div class="beheer-tile-titel">Notities</div>
           <div class="beheer-tile-sub">${notities.length} notitie${notities.length===1?"":"s"}</div>
         </div>
 
         <!-- 4 Kippenhok -->
-        <div class="beheer-tile" onclick="openBeheerOverlay('inst-schoonmaak')">
-          <div class="beheer-tile-icon" style="background:#e8f5e9">&#x1F9F9;</div>
+        <div class="beheer-tile" onclick="window.openBeheerOverlay('inst-schoonmaak')">
+          <div class="beheer-tile-icon" style="background:var(--gl)">&#x1F9F9;</div>
           <div class="beheer-tile-titel">Kippenhok</div>
           <div class="beheer-tile-sub">${(()=>{
             const s=schoonmaak.filter(r=>!r.type||r.type!=="uitstel").sort((a,b)=>b.datum.localeCompare(a.datum))[0];
@@ -1581,52 +1583,50 @@ function render() {
         </div>
 
         <!-- 5 Kippen -->
-        <div class="beheer-tile" onclick="openBeheerOverlay('inst-kippen')">
-          <div class="beheer-tile-icon" style="background:#fff8e1">&#x1F413;</div>
+        <div class="beheer-tile" onclick="window.openBeheerOverlay('inst-kippen')">
+          <div class="beheer-tile-icon" style="background:var(--gl)">&#x1F413;</div>
           <div class="beheer-tile-titel">Kippen</div>
           <div class="beheer-tile-sub">${kippen.filter(k=>!k.status||k.status==="actief").length} actief</div>
         </div>
 
         <!-- 6 Klanten -->
-        <div class="beheer-tile" onclick="openBeheerOverlay('inst-klantstat')">
-          <div class="beheer-tile-icon" style="background:#e8f5e9">&#x1F465;</div>
+        <div class="beheer-tile" onclick="window.openBeheerOverlay('inst-klantstat')">
+          <div class="beheer-tile-icon" style="background:var(--gl)">&#x1F465;</div>
           <div class="beheer-tile-titel">Klant status</div>
           <div class="beheer-tile-sub">&#x1F7E2; ${instellingen.klantGroen??7}d &middot; &#x1F7E1; ${instellingen.klantOranje??14}d</div>
         </div>
 
         <!-- 7 Statistieken -->
-        <div class="beheer-tile" onclick="openBeheerOverlay('inst-statistieken')">
-          <div class="beheer-tile-icon" style="background:#fce4ec">&#x1F4CA;</div>
+        <div class="beheer-tile" onclick="window.openBeheerOverlay('inst-statistieken')">
+          <div class="beheer-tile-icon" style="background:var(--gl)">&#x1F4CA;</div>
           <div class="beheer-tile-titel">Statistieken</div>
           <div class="beheer-tile-sub">${totGelegd} eieren totaal</div>
         </div>
 
         <!-- 8 Weerlocatie -->
-        <div class="beheer-tile" onclick="openBeheerOverlay('inst-locatie')">
-          <div class="beheer-tile-icon" style="background:#e3f2fd">&#x1F4CD;</div>
+        <div class="beheer-tile" onclick="window.openBeheerOverlay('inst-locatie')">
+          <div class="beheer-tile-icon" style="background:var(--gl)">&#x1F4CD;</div>
           <div class="beheer-tile-titel">Weerlocatie</div>
           <div class="beheer-tile-sub">${esc(instellingen.weerNaam||"Ulestraten")}</div>
         </div>
 
         <!-- 9 Pushmeldingen -->
-        <div class="beheer-tile" onclick="openBeheerOverlay('inst-push')">
-          <div class="beheer-tile-icon" style="background:#fff3e0">&#x1F514;</div>
+        <div class="beheer-tile" onclick="window.openBeheerOverlay('inst-push')">
+          <div class="beheer-tile-icon" style="background:var(--gl)">&#x1F514;</div>
           <div class="beheer-tile-titel">Pushmeldingen</div>
           <div class="beheer-tile-sub">${typeof Notification!=="undefined"&&Notification.permission==="granted"?"&#x2705; Aan":"&#x26AA; Uit"}</div>
         </div>
 
         <!-- 10 Back-up -->
-        <div class="beheer-tile" onclick="openBeheerOverlay('inst-backup')">
-          <div class="beheer-tile-icon" style="background:#f3e5f5">&#x1F4BE;</div>
+        <div class="beheer-tile" onclick="window.openBeheerOverlay('inst-backup')">
+          <div class="beheer-tile-icon" style="background:var(--gl)">&#x1F4BE;</div>
           <div class="beheer-tile-titel">Back-up</div>
           <div class="beheer-tile-sub">CSV exporteren</div>
         </div>
 
       </div>
 
-      <!-- Uitloggen knop -->
-      <button class="btn btn-g" onclick="doLogout()" style="background:#fff;border:1.5px solid var(--gd);color:var(--bd);border-radius:14px;font-size:14px;padding:14px">Uitloggen</button>
-      <div style="text-align:center;font-size:10px;color:var(--txl);margin-top:12px;padding-bottom:20px">Ben's Boerderij &middot; Firebase Realtime Database</div>
+      <div style="text-align:center;font-size:10px;color:var(--txl);margin-top:4px;padding-bottom:20px">Ben's Boerderij &middot; Firebase Realtime Database</div>
 
     </div>
 
@@ -1637,10 +1637,10 @@ function render() {
     <div class="beheer-overlay-sheet" id="beheer-overlay-sheet">
       <div class="beheer-overlay-handle"></div>
       <div class="beheer-overlay-header">
-        <div id="beheer-overlay-titel" style="font-family:'Fredoka One',cursive;font-size:18px;color:var(--bd)"></div>
-        <button onclick="closeBeheerOverlay()" style="background:none;border:none;font-size:22px;color:var(--txl);cursor:pointer;line-height:1">&#x2715;</button>
+        <div id="beheer-overlay-titel" style="font-family:'Fredoka One',cursive;font-size:17px;color:#fff"></div>
+        <button class="beheer-overlay-close" onclick="window.closeBeheerOverlay()">&#x2715;</button>
       </div>
-      <div id="beheer-overlay-body" style="overflow-y:auto;flex:1;padding:0 16px 24px"></div>
+      <div id="beheer-overlay-body" style="overflow-y:auto;flex:1;padding:14px 16px 32px;background:var(--gm)"></div>
     </div>
   </div>
 
@@ -2479,50 +2479,123 @@ function setKstMaand(m) {
 // Stap 2: Vervang de waarde hieronder door jouw eigen key
 const FCM_VAPID_KEY = "JOUW_VAPID_KEY_HIER";
 
+// ── App versie voor SW lifecycle check
+const APP_VERSION = "5.8";
+
 async function registreerPushNotificaties() {
   try {
     if (!("serviceWorker" in navigator)) {
       return toast("⚠️ Service Workers worden niet ondersteund door deze browser");
     }
-    const reg = await navigator.serviceWorker.register("/Bens_boerderij/firebase-messaging-sw.js", { scope: "/Bens_boerderij/" });
+    // FIX 1: Scope expliciet matchen met Firebase's default push scope
+    // Zonder trailing slash — voorkomt dubbele SW-registraties
+    const SW_SCOPE = "/firebase-cloud-messaging-push-scope";
+    const SW_URL   = "/Bens_boerderij/firebase-messaging-sw.js";
+
+    // Unregistreer eventuele stale registraties op verkeerde scope
+    const bestaande = await navigator.serviceWorker.getRegistrations();
+    for (const r of bestaande) {
+      if (r.scope.includes("Bens_boerderij") && !r.scope.includes("push-scope")) {
+        await r.unregister();
+        console.log("[FCM] Stale SW unregistered:", r.scope);
+      }
+    }
+
+    // Registreer op de juiste scope
+    const reg = await navigator.serviceWorker.register(SW_URL, { scope: SW_SCOPE });
+    await navigator.serviceWorker.ready;
+
     const permission = await Notification.requestPermission();
     if (permission !== "granted") {
       toast("🔕 Geen toestemming voor notificaties");
       return;
     }
+
+    // FIX 2: deleteToken voor fresh token (voorkomt stapelen van tokens)
+    try {
+      const { deleteToken } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js");
+      await deleteToken(messaging);
+    } catch(e) { /* eerste keer is er geen token — dat is ok */ }
+
     const token = await getToken(messaging, {
       vapidKey: FCM_VAPID_KEY,
       serviceWorkerRegistration: reg
     });
+
     if (token) {
-      // Verwijder eerst alle bestaande tokens om duplicaten te voorkomen
+      // FIX 2: vervang volledig (geen arrayUnion) — één token per device per UID
       await dbRemove("fcmTokens/" + currentUser.uid);
-      // Sla nieuw token op
       await dbSave("fcmTokens/" + currentUser.uid, {
         token,
+        versie: APP_VERSION,
         bijgewerkt: today(),
-        apparaat: navigator.userAgent.slice(0, 100)
+        apparaat: navigator.userAgent.slice(0, 80)
       });
+      // FIX 3: sla versie op zodat auto-recovery bij volgende deploy weet wat current is
+      localStorage.setItem("bb_push_version", APP_VERSION);
       toast("🔔 Pushmeldingen ingeschakeld!");
       render();
     } else {
-      toast("⚠️ Kon geen FCM token ophalen");
+      toast("⚠️ Kon geen FCM token ophalen. Probeer opnieuw.");
     }
   } catch(e) {
-    console.error("FCM registratie mislukt:", e);
-    toast("⚠️ " + (e.message || e.code || "Onbekende fout"));
+    console.error("[FCM] Registratie mislukt:", e);
+    toast("⚠️ " + (e.message || e.code || "Onbekende fout bij push registratie"));
   }
 }
 
 async function uitschakelenPushNotificaties() {
   if (!currentUser) return;
+  try {
+    const { deleteToken } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js");
+    await deleteToken(messaging);
+  } catch(e) { /* geen actieve token */ }
   await dbRemove("fcmTokens/" + currentUser.uid);
+  localStorage.removeItem("bb_push_version");
   toast("🔕 Pushmeldingen uitgeschakeld");
   render();
 }
 
+// FIX 3: Auto-recovery bij nieuwe app versie (SW lifecycle check)
+// Draait bij elke app-start na inloggen — detecteert stale push subscriptions
+async function checkPushVersionUpdate() {
+  if (!currentUser) return;
+  const opgeslagenVersie = localStorage.getItem("bb_push_version");
+  if (!opgeslagenVersie) return; // push was niet ingeschakeld
+  if (opgeslagenVersie === APP_VERSION) return; // versie ongewijzigd
 
-// ── Schoonmaak registreren vanuit Beheer ──────────────────────────────────
+  console.log("[FCM] Versie gewijzigd:", opgeslagenVersie, "→", APP_VERSION, "— token vernieuwen");
+  try {
+    // Reset token eerst (clean-before-add patroon)
+    try {
+      const { deleteToken } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js");
+      await deleteToken(messaging);
+    } catch(e) { /* al verlopen */ }
+    await dbRemove("fcmTokens/" + currentUser.uid);
+    // Herregistreer automatisch
+    await registreerPushNotificaties();
+    console.log("[FCM] Token succesvol vernieuwd na versie-update");
+  } catch(e) {
+    console.warn("[FCM] Auto-recovery mislukt:", e);
+    // Zet versie op huidig zodat we niet bij elke refresh opnieuw proberen
+    localStorage.setItem("bb_push_version", APP_VERSION);
+  }
+}
+
+
+// FIX 4: Luister op SW berichten voor push subscription recovery
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.addEventListener("message", event => {
+    if (event.data && event.data.type === "FCM_SUBSCRIPTION_CHANGED") {
+      console.log("[FCM] SW meldt pushsubscriptionchange — token vernieuwen");
+      if (currentUser) {
+        registreerPushNotificaties().catch(e =>
+          console.warn("[FCM] Auto-recovery na SW change mislukt:", e)
+        );
+      }
+    }
+  });
+}
 
 // ── Schoonmaak registreren vanuit Beheer ──────────────────────────────────
 async function registreerSchoonmaak() {
@@ -3285,15 +3358,13 @@ function calcNieuweKlantVeld() {
 Object.assign(window, {
   goPage, setM, setActiveKlant, saveLeg, saveLegQuick, deleteLeg, updateLeg,
   calcEditVkTot,
-  calcEditVkTot,
   saveVk, deleteVk, updateVk, calcVkTot, calcNieuweKlantVeld, setVkType,
   saveKst, deleteKst, updateKst,
   saveKlant, deleteKlant, updateKlant,
   saveInstellingen, setZoekKlant, toggleBeheer, wisSeizoensBericht,
+  openBeheerOverlay, closeBeheerOverlay,
   saveNotitie, deleteNotitie,
   startVuurwerk,
-  startVuurwerk,
-  startVuurwerk, toggleBeheer,
   openModal, closeModal, exportCSV, setSyncBadge,
   openChart, closeChart, switchChartView, setChartM,
   doLogin, doLogout, renderLogin, showResBevestiging, syncPubliekeData,
@@ -3313,7 +3384,7 @@ Object.assign(window, {
   bevestigSchoonmaak, uitstellenSchoonmaak, deleteSchoonmaak,
   registreerSchoonmaak, openSchoonmaakHistorie, setSchoonHistorieJaar,
   laadWeer,
-  registreerPushNotificaties, uitschakelenPushNotificaties,
+  registreerPushNotificaties, uitschakelenPushNotificaties, checkPushVersionUpdate,
   sluitBevestig
 });
 
@@ -3521,6 +3592,7 @@ document.addEventListener("DOMContentLoaded", () => {
       startListeners();
       updateOfflineBanner();
       setTimeout(syncPubliekeData, 2000); // populate /publiek after data loads
+      setTimeout(checkPushVersionUpdate, 4000); // FIX 3: auto-recovery push token na versie-update
     } else {
       // Not logged in: fetch minimal public data then show login
       $("loading") && ($("loading").style.display="none");

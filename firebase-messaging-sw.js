@@ -1,4 +1,8 @@
 // firebase-messaging-sw.js
+// Ben's Boerderij — Service Worker voor FCM push notificaties
+// FIX 1: Geregistreerd op scope /firebase-cloud-messaging-push-scope (geen trailing slash)
+// FIX 4: pushsubscriptionchange event voor stale token recovery
+
 importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js");
 
@@ -14,17 +18,16 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Data-only payload: service worker bouwt de melding zelf op
-// FCM toont NOOIT automatisch een melding — wij bepalen wanneer en wat
+// Data-only payload: SW bouwt de melding zelf op
 messaging.onBackgroundMessage(payload => {
   const title = (payload.data && payload.data.title) || "Ben's Boerderij";
   const body  = (payload.data && payload.data.body)  || "";
-
   return self.registration.showNotification(title, {
     body,
-    icon: "/Bens_boerderij/icon-192.png",
-    badge: "/Bens_boerderij/icon-192.png",
-    vibrate: [200, 100, 200]
+    icon:    "/Bens_boerderij/icon-192.png",
+    badge:   "/Bens_boerderij/icon-192.png",
+    vibrate: [200, 100, 200],
+    data:    payload.data || {}
   });
 });
 
@@ -34,11 +37,22 @@ self.addEventListener("notificationclick", event => {
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then(clientList => {
       for (const client of clientList) {
-        if (client.url.includes(self.location.origin) && "focus" in client) {
-          return client.focus();
-        }
+        if (client.url.includes(self.location.origin) && "focus" in client) return client.focus();
       }
       if (clients.openWindow) return clients.openWindow("/Bens_boerderij/");
+    })
+  );
+});
+
+// FIX 4: pushsubscriptionchange — subscription stilletjes verlopen (na SW-update/browser-reset)
+// Stuur bericht naar de app zodat het token vernieuwd wordt
+self.addEventListener("pushsubscriptionchange", event => {
+  console.log("[FCM SW] pushsubscriptionchange — token vernieuwen");
+  event.waitUntil(
+    clients.matchAll({ type: "window" }).then(clientList => {
+      for (const client of clientList) {
+        client.postMessage({ type: "FCM_SUBSCRIPTION_CHANGED" });
+      }
     })
   );
 });
