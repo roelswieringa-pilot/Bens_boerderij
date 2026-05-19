@@ -61,17 +61,17 @@ input:focus,select:focus,textarea:focus{border-color:var(--or);background:#fff}
 .ebtn{background:none;border:none;font-size:15px;cursor:pointer;padding:3px;color:var(--bu);opacity:.75}
 .dbtn{background:none;border:none;font-size:15px;cursor:pointer;padding:3px;color:var(--rd);opacity:.65}
 .stopbtn{background:none;border:none;font-size:15px;cursor:pointer;padding:3px;color:var(--or);opacity:.8}
-.beheer-tile{background:linear-gradient(135deg,var(--gl),var(--gm));border-radius:14px;border:1.5px solid var(--gd);padding:14px 8px 12px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:transform .12s,box-shadow .12s;-webkit-tap-highlight-color:transparent;text-align:center;box-shadow:0 2px 6px rgba(200,134,10,.08)}
-.beheer-tile:active{transform:scale(.95);box-shadow:0 1px 3px rgba(200,134,10,.2)}
-.beheer-tile-icon{width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;border:1.5px solid var(--gd)}
-.beheer-tile-titel{font-family:'Fredoka One',cursive;font-size:12px;color:var(--bd);line-height:1.2}
-.beheer-tile-sub{font-size:9px;color:var(--or);font-weight:800;line-height:1.2}
+.beheer-tile{background:linear-gradient(135deg,var(--gl),var(--gd));border-radius:14px;border:1.5px solid var(--gd);padding:14px 8px 12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;transition:transform .12s,box-shadow .12s;-webkit-tap-highlight-color:transparent;text-align:center}
+.beheer-tile:active{transform:scale(.95)}
+.beheer-tile-icon{font-size:26px;line-height:1;margin-bottom:2px}
+.beheer-tile-titel{font-family:'Fredoka One',cursive;font-size:13px;color:var(--or);line-height:1.1}
+.beheer-tile-sub{font-size:9px;color:var(--txl);font-weight:700;text-transform:uppercase;letter-spacing:.3px;line-height:1.2}
 .beheer-overlay-bg{position:fixed;inset:0;background:rgba(90,50,0,.45);z-index:200;display:none;align-items:flex-end}
 .beheer-overlay-bg.open{display:flex}
-.beheer-overlay-sheet{background:var(--gm);border-radius:22px 22px 0 0;width:100%;max-height:88vh;display:flex;flex-direction:column;padding-top:10px;animation:slideUp .25s cubic-bezier(.25,.46,.45,.94)}
+.beheer-overlay-sheet{background:var(--gm);border-radius:22px 22px 0 0;width:100%;max-height:88vh;display:flex;flex-direction:column;padding-top:0;animation:slideUp .25s cubic-bezier(.25,.46,.45,.94);overflow:hidden}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 .beheer-overlay-handle{width:40px;height:5px;background:var(--gd);border-radius:3px;margin:0 auto 14px}
-.beheer-overlay-header{display:flex;justify-content:space-between;align-items:center;padding:0 16px 14px;border-bottom:2px solid var(--gd);flex-shrink:0;background:linear-gradient(90deg,var(--or),var(--orl));border-radius:0;margin:0 0 0}
+.beheer-overlay-header{display:flex;justify-content:space-between;align-items:center;padding:16px 16px 14px;border-bottom:2px solid var(--gd);flex-shrink:0;background:linear-gradient(90deg,var(--or),var(--orl));border-radius:22px 22px 0 0}
 .beheer-overlay-header>div{color:#fff!important}
 .beheer-overlay-close{background:rgba(255,255,255,.25);border:none;width:30px;height:30px;border-radius:50%;font-size:16px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700}.stopbtn{background:none;border:none;font-size:15px;cursor:pointer;padding:3px;color:var(--or);opacity:.8}
 .tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:12px;scrollbar-width:none}
@@ -1543,14 +1543,14 @@ function render() {
 
         <!-- 1 Eierprijzen -->
         <div class="beheer-tile" onclick="window.openBeheerOverlay('inst-prijzen')">
-          <div class="beheer-tile-icon" style="background:var(--gl)">&#x1F95A;</div>
+          <div class="beheer-tile-icon">&#x1F95A;</div>
           <div class="beheer-tile-titel">Eierprijzen</div>
           <div class="beheer-tile-sub">${fmt(instellingen.prijsPerEi)} p/ei</div>
         </div>
 
         <!-- 2 Seizoensnieuws -->
         <div class="beheer-tile" onclick="window.openBeheerOverlay('inst-seizoens')">
-          <div class="beheer-tile-icon" style="background:var(--gl)">&#x1F4E2;</div>
+          <div class="beheer-tile-icon">&#x1F4E2;</div>
           <div class="beheer-tile-titel">Seizoensbericht</div>
           <div class="beheer-tile-sub">${(()=>{
             const sn=instellingen.seizoensNieuws; if(!sn) return "Geen bericht";
@@ -1563,14 +1563,14 @@ function render() {
 
         <!-- 3 Notities -->
         <div class="beheer-tile" onclick="window.openBeheerOverlay('inst-notities')">
-          <div class="beheer-tile-icon" style="background:var(--gl)">&#x1F4DD;</div>
+          <div class="beheer-tile-icon">&#x1F4DD;</div>
           <div class="beheer-tile-titel">Notities</div>
           <div class="beheer-tile-sub">${notities.length} notitie${notities.length===1?"":"s"}</div>
         </div>
 
         <!-- 4 Kippenhok -->
         <div class="beheer-tile" onclick="window.openBeheerOverlay('inst-schoonmaak')">
-          <div class="beheer-tile-icon" style="background:var(--gl)">&#x1F9F9;</div>
+          <div class="beheer-tile-icon">&#x1F9F9;</div>
           <div class="beheer-tile-titel">Kippenhok</div>
           <div class="beheer-tile-sub">${(()=>{
             const s=schoonmaak.filter(r=>!r.type||r.type!=="uitstel").sort((a,b)=>b.datum.localeCompare(a.datum))[0];
@@ -1584,42 +1584,42 @@ function render() {
 
         <!-- 5 Kippen -->
         <div class="beheer-tile" onclick="window.openBeheerOverlay('inst-kippen')">
-          <div class="beheer-tile-icon" style="background:var(--gl)">&#x1F413;</div>
+          <div class="beheer-tile-icon">&#x1F413;</div>
           <div class="beheer-tile-titel">Kippen</div>
           <div class="beheer-tile-sub">${kippen.filter(k=>!k.status||k.status==="actief").length} actief</div>
         </div>
 
         <!-- 6 Klanten -->
         <div class="beheer-tile" onclick="window.openBeheerOverlay('inst-klantstat')">
-          <div class="beheer-tile-icon" style="background:var(--gl)">&#x1F465;</div>
+          <div class="beheer-tile-icon">&#x1F465;</div>
           <div class="beheer-tile-titel">Klant status</div>
           <div class="beheer-tile-sub">&#x1F7E2; ${instellingen.klantGroen??7}d &middot; &#x1F7E1; ${instellingen.klantOranje??14}d</div>
         </div>
 
         <!-- 7 Statistieken -->
         <div class="beheer-tile" onclick="window.openBeheerOverlay('inst-statistieken')">
-          <div class="beheer-tile-icon" style="background:var(--gl)">&#x1F4CA;</div>
+          <div class="beheer-tile-icon">&#x1F4CA;</div>
           <div class="beheer-tile-titel">Statistieken</div>
           <div class="beheer-tile-sub">${totGelegd} eieren totaal</div>
         </div>
 
         <!-- 8 Weerlocatie -->
         <div class="beheer-tile" onclick="window.openBeheerOverlay('inst-locatie')">
-          <div class="beheer-tile-icon" style="background:var(--gl)">&#x1F4CD;</div>
+          <div class="beheer-tile-icon">&#x1F4CD;</div>
           <div class="beheer-tile-titel">Weerlocatie</div>
           <div class="beheer-tile-sub">${esc(instellingen.weerNaam||"Ulestraten")}</div>
         </div>
 
         <!-- 9 Pushmeldingen -->
         <div class="beheer-tile" onclick="window.openBeheerOverlay('inst-push')">
-          <div class="beheer-tile-icon" style="background:var(--gl)">&#x1F514;</div>
+          <div class="beheer-tile-icon">&#x1F514;</div>
           <div class="beheer-tile-titel">Pushmeldingen</div>
           <div class="beheer-tile-sub">${typeof Notification!=="undefined"&&Notification.permission==="granted"?"&#x2705; Aan":"&#x26AA; Uit"}</div>
         </div>
 
         <!-- 10 Back-up -->
         <div class="beheer-tile" onclick="window.openBeheerOverlay('inst-backup')">
-          <div class="beheer-tile-icon" style="background:var(--gl)">&#x1F4BE;</div>
+          <div class="beheer-tile-icon">&#x1F4BE;</div>
           <div class="beheer-tile-titel">Back-up</div>
           <div class="beheer-tile-sub">CSV exporteren</div>
         </div>
@@ -1635,7 +1635,6 @@ function render() {
   <!-- ═══ BEHEER OVERLAY ═══ -->
   <div id="beheer-overlay" class="beheer-overlay-bg" onclick="closeBeheerOverlay(event)">
     <div class="beheer-overlay-sheet" id="beheer-overlay-sheet">
-      <div class="beheer-overlay-handle"></div>
       <div class="beheer-overlay-header">
         <div id="beheer-overlay-titel" style="font-family:'Fredoka One',cursive;font-size:17px;color:#fff"></div>
         <button class="beheer-overlay-close" onclick="window.closeBeheerOverlay()">&#x2715;</button>
@@ -3179,14 +3178,22 @@ function openBeheerOverlay(id) {
       <button class="btn btn-p" onclick="saveInstellingen();closeBeheerOverlay()">💾 Drempelwaarden opslaan</button>`;
   }
   else if(id==="inst-statistieken") {
+    const _totGelegd  = leg.reduce((s,r)=>s+(r.aantal||0),0);
+    const _totKapot   = leg.reduce((s,r)=>s+(r.kapot||0),0);
+    const _totVerkocht= vk.reduce((s,r)=>s+(r.aantal||0),0);
+    const _voorraad   = _totGelegd - _totKapot - _totVerkocht - reserveringen.filter(r=>r.status==="nieuw").reduce((s,r)=>s+(r.aantal||0),0);
+    const _omzet      = vk.reduce((s,r)=>s+(r.totaal||0),0);
+    const _streak     = (()=>{ let s=0,d=new Date(); while(true){const ds=d.toISOString().slice(0,10);if(!leg.find(r=>r.datum===ds))break;s++;d.setDate(d.getDate()-1);}return s; })();
     html = `
-      <div class="li"><div class="li-l"><div class="li-t">Totaal gelegde eieren</div></div><div class="li-r"><span class="fw text-or">${totGelegd}</span></div></div>
-      <div class="li"><div class="li-l"><div class="li-t">💔 Waarvan kapot</div></div><div class="li-r"><span class="fw text-ro">${totKapot}</span></div></div>
-      <div class="li"><div class="li-l"><div class="li-t">Totaal verkochte eieren</div></div><div class="li-r"><span class="fw text-gn">${totVerkocht}</span></div></div>
-      <div class="li"><div class="li-l"><div class="li-t">Huidige voorraad</div></div><div class="li-r"><span class="fw" style="${voorraad<0?"color:var(--rd)":"color:var(--or)"}">${voorraad}</span></div></div>
-      <div class="li"><div class="li-l"><div class="li-t">Invul-streak</div></div><div class="li-r"><span class="fw text-or">${streak} dagen ${streak>=7?"🔥":streak>=3?"⭐":"📆"}</span></div></div>
+      <div class="card" style="margin-bottom:0">
+      <div class="li"><div class="li-l"><div class="li-t">Totaal gelegde eieren</div></div><div class="li-r"><span class="fw text-or">${_totGelegd}</span></div></div>
+      <div class="li"><div class="li-l"><div class="li-t">💔 Waarvan kapot</div></div><div class="li-r"><span class="fw text-ro">${_totKapot}</span></div></div>
+      <div class="li"><div class="li-l"><div class="li-t">Totaal verkochte eieren</div></div><div class="li-r"><span class="fw text-gn">${_totVerkocht}</span></div></div>
+      <div class="li"><div class="li-l"><div class="li-t">Huidige voorraad</div></div><div class="li-r"><span class="fw" style="${_voorraad<0?"color:var(--rd)":"color:var(--or)"}">${_voorraad}</span></div></div>
+      <div class="li"><div class="li-l"><div class="li-t">Invul-streak</div></div><div class="li-r"><span class="fw text-or">${_streak} dagen ${_streak>=7?"🔥":_streak>=3?"⭐":"📆"}</span></div></div>
       <div class="li"><div class="li-l"><div class="li-t">Totaal klanten</div></div><div class="li-r"><span class="fw text-or">${klanten.length}</span></div></div>
-      <div class="li" style="border:none"><div class="li-l"><div class="li-t">Totaal omzet</div></div><div class="li-r"><span class="fw text-gn">${fmt(omzet)}</span></div></div>`;
+      <div class="li" style="border:none"><div class="li-l"><div class="li-t">Totaal omzet</div></div><div class="li-r"><span class="fw text-gn">${fmt(_omzet)}</span></div></div>
+      </div>`;
   }
   else if(id==="inst-locatie") {
     html = `
