@@ -3178,12 +3178,13 @@ function openBeheerOverlay(id) {
       <button class="btn btn-p" onclick="saveInstellingen();closeBeheerOverlay()">💾 Drempelwaarden opslaan</button>`;
   }
   else if(id==="inst-statistieken") {
-    const _totGelegd  = leg.reduce((s,r)=>s+(r.aantal||0),0);
-    const _totKapot   = leg.reduce((s,r)=>s+(r.kapot||0),0);
-    const _totVerkocht= vk.reduce((s,r)=>s+(r.aantal||0),0);
-    const _voorraad   = _totGelegd - _totKapot - _totVerkocht - reserveringen.filter(r=>r.status==="nieuw").reduce((s,r)=>s+(r.aantal||0),0);
-    const _omzet      = vk.reduce((s,r)=>s+(r.totaal||0),0);
-    const _streak     = (()=>{ let s=0,d=new Date(); while(true){const ds=d.toISOString().slice(0,10);if(!leg.find(r=>r.datum===ds))break;s++;d.setDate(d.getDate()-1);}return s; })();
+    // Gebruik exact dezelfde berekeningen als het dashboard
+    const _totGelegd   = leg.reduce((s,r)=>s+(r.aantal||0),0);
+    const _totKapot    = leg.reduce((s,r)=>s+(r.kapot||0),0);
+    const _totVerkocht = vk.reduce((s,r)=>s+(r.aantal||0),0);
+    const _voorraad    = _totGelegd - _totKapot - _totVerkocht;
+    const _omzet       = vk.reduce((s,r)=>s+(r.totaal||0),0);
+    const _streak      = calcStreak();
     html = `
       <div class="card" style="margin-bottom:0">
       <div class="li"><div class="li-l"><div class="li-t">Totaal gelegde eieren</div></div><div class="li-r"><span class="fw text-or">${_totGelegd}</span></div></div>
