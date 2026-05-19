@@ -3119,44 +3119,86 @@ function openBeheerOverlay(id) {
       <button class="btn btn-s" onclick="saveSchoonmaak()" style="margin-top:8px">🧹 Schoonmaak registreren</button>`;
   }
   else if(id==="inst-kippen") {
-    const actiefKippen=kippen.filter(k=>!k.status||k.status==="actief");
+    const actiefKippen = kippen.filter(k=>!k.status||k.status==="actief");
+    const uitgevallen  = kippen.filter(k=>k.status==="uitgevallen"||k.status==="verkocht");
+    const gemLeeftijd  = actiefKippen.filter(k=>k.geboortedatum).map(k=>
+      Math.floor((new Date()-new Date(k.geboortedatum+"T12:00:00"))/(365.25*24*3600*1000)*10)/10
+    );
+    const gem = gemLeeftijd.length ? (gemLeeftijd.reduce((s,v)=>s+v,0)/gemLeeftijd.length).toFixed(1) : null;
+
     html = `
+      <!-- Boerderijnaam -->
       <div class="fg"><label class="fl">🏡 Naam boerderij</label>
         <input type="text" id="inst-boerderij-naam" value="${esc(instellingen.boerderijNaam||"Ben's Boerderij")}" placeholder="bijv. Ben's Boerderij">
-        <div style="font-size:11px;color:var(--txl);margin-top:4px">Wordt getoond in de header en op de bestelpage</div>
       </div>
       <button class="btn btn-p" onclick="saveInstellingen()" style="margin-bottom:14px">💾 Naam opslaan</button>
-      <div style="height:1px;background:var(--gd);margin-bottom:14px"></div>
-      <div style="font-size:11px;font-weight:800;color:var(--txl);margin-bottom:10px">Kip toevoegen</div>
+
+      <!-- Stats -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+        <div style="background:var(--gl);border-radius:10px;border:1.5px solid var(--gd);padding:8px;text-align:center">
+          <div style="font-family:'Fredoka One',cursive;font-size:18px;color:var(--or)">${actiefKippen.length}</div>
+          <div style="font-size:9px;color:var(--txl);font-weight:700">ACTIEF</div>
+        </div>
+        <div style="background:var(--gl);border-radius:10px;border:1.5px solid var(--gd);padding:8px;text-align:center">
+          <div style="font-family:'Fredoka One',cursive;font-size:18px;color:var(--rd)">${uitgevallen.length}</div>
+          <div style="font-size:9px;color:var(--txl);font-weight:700">UITGEVALLEN</div>
+        </div>
+        <div style="background:var(--gl);border-radius:10px;border:1.5px solid var(--gd);padding:8px;text-align:center">
+          <div style="font-family:'Fredoka One',cursive;font-size:18px;color:var(--or)">${gem||"—"}</div>
+          <div style="font-size:9px;color:var(--txl);font-weight:700">GEM. LEEFTIJD</div>
+        </div>
+      </div>
+
+      <!-- Kip toevoegen -->
+      <div style="font-size:11px;font-weight:800;color:var(--txl);margin-bottom:10px">➕ Kip toevoegen</div>
       <div class="frow">
         <div class="fg"><label class="fl">Naam</label><input type="text" id="kip-naam" placeholder="bijv. Max..."></div>
         <div class="fg"><label class="fl">Ras</label><select id="kip-ras">${RASSEN.map(r=>`<option>${r}</option>`).join("")}</select></div>
       </div>
       <div class="frow">
-        <div class="fg"><label class="fl">Geslacht</label><select id="kip-geslacht"><option value="Hen">🐔 Hen</option><option value="Haan">🐓 Haan</option></select></div>
+        <div class="fg"><label class="fl">Geslacht</label>
+          <select id="kip-geslacht"><option value="Hen">🐔 Hen</option><option value="Haan">🐓 Haan</option></select>
+        </div>
         <div class="fg"><label class="fl">Geboortedatum</label><input type="date" id="kip-geboortedatum"></div>
       </div>
       <div class="fg"><label class="fl">Aanschafdatum</label><input type="date" id="kip-aanschafdatum" value="${today()}"></div>
       <button class="btn btn-p" onclick="saveKip()" style="margin-bottom:14px">🐓 Kip toevoegen</button>
-      <div style="height:1px;background:var(--gd);margin-bottom:10px"></div>
-      <div style="font-size:11px;font-weight:800;color:var(--txl);margin-bottom:8px">🐓 Kippen (${actiefKippen.length} actief)</div>
+
+      <!-- Kippenlijst -->
+      <div style="height:1px;background:var(--gd);margin-bottom:12px"></div>
+      <div style="font-size:11px;font-weight:800;color:var(--txl);margin-bottom:8px">🐓 Actieve kippen (${actiefKippen.length})</div>
       ${(()=>{
-        if(kippen.length===0) return '<div class="empty" style="padding:8px 0"><div class="em">🐓</div><p>Nog geen kippen</p></div>';
-        return kippen.map(k=>{
+        if(actiefKippen.length===0) return '<div class="empty" style="padding:8px 0"><div class="em">🐓</div><p>Nog geen kippen</p></div>';
+        return actiefKippen.map(k=>{
           const leeftijd=k.geboortedatum?Math.floor((new Date()-new Date(k.geboortedatum+"T12:00:00"))/(365.25*24*3600*1000)*10)/10:null;
           const dot=!leeftijd?"":leeftijd>3?"🔴":leeftijd>2.5?"🟡":"🟢";
           return `<div class="li">
             <div class="li-l">
-              <div class="li-t">${dot} ${esc(k.naam)} <span style="font-size:10px;color:var(--txl)">${k.ras||""}</span></div>
-              <div class="li-s">${leeftijd?leeftijd+" jr":""} ${k.status&&k.status!=="actief"?"· "+k.status:""}</div>
+              <div class="li-t">${dot} ${esc(k.naam)} <span style="font-size:10px;color:var(--txl);font-weight:400">${k.ras||""} ${k.geslacht==="Haan"?"🐓":""}</span></div>
+              <div class="li-s">${leeftijd?leeftijd+" jr · ":""} ${k.geboortedatum?fmtD(k.geboortedatum):""}</div>
             </div>
-            <div class="li-r">
-              <button class="ebtn" onclick='openModal("kip",${JSON.stringify(k)})'>✏️</button>
-              <button class="dbtn" onclick="deleteKip('${k._key}')">🗑</button>
+            <div class="li-r" style="gap:2px">
+              <button class="ebtn" title="Gezondheid" onclick='openKipGezondheid("${k._key}")'>🏥</button>
+              <button class="ebtn" title="Uitval" onclick='uitvallenKip("${k._key}")'>🪦</button>
+              <button class="ebtn" title="Bewerken" onclick='openModal("kip",${JSON.stringify(k)})'>✏️</button>
+              <button class="dbtn" title="Verwijderen" onclick="deleteKip('${k._key}')">🗑</button>
             </div>
           </div>`;
         }).join("");
-      })()}`;
+      })()}
+      ${uitgevallen.length>0?`
+      <div style="height:1px;background:var(--gd);margin:10px 0 8px"></div>
+      <div style="font-size:11px;font-weight:800;color:var(--txl);margin-bottom:8px">🪦 Uitgevallen (${uitgevallen.length})</div>
+      ${uitgevallen.map(k=>`<div class="li">
+        <div class="li-l">
+          <div class="li-t" style="color:var(--txl)">${esc(k.naam)} <span style="font-size:10px">${k.ras||""}</span></div>
+          <div class="li-s">${k.status||""} ${k.uitvalDatum?"· "+fmtD(k.uitvalDatum):""}</div>
+        </div>
+        <div class="li-r">
+          <button class="ebtn" onclick='heractiveerKip("${k._key}")'>▶️</button>
+          <button class="dbtn" onclick="deleteKip('${k._key}')">🗑</button>
+        </div>
+      </div>`).join("")}`:""}`;
   }
   else if(id==="inst-klantstat") {
     html = `
