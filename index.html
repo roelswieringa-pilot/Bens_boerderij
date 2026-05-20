@@ -195,6 +195,7 @@ let leg=[], vk=[], kst=[], inv=[], klanten=[], kippen=[], reserveringen=[], abon
 let instellingen = { prijsPerEi: 0.40, doosjeGrootte: 6, prijsDoosje6: 2.50, prijsDoosje10: 4.00, bezorgkosten: 1.00, boerderijNaam: "Ben's Boerderij", klantGroen: 7, klantOranje: 14, loyaliteitDrempel: 10, hokFrequentie: 14, weerLat: 50.9057, weerLon: 5.7815, weerNaam: "Ulestraten", seizoensNieuws: "", seizoensVanaf: "", seizoensTm: "" };
 let zoekKlant = "";
 let currentUser = null;
+let aboGeladen = false, resGeladen = false, _aboSyncBezig = false;
 let kstTab = "kosten";
 // Beheer accordion — standaard alles ingeklapt behalve niets
 let beheerOpen = new Set(['inst-schoonmaak','vk-form']);
@@ -308,17 +309,14 @@ function startListeners() {
   onValue(ref(db,"abonnementen"), snap => {
     const val2 = snap.val() || {};
     abonnementen = Object.entries(val2).map(([k,v])=>({...v,_key:k})).sort((a,b)=>a.naam.localeCompare(b.naam));
-    render(); setSyncBadge("ok");
-  });
-  onValue(ref(db,"abonnementen"), snap => {
-    const val2 = snap.val() || {};
-    abonnementen = Object.entries(val2).map(([k,v])=>({...v,_key:k})).sort((a,b)=>a.naam.localeCompare(b.naam));
-    render(); setSyncBadge("ok");
+    aboGeladen = true;
+    render(); setSyncBadge("ok"); syncAboReserveringen();
   });
   onValue(ref(db,"reserveringen"), snap => {
     const val = snap.val() || {};
     reserveringen = Object.entries(val).map(([k,v])=>({...v,_key:k})).sort((a,b)=>a.datum.localeCompare(b.datum));
-    render(); setSyncBadge("ok"); if(currentUser) syncPubliekeData();
+    resGeladen = true;
+    render(); setSyncBadge("ok"); syncAboReserveringen(); if(currentUser) syncPubliekeData();
   });
   onValue(ref(db,"kippen"), snap => {
     const val = snap.val() || {};
@@ -2661,6 +2659,35 @@ function getVolgendeAboDatum(abo, vanafDatum) {
     d.setDate(d.getDate()+1);
   }
   return null;
+}
+
+// Zet abonnementsbestellingen van vandaag om in reserveringen, zodat ze bij
+// Verkopen verschijnen en meetellen in de voorraadprognose. Mirrort de
+// Cloud Function abonnementReserveringen zodat de app niet van het 07:00-schema afhangt.
+async function syncAboReserveringen() {
+  if (_aboSyncBezig || !currentUser || !aboGeladen || !resGeladen) return;
+  _aboSyncBezig = true;
+  try {
+    const vandaag = today();
+    for (const abo of abonnementen) {
+      if (abo.status !== "actief") continue;
+      if (getVolgendeAboDatum(abo, vandaag) !== vandaag) continue;
+      const bestaatAl = reserveringen.some(r =>
+        r.abonnementKey === abo._key && r.datum === vandaag);
+      if (bestaatAl) continue;
+      const doosPrijs = abo.doosje === 10
+        ? (instellingen.prijsDoosje10 || 4.00)
+        : (instellingen.prijsDoosje6 || 2.50);
+      await dbSave("reserveringen/" + uid(), {
+        naam: abo.naam, tel: abo.tel || "", datum: vandaag,
+        aantal: abo.doosje, doosPrijs, status: "nieuw", aangemeld: vandaag,
+        bezorging: abo.bezorging || false, adres: abo.adres || null,
+        abonnementKey: abo._key, type: "abonnement"
+      });
+    }
+  } finally {
+    _aboSyncBezig = false;
+  }
 }
 
 async function updateAbonnement() {
