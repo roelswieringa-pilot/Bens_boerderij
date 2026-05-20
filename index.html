@@ -2491,7 +2491,7 @@ function setKstMaand(m) {
 const FCM_VAPID_KEY = "BF9iBYmS_wvSZc1Pvq-TIs-F9i1jD6Yslzkf-9fzLvPv2E6gr8aSpMSt1WdnzhMe_6VVwHadqqeOzw_o_iL_zSc";
 
 // ── App versie voor SW lifecycle check
-const APP_VERSION = "6.2";
+const APP_VERSION = "6.3";
 
 async function registreerPushNotificaties() {
   try {
@@ -2671,19 +2671,26 @@ async function syncAboReserveringen() {
     const vandaag = today();
     for (const abo of abonnementen) {
       if (abo.status !== "actief") continue;
+      // Leverdag al verwerkt vandaag — niet opnieuw aanmaken, ook niet als
+      // Ben de reservering inmiddels geaccepteerd of verwijderd heeft.
+      if (abo.laatsteAboReservering === vandaag) continue;
       if (getVolgendeAboDatum(abo, vandaag) !== vandaag) continue;
       const bestaatAl = reserveringen.some(r =>
         r.abonnementKey === abo._key && r.datum === vandaag);
-      if (bestaatAl) continue;
-      const doosPrijs = abo.doosje === 10
-        ? (instellingen.prijsDoosje10 || 4.00)
-        : (instellingen.prijsDoosje6 || 2.50);
-      await dbSave("reserveringen/" + uid(), {
-        naam: abo.naam, tel: abo.tel || "", datum: vandaag,
-        aantal: abo.doosje, doosPrijs, status: "nieuw", aangemeld: vandaag,
-        bezorging: abo.bezorging || false, adres: abo.adres || null,
-        abonnementKey: abo._key, type: "abonnement"
-      });
+      if (!bestaatAl) {
+        const doosPrijs = abo.doosje === 10
+          ? (instellingen.prijsDoosje10 || 4.00)
+          : (instellingen.prijsDoosje6 || 2.50);
+        await dbSave("reserveringen/" + uid(), {
+          naam: abo.naam, tel: abo.tel || "", datum: vandaag,
+          aantal: abo.doosje, doosPrijs, status: "nieuw", aangemeld: vandaag,
+          bezorging: abo.bezorging || false, adres: abo.adres || null,
+          abonnementKey: abo._key, type: "abonnement"
+        });
+      }
+      // Markeer de leverdag als verwerkt (ook als de Cloud Function de
+      // reservering al had aangemaakt).
+      await dbSave("abonnementen/" + abo._key + "/laatsteAboReservering", vandaag);
     }
   } finally {
     _aboSyncBezig = false;

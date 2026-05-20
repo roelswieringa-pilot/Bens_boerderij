@@ -183,18 +183,23 @@ exports.abonnementReserveringen = onSchedule(
     for (const abo of actief) {
       const volgende = getVolgendeAboDatum(abo, vandaag);
       if (!volgende || volgende !== vandaag) continue;
+      // Leverdag al verwerkt — niet opnieuw aanmaken na accepteren/verwijderen.
+      if (abo.laatsteAboReservering === vandaag) continue;
       const bestaatAl = reserveringen.some(r =>
         r.naam === abo.naam && r.datum === vandaag && r.abonnementKey === abo._key
       );
-      if (bestaatAl) continue;
-      const doosPrijs = abo.doosje === 10 ? (inst.prijsDoosje10 || 4.00) : (inst.prijsDoosje6 || 2.50);
-      const key = db.ref("reserveringen").push().key;
-      await db.ref("reserveringen/" + key).set({
-        naam: abo.naam, tel: abo.tel || "", datum: vandaag,
-        aantal: abo.doosje, doosPrijs, status: "nieuw", aangemeld: vandaag,
-        abonnementKey: abo._key, type: "abonnement"
-      });
-      nieuw.push({ naam: abo.naam, aantal: abo.doosje });
+      if (!bestaatAl) {
+        const doosPrijs = abo.doosje === 10 ? (inst.prijsDoosje10 || 4.00) : (inst.prijsDoosje6 || 2.50);
+        const key = db.ref("reserveringen").push().key;
+        await db.ref("reserveringen/" + key).set({
+          naam: abo.naam, tel: abo.tel || "", datum: vandaag,
+          aantal: abo.doosje, doosPrijs, status: "nieuw", aangemeld: vandaag,
+          abonnementKey: abo._key, type: "abonnement"
+        });
+        nieuw.push({ naam: abo.naam, aantal: abo.doosje });
+      }
+      // Markeer de leverdag als verwerkt.
+      await db.ref("abonnementen/" + abo._key + "/laatsteAboReservering").set(vandaag);
     }
     if (nieuw.length > 0) {
       const namen  = nieuw.map(r => r.naam).join(", ");
