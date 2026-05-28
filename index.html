@@ -2491,7 +2491,7 @@ function setKstMaand(m) {
 const FCM_VAPID_KEY = "BF9iBYmS_wvSZc1Pvq-TIs-F9i1jD6Yslzkf-9fzLvPv2E6gr8aSpMSt1WdnzhMe_6VVwHadqqeOzw_o_iL_zSc";
 
 // ── App versie voor SW lifecycle check
-const APP_VERSION = "6.3";
+const APP_VERSION = "6.4";
 
 async function registreerPushNotificaties() {
   try {
@@ -3163,7 +3163,7 @@ function openBeheerOverlay(id) {
           <div class="li-r"><button class="dbtn" onclick="deleteSchoonmaak('${s._key}')">🗑</button></div>
         </div>`).join("");
       })()}
-      <button class="btn btn-s" onclick="saveSchoonmaak()" style="margin-top:8px">🧹 Schoonmaak registreren</button>`;
+      <button class="btn btn-s" onclick="registreerSchoonmaak()" style="margin-top:8px">🧹 Schoonmaak registreren</button>`;
   }
   else if(id==="inst-kippen") {
     const actiefKippen = kippen.filter(k=>!k.status||k.status==="actief");
