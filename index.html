@@ -2491,7 +2491,7 @@ function setKstMaand(m) {
 const FCM_VAPID_KEY = "BF9iBYmS_wvSZc1Pvq-TIs-F9i1jD6Yslzkf-9fzLvPv2E6gr8aSpMSt1WdnzhMe_6VVwHadqqeOzw_o_iL_zSc";
 
 // ── App versie voor SW lifecycle check
-const APP_VERSION = "6.4";
+const APP_VERSION = "6.5";
 
 async function registreerPushNotificaties() {
   try {
@@ -2609,8 +2609,8 @@ if ("serviceWorker" in navigator) {
 
 // ── Schoonmaak registreren vanuit Beheer ──────────────────────────────────
 async function registreerSchoonmaak() {
-  const datum   = (document.getElementById("schoon-datum")||{}).value || today();
-  const notitie = (document.getElementById("schoon-notitie")||{}).value.trim() || "";
+  const datum   = document.getElementById("schoon-datum")?.value || today();
+  const notitie = (document.getElementById("schoon-notitie")?.value || "").trim();
   if(datum > today()) return toast("\u26A0\uFE0F Datum kan niet in de toekomst liggen");
   const key = uid();
   await dbSave("schoonmaak/" + key, { datum, notitie });
