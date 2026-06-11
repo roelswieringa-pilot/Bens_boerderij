@@ -189,7 +189,13 @@ exports.abonnementReserveringen = onSchedule(
         r.naam === abo.naam && r.datum === vandaag && r.abonnementKey === abo._key
       );
       if (!bestaatAl) {
-        const doosPrijs = abo.doosje === 10 ? (inst.prijsDoosje10 || 4.00) : (inst.prijsDoosje6 || 2.50);
+        const doosjePrijzen = {
+          4: inst.prijsDoosje4 || 1.70,
+          6: inst.prijsDoosje6 || 2.50,
+          8: inst.prijsDoosje8 || 3.25,
+          10: inst.prijsDoosje10 || 4.00
+        };
+        const doosPrijs = doosjePrijzen[abo.doosje] || doosjePrijzen[6];
         const key = db.ref("reserveringen").push().key;
         await db.ref("reserveringen/" + key).set({
           naam: abo.naam, tel: abo.tel || "", datum: vandaag,
