@@ -98,7 +98,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--or);background:#fff}
 .toast{position:fixed;bottom:86px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--bd);color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:700;opacity:0;transition:all .3s;z-index:200;white-space:nowrap;pointer-events:none;max-width:90vw;text-align:center}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .fw-emoji{position:fixed;pointer-events:none;z-index:600;font-size:30px;line-height:1;transform-origin:center;}
-.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:flex-end;justify-content:center}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:flex-end;justify-content:center}
 .overlay.open{display:flex}
 .modal{background:#fff;border-radius:20px 20px 0 0;padding:20px 20px calc(var(--safe-bot) + 20px);width:100%;max-width:480px;max-height:88vh;overflow-y:auto}
 .modal-title{font-family:'Fredoka One',cursive;font-size:18px;color:var(--bd);margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
@@ -2521,7 +2521,7 @@ function setKstMaand(m) {
 const FCM_VAPID_KEY = "BF9iBYmS_wvSZc1Pvq-TIs-F9i1jD6Yslzkf-9fzLvPv2E6gr8aSpMSt1WdnzhMe_6VVwHadqqeOzw_o_iL_zSc";
 
 // ── App versie voor SW lifecycle check
-const APP_VERSION = "7.0";
+const APP_VERSION = "7.1";
 
 async function registreerPushNotificaties() {
   try {
