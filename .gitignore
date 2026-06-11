@@ -1,0 +1,13 @@
+# Node dependencies — worden geïnstalleerd via npm install
+functions/node_modules/
+
+# Firebase deploy cache
+.firebase/
+
+# macOS metadata
+.DS_Store
+
+# Editor en log bestanden
+*.log
+.vscode/
+.idea/
