@@ -449,6 +449,19 @@ async function saveVk() {
     klantId=klantKey; koper=k?k.naam:"";
   }
 
+  // Check op dubbele verkoop voor dezelfde klant op dezelfde datum
+  if(klantId && klantKey !== "nieuw") {
+    const dubbel = vk.find(v => v.klantId === klantId && v.datum === datum);
+    if(dubbel) {
+      const ok = await bevestig(
+        `Er is al een verkoop voor ${koper} op ${fmtD(datum)}.`,
+        "Ja, toch registreren", "btn-p",
+        `Bestaand: ${dubbel.aantal} eieren · ${fmt(dubbel.totaal||0)}. Toch een tweede verkoop registreren?`
+      );
+      if(!ok) return;
+    }
+  }
+
   const finalNotitie = [notitieExtra, notitie].filter(Boolean).join(" · ");
   const key = uid();
   await dbSave("verkopen/"+key, {datum,aantal,koper,klantId,betaal,totaal,notitie:finalNotitie});
@@ -2033,6 +2046,17 @@ async function accepteerRes(key, r) {
     }
   }
 
+  // Check op dubbele verkoop voor dezelfde klant op dezelfde datum
+  const dubbel = vk.find(v => v.klantId === klantId && v.datum === r.datum);
+  if(dubbel) {
+    const ok = await bevestig(
+      `Er is al een verkoop voor ${r.naam} op ${fmtD(r.datum)}.`,
+      "Ja, toch omzetten", "btn-p",
+      `Bestaand: ${dubbel.aantal} eieren · ${fmt(dubbel.totaal||0)}. Toch de reservering omzetten?`
+    );
+    if(!ok) return;
+  }
+
   // Sla op als verkoop — gebruik de doosPrijs uit de reservering
   const vkKey = uid();
   // Gebruik doosPrijs uit reservering, anders huidige doosjesprijs uit instellingen
@@ -2521,7 +2545,7 @@ function setKstMaand(m) {
 const FCM_VAPID_KEY = "BF9iBYmS_wvSZc1Pvq-TIs-F9i1jD6Yslzkf-9fzLvPv2E6gr8aSpMSt1WdnzhMe_6VVwHadqqeOzw_o_iL_zSc";
 
 // ── App versie voor SW lifecycle check
-const APP_VERSION = "7.1";
+const APP_VERSION = "7.2";
 
 async function registreerPushNotificaties() {
   try {
