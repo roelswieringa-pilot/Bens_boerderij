@@ -369,16 +369,17 @@ async function dbRemove(path) {
 
 // ── CRUD — Legdagen ───────────────────────────────────────────────────────
 async function saveLeg() {
-  const datum   = val("leg-datum");
-  const aantal  = parseInt(val("leg-aantal"))||0;
-  const kapot   = parseInt(val("leg-kapot"))||0;
-  const notitie = val("leg-notitie");
+  const datum      = val("leg-datum");
+  const aantal     = parseInt(val("leg-aantal"))||0;
+  const kapot      = parseInt(val("leg-kapot"))||0;
+  const weggegeven = parseInt(val("leg-weggegeven"))||0;
+  const notitie    = val("leg-notitie");
   if(!datum) return toast("⚠️ Kies een datum");
-  if(kapot > aantal) return toast("⚠️ Kapotte eieren kunnen niet meer zijn dan het totaal");
+  if(kapot + weggegeven > aantal) return toast("⚠️ Kapot + weggegeven kan niet meer zijn dan het totaal");
   const existing = leg.find(r=>r.datum===datum);
   const key = existing?existing._key:uid();
-  await dbSave("legdagen/"+key, {datum,aantal,kapot,notitie});
-  set_val("leg-datum", today()); set_val("leg-aantal",""); set_val("leg-kapot",""); set_val("leg-notitie","");
+  await dbSave("legdagen/"+key, {datum,aantal,kapot,weggegeven,notitie});
+  set_val("leg-datum", today()); set_val("leg-aantal",""); set_val("leg-kapot",""); set_val("leg-weggegeven",""); set_val("leg-notitie","");
   set_val("quick-datum", today()); set_val("quick-eieren","");
   if(aantal >= 10) {
     toast("🎆 " + aantal + " eieren geraapt! 🐔");
@@ -399,13 +400,14 @@ async function deleteLeg(key) {
   toast("🗑 Verwijderd");
 }
 async function updateLeg() {
-  const key     = val("edit-leg-key");
-  const datum   = val("edit-leg-datum");
-  const aantal  = parseInt(val("edit-leg-aantal"))||0;
-  const kapot   = parseInt(val("edit-leg-kapot"))||0;
-  const notitie = val("edit-leg-notitie");
-  if(kapot > aantal) return toast("⚠️ Kapotte eieren kunnen niet meer zijn dan het totaal");
-  await dbSave("legdagen/"+key, {datum,aantal,kapot,notitie});
+  const key        = val("edit-leg-key");
+  const datum      = val("edit-leg-datum");
+  const aantal     = parseInt(val("edit-leg-aantal"))||0;
+  const kapot      = parseInt(val("edit-leg-kapot"))||0;
+  const weggegeven = parseInt(val("edit-leg-weggegeven"))||0;
+  const notitie    = val("edit-leg-notitie");
+  if(kapot + weggegeven > aantal) return toast("⚠️ Kapot + weggegeven kan niet meer zijn dan het totaal");
+  await dbSave("legdagen/"+key, {datum,aantal,kapot,weggegeven,notitie});
   closeModal(); toast("✅ Bijgewerkt!");
 }
 
@@ -578,6 +580,7 @@ function renderModal() {
         <div class="fg"><label class="fl">Aantal eieren</label><input type="number" id="edit-leg-aantal" value="${data.aantal}" min="0" inputmode="numeric"></div>
         <div class="fg"><label class="fl">Waarvan kapot 💔</label><input type="number" id="edit-leg-kapot" value="${data.kapot||0}" min="0" inputmode="numeric"></div>
       </div>
+      <div class="fg"><label class="fl">Waarvan weggegeven 🎁</label><input type="number" id="edit-leg-weggegeven" value="${data.weggegeven||0}" min="0" inputmode="numeric"></div>
       <div class="fg"><label class="fl">Notities</label><input type="text" id="edit-leg-notitie" value="${esc(data.notitie||'')}"></div>
       <div class="brow"><button class="btn btn-g" onclick="closeModal()">Annuleren</button><button class="btn btn-p" onclick="updateLeg()">✅ Opslaan</button></div>`;
   } else if(type==="vk") {
@@ -858,8 +861,8 @@ function renderModal() {
 function exportCSV(type) {
   let rows, header, filename;
   if(type==="legdagen"){
-    header="datum,aantal,notitie";
-    rows=leg.map(r=>[r.datum,r.aantal,`"${(r.notitie||"").replace(/"/g,'""')}"`].join(","));
+    header="datum,aantal,kapot,weggegeven,notitie";
+    rows=leg.map(r=>[r.datum,r.aantal,r.kapot||0,r.weggegeven||0,`"${(r.notitie||"").replace(/"/g,'""')}"`].join(","));
     filename="bens_legdagen.csv";
   } else if(type==="verkopen"){
     header="datum,aantal,koper,betaalwijze,totaal,notitie";
@@ -905,11 +908,12 @@ function render() {
   const lasten  = kst.reduce((s,r)=>s+(r.bedrag||0),0);
   const result  = omzet-lasten;
 
-  // Voorraad: gelegd - kapot - verkocht
-  const totGelegd   = leg.reduce((s,r)=>s+(r.aantal||0),0);
-  const totKapot    = leg.reduce((s,r)=>s+(r.kapot||0),0);
-  const totVerkocht = vk.reduce((s,r)=>s+(r.aantal||0),0);
-  const voorraad    = totGelegd - totKapot - totVerkocht;
+  // Voorraad: gelegd - kapot - weggegeven - verkocht
+  const totGelegd     = leg.reduce((s,r)=>s+(r.aantal||0),0);
+  const totKapot      = leg.reduce((s,r)=>s+(r.kapot||0),0);
+  const totWeggegeven = leg.reduce((s,r)=>s+(r.weggegeven||0),0);
+  const totVerkocht   = vk.reduce((s,r)=>s+(r.aantal||0),0);
+  const voorraad      = totGelegd - totKapot - totWeggegeven - totVerkocht;
 
   // Streak
   const streak = calcStreak();
@@ -1043,7 +1047,8 @@ function render() {
           <div class="fg"><label class="fl">Aantal eieren geraapt</label><input type="number" id="leg-aantal" placeholder="0" min="0" inputmode="numeric"></div>
           <div class="fg"><label class="fl">Waarvan kapot 🥚💔</label><input type="number" id="leg-kapot" placeholder="0" min="0" inputmode="numeric"></div>
         </div>
-        <div class="fg"><label class="fl">Notities (optioneel)</label><input type="text" id="leg-notitie" placeholder="bijv. 2 gebroken..."></div>
+        <div class="fg"><label class="fl">Waarvan weggegeven 🎁 <span style="font-size:10px;color:var(--txl);font-weight:400">(niet verkocht, niet kapot)</span></label><input type="number" id="leg-weggegeven" placeholder="0" min="0" inputmode="numeric"></div>
+        <div class="fg"><label class="fl">Notities (optioneel)</label><input type="text" id="leg-notitie" placeholder="bijv. 2 gebroken, of weggegeven tijdens vakantie..."></div>
         <button class="btn btn-p" onclick="saveLeg()">✅ Opslaan</button>
       </div>
       <div class="card">
@@ -1063,7 +1068,7 @@ function render() {
             </div></div>`+
           rows.map(r=>`<div class="li">
             <div class="li-l"><div class="li-t">${fmtD(r.datum)}</div>
-            ${r.kapot?`<div class="li-s" style="color:var(--rd)">💔 ${r.kapot} kapot · verkoopbaar: ${r.aantal-(r.kapot||0)}</div>`:""}
+            ${(r.kapot||r.weggegeven)?`<div class="li-s" style="color:var(--rd)">${r.kapot?`💔 ${r.kapot} kapot`:""}${(r.kapot&&r.weggegeven)?" · ":""}${r.weggegeven?`🎁 ${r.weggegeven} weggegeven`:""} · verkoopbaar: ${r.aantal-(r.kapot||0)-(r.weggegeven||0)}</div>`:""}
             ${r.notitie?`<div class="li-s">${esc(r.notitie)}</div>`:""}</div>
             <div class="li-r"><span class="badge bo">🥚 ${r.aantal}</span>
               <button class="ebtn" onclick='openModal("leg",${JSON.stringify(r)})'>✏️</button>
@@ -2329,8 +2334,9 @@ async function saveKipUitval() {
   const notitie= val("uitval-notitie").trim();
   const kip = kippen.find(k=>k._key===key);
   if(!kip) return;
+  const { _key: _k, ...kipData } = kip;
   await dbSave("kippen/"+key, {
-    ...kip, _key: undefined,
+    ...kipData,
     status: "uitgevallen",
     uitval: { datum, reden, notitie }
   });
@@ -2545,7 +2551,7 @@ function setKstMaand(m) {
 const FCM_VAPID_KEY = "BF9iBYmS_wvSZc1Pvq-TIs-F9i1jD6Yslzkf-9fzLvPv2E6gr8aSpMSt1WdnzhMe_6VVwHadqqeOzw_o_iL_zSc";
 
 // ── App versie voor SW lifecycle check
-const APP_VERSION = "7.2";
+const APP_VERSION = "7.3";
 
 async function registreerPushNotificaties() {
   try {
@@ -3352,16 +3358,18 @@ function openBeheerOverlay(id) {
   }
   else if(id==="inst-statistieken") {
     // Gebruik exact dezelfde berekeningen als het dashboard
-    const _totGelegd   = leg.reduce((s,r)=>s+(r.aantal||0),0);
-    const _totKapot    = leg.reduce((s,r)=>s+(r.kapot||0),0);
-    const _totVerkocht = vk.reduce((s,r)=>s+(r.aantal||0),0);
-    const _voorraad    = _totGelegd - _totKapot - _totVerkocht;
-    const _omzet       = vk.reduce((s,r)=>s+(r.totaal||0),0);
-    const _streak      = calcStreak();
+    const _totGelegd     = leg.reduce((s,r)=>s+(r.aantal||0),0);
+    const _totKapot      = leg.reduce((s,r)=>s+(r.kapot||0),0);
+    const _totWeggegeven = leg.reduce((s,r)=>s+(r.weggegeven||0),0);
+    const _totVerkocht   = vk.reduce((s,r)=>s+(r.aantal||0),0);
+    const _voorraad      = _totGelegd - _totKapot - _totWeggegeven - _totVerkocht;
+    const _omzet         = vk.reduce((s,r)=>s+(r.totaal||0),0);
+    const _streak        = calcStreak();
     html = `
       <div class="card" style="margin-bottom:0">
       <div class="li"><div class="li-l"><div class="li-t">Totaal gelegde eieren</div></div><div class="li-r"><span class="fw text-or">${_totGelegd}</span></div></div>
       <div class="li"><div class="li-l"><div class="li-t">💔 Waarvan kapot</div></div><div class="li-r"><span class="fw text-ro">${_totKapot}</span></div></div>
+      <div class="li"><div class="li-l"><div class="li-t">🎁 Waarvan weggegeven</div></div><div class="li-r"><span class="fw text-ro">${_totWeggegeven}</span></div></div>
       <div class="li"><div class="li-l"><div class="li-t">Totaal verkochte eieren</div></div><div class="li-r"><span class="fw text-gn">${_totVerkocht}</span></div></div>
       <div class="li"><div class="li-l"><div class="li-t">Huidige voorraad</div></div><div class="li-r"><span class="fw" style="${_voorraad<0?"color:var(--rd)":"color:var(--or)"}">${_voorraad}</span></div></div>
       <div class="li"><div class="li-l"><div class="li-t">Invul-streak</div></div><div class="li-r"><span class="fw text-or">${_streak} dagen ${_streak>=7?"🔥":_streak>=3?"⭐":"📆"}</span></div></div>
@@ -3584,13 +3592,14 @@ Object.assign(window, {
 // ── Sync publieke data naar Firebase ──────────────────────────────────────
 async function syncPubliekeData() {
   // Bereken voorraad en gemiddelde
-  const totGelegd      = leg.reduce((s,r)=>s+(r.aantal||0),0);
-  const totKapotSync   = leg.reduce((s,r)=>s+(r.kapot||0),0);
-  const totVerkocht    = vk.reduce((s,r)=>s+(r.aantal||0),0);
-  const totGereserveerd= reserveringen.filter(r=>r.status==="nieuw").reduce((s,r)=>s+(r.aantal||0),0);
-  // Voorraad = gelegd - kapot - verkocht - gereserveerd
+  const totGelegd        = leg.reduce((s,r)=>s+(r.aantal||0),0);
+  const totKapotSync     = leg.reduce((s,r)=>s+(r.kapot||0),0);
+  const totWeggegevenSync= leg.reduce((s,r)=>s+(r.weggegeven||0),0);
+  const totVerkocht      = vk.reduce((s,r)=>s+(r.aantal||0),0);
+  const totGereserveerd  = reserveringen.filter(r=>r.status==="nieuw").reduce((s,r)=>s+(r.aantal||0),0);
+  // Voorraad = gelegd - kapot - weggegeven - verkocht - gereserveerd
   // Abonnements-reserveringen tellen al mee via totGereserveerd (Cloud Function maakt ze aan)
-  const voorraad = totGelegd - totKapotSync - totVerkocht - totGereserveerd;
+  const voorraad = totGelegd - totKapotSync - totWeggegevenSync - totVerkocht - totGereserveerd;
   const recent7     = [...leg].reverse().slice(0,7).filter(r=>r.aantal>0);
   const gemDag      = recent7.length
     ? Math.round(recent7.reduce((s,r)=>s+(r.aantal||0),0)/recent7.length)
@@ -3798,6 +3807,8 @@ document.addEventListener("DOMContentLoaded", () => {
       ]).then(([legSnap, vkSnap, instSnap, pubSnap]) => {
         const legData = legSnap.exists() ? Object.values(legSnap.val()) : [];
         const totGelegd = legData.reduce((s,r)=>s+(r.aantal||0),0);
+        const totKapot  = legData.reduce((s,r)=>s+(r.kapot||0),0);
+        const totWeggegeven = legData.reduce((s,r)=>s+(r.weggegeven||0),0);
         const vkData = vkSnap.exists() ? Object.values(vkSnap.val()) : [];
         const totVerkocht = vkData.reduce((s,r)=>s+(r.aantal||0),0);
         const inst = instSnap.exists() ? instSnap.val() : {};
@@ -3807,7 +3818,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const gesorteerd = legData.filter(r=>r.aantal>0).sort((a,b)=>b.datum.localeCompare(a.datum));
         const recent7 = gesorteerd.slice(0,7);
         const gemDag = recent7.length ? Math.round(recent7.reduce((s,r)=>s+(r.aantal||0),0)/recent7.length) : null;
-        window._pubVoorraad      = totGelegd - totVerkocht - totGereserveerd;
+        window._pubVoorraad      = totGelegd - totKapot - totWeggegeven - totVerkocht - totGereserveerd;
         window._pubGemDag        = gemDag;
         window._pubDoosje        = inst.doosjeGrootte || 6;
         window._pubPrijsDoosje4  = inst.prijsDoosje4 || 1.70;
